@@ -4,12 +4,10 @@ from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
 
-# ChromaDB location
-CHROMA_DIR = Path("../chroma_db")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+CHROMA_DIR = PROJECT_ROOT / "chroma_db"
 
-# Same embedding model used while creating the vector store
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
 
 def load_vector_store():
 

@@ -205,7 +205,7 @@ class TransactionProfile(Base):
 
     number_of_countries = Column(Integer)
 
-    transaction_velocity = Column(String)
+    transaction_velocity = Column(Float)
 
     round_amount_risk = Column(Boolean, default=False)
 
@@ -313,3 +313,223 @@ class Vendor(Base):
         Boolean,
         default=False
     )
+
+class Control(Base):
+
+    __tablename__ = "controls"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    control_name = Column(String, nullable=False)
+
+    control_category = Column(String)
+
+    description = Column(Text)
+
+    control_type = Column(String)
+
+    control_strength = Column(String)
+
+    implemented = Column(Boolean, default=False)
+
+    implementation_status = Column(String)
+
+    owner = Column(String)
+
+    evidence_document_id = Column(Integer)
+
+    effectiveness_score = Column(Float)
+
+class ControlEffectiveness(Base):
+
+    __tablename__ = "control_effectiveness"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    control_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    design_effectiveness = Column(Float)
+
+    operating_effectiveness = Column(Float)
+
+    coverage = Column(Float)
+
+    automation_level = Column(Float)
+
+    evidence_quality = Column(Float)
+
+    effectiveness_score = Column(Float)
+
+class RiskFactor(Base):
+
+    __tablename__ = "risk_factors"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    risk_category = Column(String, nullable=False)
+
+    risk_factor = Column(String, nullable=False)
+
+    factor_value = Column(String)
+
+    factor_score = Column(Float)
+
+    factor_weight = Column(Float)
+
+    inherent_risk_contribution = Column(Float)
+
+    source_type = Column(String)
+
+    source_reference = Column(String)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+class RiskAssessment(Base):
+
+    __tablename__ = "risk_assessments"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    risk_model_version = Column(String)
+
+    customer_risk_score = Column(Float)
+    product_risk_score = Column(Float)
+    geography_risk_score = Column(Float)
+    transaction_risk_score = Column(Float)
+    channel_risk_score = Column(Float)
+    third_party_risk_score = Column(Float)
+    fraud_risk_score = Column(Float)
+
+    inherent_score = Column(Float)
+
+    inherent_rating = Column(String)
+
+    control_adjustment = Column(Float)
+
+    residual_score = Column(Float)
+
+    residual_rating = Column(String)
+
+    ai_recommendation = Column(String)
+
+    analyst_rating = Column(String)
+
+    final_rating = Column(String)
+
+    assessment_status = Column(
+        String,
+        default="DRAFT"
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+    updated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
+
+class RiskModelConfig(Base):
+
+    __tablename__ = "risk_model_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    model_name = Column(String, nullable=False)
+
+    version = Column(String, nullable=False)
+
+    effective_from = Column(DateTime)
+
+    effective_to = Column(DateTime)
+
+    created_by = Column(String)
+
+    approved_by = Column(String)
+
+    active = Column(Boolean, default=False)
+
+class RiskModelWeight(Base):
+
+    __tablename__ = "risk_model_weights"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    risk_model_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    risk_category = Column(
+        String,
+        nullable=False
+    )
+
+    weight = Column(Float)
+
+    minimum_score = Column(Float)
+
+    maximum_score = Column(Float)
+
+class RegulatorySource(Base):
+    __tablename__ = "regulatory_sources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    authority = Column(String, nullable=False)
+    document_name = Column(String, nullable=False)
+    document_type = Column(String)
+    status = Column(String)
+    jurisdiction = Column(String, default="INDIA")
+    source_file = Column(String)
+    effective_from = Column(DateTime)
+    effective_to = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class RegulatoryEvidence(Base):
+    __tablename__ = "regulatory_evidence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    change_request_id = Column(Integer, nullable=False, index=True)
+    risk_factor_id = Column(Integer, nullable=True, index=True)
+    regulatory_source_id = Column(Integer, nullable=True, index=True)
+
+    query = Column(Text)
+    evidence_text = Column(Text)
+
+    authority = Column(String)
+    document_name = Column(String)
+    page_number = Column(Integer)
+
+    source_reference = Column(String)
+    relevance_score = Column(Float)
+
+    created_at = Column(DateTime, default=datetime.utcnow)

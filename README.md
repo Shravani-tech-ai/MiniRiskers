@@ -55,3 +55,133 @@ FastAPI Backend
 SQLite Database
       ↓
 Change Request
+
+## Progress — September 5, 2026
+
+### Completed Today
+
+- Expanded the database schema to support structured financial crime risk assessment data.
+
+- Added database models for:
+  - Products
+  - Customer Profiles
+  - Geographies
+  - Transaction Profiles
+  - Channels
+  - Third-Party Vendors
+  - Controls
+  - Control Effectiveness
+  - Risk Factors
+  - Risk Assessments
+  - Risk Model Configuration
+  - Risk Model Weights
+  - Regulatory Sources
+  - Regulatory Evidence
+
+- Added APIs for creating and retrieving structured change request information across product, customer, geography, transaction, channel, vendor, control, and risk-factor components.
+
+- Implemented automatic risk-factor generation based on change request characteristics.
+
+- Generated risk factors across multiple financial crime risk categories:
+  - Customer Risk
+  - Product Risk
+  - Geography Risk
+  - Transaction Risk
+  - Channel Risk
+  - Third-Party Risk
+  - Fraud Risk
+
+- Implemented configurable risk scoring methodology using weighted risk categories.
+
+- Added inherent risk calculation using category-level risk scores and configurable weights.
+
+- Added risk rating bands:
+  - LOW
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+
+- Implemented control effectiveness scoring using:
+  - Design Effectiveness
+  - Operating Effectiveness
+  - Coverage
+  - Automation Level
+  - Evidence Quality
+
+- Implemented residual risk calculation based on inherent risk and control effectiveness.
+
+- Added risk concentration and risk-floor rules for scenarios such as:
+  - Cross-border activity involving high-risk jurisdictions and high transaction velocity
+  - Third-party processing without completed vendor due diligence
+  - Missing sanctions screening
+
+- Added separation between:
+  - System-generated risk assessment
+  - AI recommendation
+  - Analyst assessment
+  - Final human decision
+
+- Added regulatory evidence retrieval using the existing Indian regulatory RAG pipeline.
+
+- Created regulatory query mappings for individual risk factors so that each risk factor can be associated with a relevant Indian regulatory question.
+
+- Implemented automated regulatory evidence generation for all risk factors associated with a Change Request.
+
+- Integrated the regulatory query engine with the FastAPI backend.
+
+- Regulatory evidence now stores:
+  - Change Request
+  - Risk Factor
+  - Regulatory Query
+  - Evidence Text
+  - Regulatory Authority
+  - Document Name
+  - Page Number
+  - Source Reference
+  - Relevance/Distance Score
+  - Creation Timestamp
+
+- Added API endpoint to generate regulatory evidence for a Change Request.
+
+- Added API endpoint to retrieve regulatory evidence associated with a Change Request.
+
+- Successfully tested regulatory evidence generation for `CR-2026-001`.
+
+- Successfully generated regulatory evidence for the automatically generated risk factors using the Indian regulatory document collection.
+
+- Fixed SQLAlchemy response serialization so regulatory evidence is returned as structured JSON instead of raw ORM objects.
+
+- Fixed risk-factor generation issues related to transaction velocity data types.
+
+- Fixed the regulatory evidence generation variable-name error and verified successful evidence generation.
+
+- Added project-level ChromaDB path handling so the vector store can be accessed reliably from the project structure.
+
+- Improved the regulatory query engine by caching the embedding/vector-store instance to avoid repeatedly loading the Hugging Face embedding model for every query.
+
+### Current Risk Assessment Flow
+
+```text
+Change Request
+      ↓
+Structured Product / Customer / Geography / Transaction Data
+      ↓
+Automatic Risk Factor Generation
+      ↓
+Risk Category Scoring
+      ↓
+Inherent Risk Calculation
+      ↓
+Control Effectiveness Assessment
+      ↓
+Residual Risk Calculation
+      ↓
+Regulatory Evidence Retrieval
+      ↓
+Risk Assessment + Regulatory Evidence
+      ↓
+AI-Assisted FCRM Assessment
+      ↓
+Human Analyst Review
+      ↓
+Risk Committee Decision
