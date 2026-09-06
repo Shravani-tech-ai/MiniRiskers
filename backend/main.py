@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from backend.database import engine, get_db
@@ -31,6 +32,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -48,6 +59,91 @@ def root():
 @app.get("/change-requests")
 def get_change_requests(db: Session = Depends(get_db)):
     return db.query(ChangeRequest).all()
+
+@app.get("/change-requests/{change_request_id}")
+def get_change_request(
+    change_request_id: int,
+    db: Session = Depends(get_db)
+):
+    change_request = (
+        db.query(ChangeRequest)
+        .filter(ChangeRequest.id == change_request_id)
+        .first()
+    )
+
+    if not change_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Change request not found"
+        )
+
+    return {
+        "id": change_request.id,
+        "request_number": change_request.request_number,
+        "title": change_request.title,
+        "description": change_request.description,
+        "change_type": change_request.change_type,
+        "product_type": change_request.product_type,
+        "business_unit": change_request.business_unit,
+        "customer_segment": change_request.customer_segment,
+        "requested_by": change_request.requested_by,
+        "assigned_analyst": change_request.assigned_analyst,
+        "status": change_request.status,
+        "priority": change_request.priority,
+        "proposed_go_live_date": change_request.proposed_go_live_date,
+        "created_at": change_request.created_at
+    }
+
+@app.get("/change-requests/{change_request_id}/risk-assessment")
+def get_risk_assessment(
+    change_request_id: int,
+    db: Session = Depends(get_db)
+):
+    risk_assessment = (
+        db.query(RiskAssessment)
+        .filter(
+            RiskAssessment.change_request_id == change_request_id
+        )
+        .order_by(RiskAssessment.id.desc())
+        .first()
+    )
+
+    if not risk_assessment:
+        raise HTTPException(
+            status_code=404,
+            detail="Risk assessment not found"
+        )
+
+    return {
+        "id": risk_assessment.id,
+        "change_request_id": risk_assessment.change_request_id,
+        "risk_model_version": risk_assessment.risk_model_version,
+
+        "customer_risk_score": risk_assessment.customer_risk_score,
+        "product_risk_score": risk_assessment.product_risk_score,
+        "geography_risk_score": risk_assessment.geography_risk_score,
+        "transaction_risk_score": risk_assessment.transaction_risk_score,
+        "channel_risk_score": risk_assessment.channel_risk_score,
+        "third_party_risk_score": risk_assessment.third_party_risk_score,
+        "fraud_risk_score": risk_assessment.fraud_risk_score,
+
+        "inherent_score": risk_assessment.inherent_score,
+        "inherent_rating": risk_assessment.inherent_rating,
+
+        "control_adjustment": risk_assessment.control_adjustment,
+
+        "residual_score": risk_assessment.residual_score,
+        "residual_rating": risk_assessment.residual_rating,
+
+        "ai_recommendation": risk_assessment.ai_recommendation,
+        "analyst_rating": risk_assessment.analyst_rating,
+        "final_rating": risk_assessment.final_rating,
+
+        "assessment_status": risk_assessment.assessment_status,
+
+        "created_at": risk_assessment.created_at,
+        "updated_at": risk_assessment.updated_at
+    }
 
 @app.post("/change-requests")
 def create_change_request(
