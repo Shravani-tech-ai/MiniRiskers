@@ -5,6 +5,7 @@ from backend.database import engine, get_db
 from risk_engine.risk_calculator import generate_risk_assessment
 from risk_engine.risk_factor_generator import generate_risk_factors
 from rag.evidence_service import generate_evidence_for_change_request
+from backend.assessment_service import generate_ai_assessment
 from backend.models import (
     Base,
     ChangeRequest,
@@ -503,4 +504,38 @@ def get_regulatory_evidence(
         "change_request_id": change_request_id,
         "evidence_count": len(evidence_response),
         "evidence": evidence_response
+    }
+
+@app.post(
+    "/change-requests/{change_request_id}/generate-ai-assessment"
+)
+def generate_ai_assessment_endpoint(
+    change_request_id: int,
+    db: Session = Depends(get_db)
+):
+
+    recommendation, assessment = generate_ai_assessment(
+        db,
+        change_request_id
+    )
+
+    return {
+        "id": recommendation.id,
+        "change_request_id":
+            recommendation.change_request_id,
+
+        "model":
+            recommendation.model_name,
+
+        "model_version":
+            recommendation.model_version,
+
+        "status":
+            recommendation.status,
+
+        "recommendation":
+            recommendation.recommendation,
+
+        "assessment":
+            assessment
     }

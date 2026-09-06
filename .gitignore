@@ -7,3 +7,4 @@ data/processed/
 data/synthetic/
 .vscode/
 *.db
+.env

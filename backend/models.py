@@ -533,3 +533,48 @@ class RegulatoryEvidence(Base):
     relevance_score = Column(Float)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class AIRecommendation(Base):
+    __tablename__ = "ai_recommendations"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    risk_assessment_id = Column(
+        Integer,
+        nullable=True,
+        index=True
+    )
+
+    model_name = Column(String)
+
+    model_version = Column(String)
+
+    assessment_summary = Column(Text)
+
+    risk_analysis = Column(Text)
+
+    regulatory_considerations = Column(Text)
+
+    analyst_review_questions = Column(Text)
+
+    rationale = Column(Text)
+
+    recommendation = Column(String)
+
+    evidence_references = Column(Text)
+
+    status = Column(
+        String,
+        default="DRAFT"
+    )
+
+    generated_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
