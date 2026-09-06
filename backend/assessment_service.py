@@ -7,6 +7,23 @@ from backend.assessment_prompt import build_assessment_prompt
 from backend.gemini_service import generate_text
 from backend.models import AIRecommendation
 
+def parse_gemini_json(response_text: str):
+
+    response_text = response_text.strip()
+
+    # Remove Markdown code fences if Gemini adds them
+    if response_text.startswith("```json"):
+        response_text = response_text[7:]
+
+    elif response_text.startswith("```"):
+        response_text = response_text[3:]
+
+    if response_text.endswith("```"):
+        response_text = response_text[:-3]
+
+    response_text = response_text.strip()
+
+    return json.loads(response_text)
 
 def generate_ai_assessment(
     db: Session,
@@ -31,14 +48,15 @@ def generate_ai_assessment(
 
     # 4. Try to parse Gemini JSON
     try:
-        assessment = json.loads(response_text)
-    except json.JSONDecodeError:
+        assessment = parse_gemini_json(
+            response_text
+        )
 
-        assessment = {
-            "executive_summary": response_text,
-            "recommendation":
-                "REQUIRES_FCRM_REVIEW"
-        }
+    except json.JSONDecodeError as e:
+
+        raise ValueError(
+            f"Gemini returned invalid JSON: {e}"
+        )
 
     # 5. Store AI assessment
     recommendation = AIRecommendation(

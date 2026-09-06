@@ -87,6 +87,16 @@ The final recommendation must be:
 
 REQUIRES_FCRM_REVIEW
 
+Return ONLY valid JSON.
+
+Do NOT use Markdown.
+
+Do NOT wrap the JSON in ```json or ```.
+
+Do NOT include any explanation before or after the JSON.
+
+The response must exactly follow the requested JSON structure.
+
 Return the assessment as structured JSON with the following format:
 
 {{
