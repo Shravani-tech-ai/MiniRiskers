@@ -111,6 +111,46 @@ function Assessment() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [productSaved, setProductSaved] = useState(false);
+  const [customerSaved, setCustomerSaved] = useState(false);
+
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [savingCustomer, setSavingCustomer] = useState(false);
+
+  const [productForm, setProductForm] = useState({
+    product_name: "",
+    product_category: "",
+    product_description: "",
+    digital_channel: true,
+    branch_channel: false,
+    agent_channel: false,
+    cross_border: true,
+    cash_involved: false,
+    transaction_type: "",
+    transaction_limit: "",
+    expected_transaction_volume: "",
+    expected_transaction_frequency: "",
+    currency: "INR",
+    countries_supported: "",
+    new_product_flag: true,
+  });
+
+  const [customerForm, setCustomerForm] = useState({
+    customer_type: "INDIVIDUAL",
+    customer_segment: "",
+    individual_customer: true,
+    business_customer: false,
+    foreign_customer: false,
+    onboarding_method: "",
+    kyc_required: true,
+    kyc_method: "",
+    beneficial_owner_required: false,
+    pep_exposure: false,
+    high_risk_customer_exposure: false,
+    expected_customer_count: "",
+    customer_geographic_distribution: "",
+  });
+
   useEffect(() => {
     loadAssessment();
   }, [changeRequestId]);
@@ -124,26 +164,201 @@ function Assessment() {
         `/change-requests/${changeRequestId}`
       );
 
-      const riskAssessmentResponse = await api.get(
-        `/change-requests/${changeRequestId}/risk-assessment`
-      );
-
-      const evidenceResponse = await api.get(
-        `/change-requests/${changeRequestId}/regulatory-evidence`
-      );
-
       setChangeRequest(changeRequestResponse.data);
-      setRiskAssessment(riskAssessmentResponse.data);
-      setRegulatoryEvidence(evidenceResponse.data.evidence || []);
+
+      try {
+        const riskAssessmentResponse = await api.get(
+          `/change-requests/${changeRequestId}/risk-assessment`
+        );
+
+        setRiskAssessment(riskAssessmentResponse.data);
+      } catch (riskError) {
+        console.log(
+          "No risk assessment available yet."
+        );
+
+        setRiskAssessment(null);
+      }
+
+      try {
+        const evidenceResponse = await api.get(
+          `/change-requests/${changeRequestId}/regulatory-evidence`
+        );
+
+        setRegulatoryEvidence(
+          evidenceResponse.data.evidence || []
+        );
+      } catch (evidenceError) {
+        console.log(
+          "No regulatory evidence available yet."
+        );
+
+        setRegulatoryEvidence([]);
+      }
 
     } catch (error) {
-      console.error("Failed to load assessment:", error);
+      console.error(
+        "Failed to load change request:",
+        error
+      );
 
       setError(
-        "Unable to load the risk assessment."
+        "Unable to load the change request."
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveProduct = async () => {
+    if (!productForm.product_name.trim()) {
+      setError("Please enter the product name.");
+      return;
+    }
+
+    if (!productForm.transaction_type.trim()) {
+      setError("Please enter the transaction type.");
+      return;
+    }
+
+    try {
+      setSavingProduct(true);
+      setError("");
+
+      const payload = {
+        product_name: productForm.product_name,
+        product_category: productForm.product_category,
+        product_description: productForm.product_description,
+
+        digital_channel: productForm.digital_channel,
+        branch_channel: productForm.branch_channel,
+        agent_channel: productForm.agent_channel,
+
+        cross_border: productForm.cross_border,
+        cash_involved: productForm.cash_involved,
+
+        transaction_type: productForm.transaction_type,
+
+        transaction_limit:
+          productForm.transaction_limit === ""
+            ? null
+            : Number(productForm.transaction_limit),
+
+        expected_transaction_volume:
+          productForm.expected_transaction_volume === ""
+            ? null
+            : Number(productForm.expected_transaction_volume),
+
+        expected_transaction_frequency:
+          productForm.expected_transaction_frequency,
+
+        currency: productForm.currency,
+
+        countries_supported:
+          productForm.countries_supported,
+
+        new_product_flag: productForm.new_product_flag,
+      };
+
+      await api.post(
+        `/change-requests/${changeRequestId}/product`,
+        null,
+        {
+          params: payload,
+        }
+      );
+
+      setProductSaved(true);
+
+    } catch (error) {
+      console.error("Failed to save product:", error);
+
+      setError(
+        error.response?.data?.detail ||
+        "Unable to save product information."
+      );
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const saveCustomerProfile = async () => {
+    if (!customerForm.customer_type) {
+      setError("Please select the customer type.");
+      return;
+    }
+
+    if (!customerForm.onboarding_method.trim()) {
+      setError("Please enter the onboarding method.");
+      return;
+    }
+
+    try {
+      setSavingCustomer(true);
+      setError("");
+
+      const payload = {
+        customer_type: customerForm.customer_type,
+        customer_segment: customerForm.customer_segment,
+
+        individual_customer:
+          customerForm.individual_customer,
+
+        business_customer:
+          customerForm.business_customer,
+
+        foreign_customer:
+          customerForm.foreign_customer,
+
+        onboarding_method:
+          customerForm.onboarding_method,
+
+        kyc_required:
+          customerForm.kyc_required,
+
+        kyc_method:
+          customerForm.kyc_method,
+
+        beneficial_owner_required:
+          customerForm.beneficial_owner_required,
+
+        pep_exposure:
+          customerForm.pep_exposure,
+
+        high_risk_customer_exposure:
+          customerForm.high_risk_customer_exposure,
+
+        expected_customer_count:
+          customerForm.expected_customer_count === ""
+            ? null
+            : Number(customerForm.expected_customer_count),
+
+        customer_geographic_distribution:
+          customerForm.customer_geographic_distribution,
+      };
+
+      await api.post(
+        `/change-requests/${changeRequestId}/customer-profile`,
+        null,
+        {
+          params: payload,
+        }
+      );
+
+      setCustomerSaved(true);
+
+    } catch (error) {
+      console.error(
+        "Failed to save customer profile:",
+        error
+      );
+
+      setError(
+        error.response?.data?.detail ||
+        "Unable to save customer profile."
+      );
+    } finally {
+      setSavingCustomer(false);
     }
   };
 
@@ -349,6 +564,835 @@ function Assessment() {
       {/* ========================================================= */}
 
       <main className="mx-auto max-w-7xl px-8 py-8">
+        {/* ========================================================= */}
+{/* ASSESSMENT INPUTS */}
+{/* ========================================================= */}
+
+<div className="mb-8">
+
+  <div className="mb-6">
+
+    <h2 className="text-xl font-semibold text-slate-900">
+      Assessment Inputs
+    </h2>
+
+    <p className="mt-1 text-sm text-slate-500">
+      Provide structured information required for the financial
+      crime risk assessment.
+    </p>
+
+  </div>
+
+
+  {/* ======================================================= */}
+  {/* PRODUCT INFORMATION */}
+  {/* ======================================================= */}
+
+  <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+
+    <div className="border-b border-slate-200 bg-slate-50 p-6">
+
+      <div className="flex items-center justify-between">
+
+        <div>
+
+          <h3 className="font-semibold text-slate-900">
+            Product Information
+          </h3>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Define the product characteristics and transaction
+            capabilities.
+          </p>
+
+        </div>
+
+        {productSaved && (
+          <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+            ✓ Saved
+          </span>
+        )}
+
+      </div>
+
+    </div>
+
+
+    <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
+
+
+      {/* Product Name */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Product Name *
+        </label>
+
+        <input
+          type="text"
+          value={productForm.product_name}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              product_name: e.target.value,
+            })
+          }
+          placeholder="Digital International Remittance"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Product Category */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Product Category
+        </label>
+
+        <input
+          type="text"
+          value={productForm.product_category}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              product_category: e.target.value,
+            })
+          }
+          placeholder="Payments / Remittance"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Description */}
+
+      <div className="md:col-span-2">
+
+        <label className="text-sm font-medium text-slate-700">
+          Product Description
+        </label>
+
+        <textarea
+          rows={3}
+          value={productForm.product_description}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              product_description: e.target.value,
+            })
+          }
+          placeholder="Describe how the product works..."
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Transaction Type */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Transaction Type *
+        </label>
+
+        <input
+          type="text"
+          value={productForm.transaction_type}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              transaction_type: e.target.value,
+            })
+          }
+          placeholder="International Remittance"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Currency */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Currency
+        </label>
+
+        <input
+          type="text"
+          value={productForm.currency}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              currency: e.target.value,
+            })
+          }
+          placeholder="INR"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm uppercase outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Transaction Limit */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Transaction Limit
+        </label>
+
+        <input
+          type="number"
+          value={productForm.transaction_limit}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              transaction_limit: e.target.value,
+            })
+          }
+          placeholder="500000"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Expected Volume */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Expected Transaction Volume
+        </label>
+
+        <input
+          type="number"
+          value={productForm.expected_transaction_volume}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              expected_transaction_volume: e.target.value,
+            })
+          }
+          placeholder="10000"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Frequency */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Expected Transaction Frequency
+        </label>
+
+        <select
+          value={productForm.expected_transaction_frequency}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              expected_transaction_frequency: e.target.value,
+            })
+          }
+          className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        >
+
+          <option value="">
+            Select frequency
+          </option>
+
+          <option value="LOW">
+            Low
+          </option>
+
+          <option value="MEDIUM">
+            Medium
+          </option>
+
+          <option value="HIGH">
+            High
+          </option>
+
+          <option value="VERY_HIGH">
+            Very High
+          </option>
+
+        </select>
+
+      </div>
+
+
+      {/* Countries */}
+
+      <div>
+
+        <label className="text-sm font-medium text-slate-700">
+          Supported Countries
+        </label>
+
+        <input
+          type="text"
+          value={productForm.countries_supported}
+          onChange={(e) =>
+            setProductForm({
+              ...productForm,
+              countries_supported: e.target.value,
+            })
+          }
+          placeholder="UAE, Singapore, UK, USA"
+          className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      {/* Checkboxes */}
+
+      <div className="md:col-span-2">
+
+        <p className="mb-3 text-sm font-medium text-slate-700">
+          Product Characteristics
+        </p>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+
+          <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+            <input
+              type="checkbox"
+              checked={productForm.digital_channel}
+              onChange={(e) =>
+                setProductForm({
+                  ...productForm,
+                  digital_channel: e.target.checked,
+                })
+              }
+            />
+
+            <span className="text-sm text-slate-700">
+              Digital Channel
+            </span>
+
+          </label>
+
+
+          <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+            <input
+              type="checkbox"
+              checked={productForm.cross_border}
+              onChange={(e) =>
+                setProductForm({
+                  ...productForm,
+                  cross_border: e.target.checked,
+                })
+              }
+            />
+
+            <span className="text-sm text-slate-700">
+              Cross Border
+            </span>
+
+          </label>
+
+
+          <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+            <input
+              type="checkbox"
+              checked={productForm.cash_involved}
+              onChange={(e) =>
+                setProductForm({
+                  ...productForm,
+                  cash_involved: e.target.checked,
+                })
+              }
+            />
+
+            <span className="text-sm text-slate-700">
+              Cash Involved
+            </span>
+
+          </label>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    {/* Product Footer */}
+
+    <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+
+      <button
+        onClick={saveProduct}
+        disabled={savingProduct}
+        className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {savingProduct
+          ? "Saving..."
+          : productSaved
+          ? "Update Product"
+          : "Save Product"}
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+{/* ======================================================= */}
+{/* CUSTOMER PROFILE */}
+{/* ======================================================= */}
+
+<div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+
+  {/* Header */}
+
+  <div className="border-b border-slate-200 bg-slate-50 p-6">
+
+    <div className="flex items-center justify-between">
+
+      <div>
+
+        <h3 className="font-semibold text-slate-900">
+          Customer Profile
+        </h3>
+
+        <p className="mt-1 text-sm text-slate-500">
+          Define the customer population, onboarding method, and
+          financial crime exposure.
+        </p>
+
+      </div>
+
+      {customerSaved && (
+        <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+          ✓ Saved
+        </span>
+      )}
+
+    </div>
+
+  </div>
+
+
+  {/* Form */}
+
+  <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
+
+
+    {/* Customer Type */}
+
+    <div>
+
+      <label className="text-sm font-medium text-slate-700">
+        Customer Type *
+      </label>
+
+      <select
+        value={customerForm.customer_type}
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            customer_type: e.target.value,
+          })
+        }
+        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+      >
+
+        <option value="INDIVIDUAL">
+          Individual
+        </option>
+
+        <option value="BUSINESS">
+          Business
+        </option>
+
+        <option value="BOTH">
+          Individual + Business
+        </option>
+
+      </select>
+
+    </div>
+
+
+    {/* Customer Segment */}
+
+    <div>
+
+      <label className="text-sm font-medium text-slate-700">
+        Customer Segment
+      </label>
+
+      <input
+        type="text"
+        value={customerForm.customer_segment}
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            customer_segment: e.target.value,
+          })
+        }
+        placeholder="Retail Customers"
+        className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+      />
+
+    </div>
+
+
+    {/* Onboarding Method */}
+
+    <div>
+
+      <label className="text-sm font-medium text-slate-700">
+        Onboarding Method *
+      </label>
+
+      <select
+        value={customerForm.onboarding_method}
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            onboarding_method: e.target.value,
+          })
+        }
+        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+      >
+
+        <option value="">
+          Select onboarding method
+        </option>
+
+        <option value="BRANCH">
+          Branch
+        </option>
+
+        <option value="DIGITAL">
+          Digital
+        </option>
+
+        <option value="REMOTE">
+          Remote / Video KYC
+        </option>
+
+        <option value="AGENT">
+          Agent Assisted
+        </option>
+
+        <option value="MIXED">
+          Mixed
+        </option>
+
+      </select>
+
+    </div>
+
+
+    {/* KYC Method */}
+
+    <div>
+
+      <label className="text-sm font-medium text-slate-700">
+        KYC Method
+      </label>
+
+      <select
+        value={customerForm.kyc_method}
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            kyc_method: e.target.value,
+          })
+        }
+        className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+      >
+
+        <option value="">
+          Select KYC method
+        </option>
+
+        <option value="CKYC">
+          CKYC
+        </option>
+
+        <option value="VIDEO_KYC">
+          Video KYC
+        </option>
+
+        <option value="DIGITAL_KYC">
+          Digital KYC
+        </option>
+
+        <option value="BRANCH_KYC">
+          Branch KYC
+        </option>
+
+        <option value="MIXED">
+          Mixed
+        </option>
+
+      </select>
+
+    </div>
+
+
+    {/* Expected Customer Count */}
+
+    <div>
+
+      <label className="text-sm font-medium text-slate-700">
+        Expected Customer Count
+      </label>
+
+      <input
+        type="number"
+        value={customerForm.expected_customer_count}
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            expected_customer_count: e.target.value,
+          })
+        }
+        placeholder="100000"
+        className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+      />
+
+    </div>
+
+
+    {/* Geographic Distribution */}
+
+    <div>
+
+      <label className="text-sm font-medium text-slate-700">
+        Customer Geographic Distribution
+      </label>
+
+      <input
+        type="text"
+        value={customerForm.customer_geographic_distribution}
+        onChange={(e) =>
+          setCustomerForm({
+            ...customerForm,
+            customer_geographic_distribution: e.target.value,
+          })
+        }
+        placeholder="India, UAE, Singapore, UK"
+        className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+      />
+
+    </div>
+
+
+    {/* Customer Characteristics */}
+
+    <div className="md:col-span-2">
+
+      <p className="mb-3 text-sm font-medium text-slate-700">
+        Customer Characteristics
+      </p>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+
+
+        {/* Foreign Customers */}
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+          <input
+            type="checkbox"
+            checked={customerForm.foreign_customer}
+            onChange={(e) =>
+              setCustomerForm({
+                ...customerForm,
+                foreign_customer: e.target.checked,
+              })
+            }
+          />
+
+          <span className="text-sm text-slate-700">
+            Foreign Customer Exposure
+          </span>
+
+        </label>
+
+
+        {/* Beneficial Owner */}
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+          <input
+            type="checkbox"
+            checked={customerForm.beneficial_owner_required}
+            onChange={(e) =>
+              setCustomerForm({
+                ...customerForm,
+                beneficial_owner_required: e.target.checked,
+              })
+            }
+          />
+
+          <span className="text-sm text-slate-700">
+            Beneficial Owner Required
+          </span>
+
+        </label>
+
+
+        {/* PEP */}
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+          <input
+            type="checkbox"
+            checked={customerForm.pep_exposure}
+            onChange={(e) =>
+              setCustomerForm({
+                ...customerForm,
+                pep_exposure: e.target.checked,
+              })
+            }
+          />
+
+          <span className="text-sm text-slate-700">
+            PEP Exposure
+          </span>
+
+        </label>
+
+
+        {/* High Risk Customers */}
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+          <input
+            type="checkbox"
+            checked={customerForm.high_risk_customer_exposure}
+            onChange={(e) =>
+              setCustomerForm({
+                ...customerForm,
+                high_risk_customer_exposure:
+                  e.target.checked,
+              })
+            }
+          />
+
+          <span className="text-sm text-slate-700">
+            High-Risk Customer Exposure
+          </span>
+
+        </label>
+
+
+        {/* KYC Required */}
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+          <input
+            type="checkbox"
+            checked={customerForm.kyc_required}
+            onChange={(e) =>
+              setCustomerForm({
+                ...customerForm,
+                kyc_required: e.target.checked,
+              })
+            }
+          />
+
+          <span className="text-sm text-slate-700">
+            KYC Required
+          </span>
+
+        </label>
+
+
+        {/* Individual Customer */}
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+          <input
+            type="checkbox"
+            checked={customerForm.individual_customer}
+            onChange={(e) =>
+              setCustomerForm({
+                ...customerForm,
+                individual_customer: e.target.checked,
+              })
+            }
+          />
+
+          <span className="text-sm text-slate-700">
+            Individual Customers
+          </span>
+
+        </label>
+
+
+        {/* Business Customer */}
+
+        <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+
+          <input
+            type="checkbox"
+            checked={customerForm.business_customer}
+            onChange={(e) =>
+              setCustomerForm({
+                ...customerForm,
+                business_customer: e.target.checked,
+              })
+            }
+          />
+
+          <span className="text-sm text-slate-700">
+            Business Customers
+          </span>
+
+        </label>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  {/* Footer */}
+
+  <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
+
+    <button
+      onClick={saveCustomerProfile}
+      disabled={savingCustomer}
+      className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+
+      {savingCustomer
+        ? "Saving..."
+        : customerSaved
+        ? "Update Customer Profile"
+        : "Save Customer Profile"}
+
+    </button>
+
+  </div>
+
+</div>
 
         {/* Risk Overview heading */}
 

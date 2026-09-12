@@ -69,10 +69,10 @@ function Dashboard() {
             </div>
 
             <button
-              className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-slate-800"
+              onClick={() => navigate("/new-request")}
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
             >
               <Plus size={18} />
-
               New Request
             </button>
 
