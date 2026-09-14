@@ -618,3 +618,47 @@ class AnalystOverride(Base):
         DateTime,
         default=datetime.utcnow
     )
+
+class CommitteeDecision(Base):
+    __tablename__ = "committee_decisions"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    risk_assessment_id = Column(
+        Integer,
+        nullable=True,
+        index=True
+    )
+
+    analyst_override_id = Column(
+        Integer,
+        nullable=True,
+        index=True
+    )
+
+    decision = Column(String, nullable=False)
+
+    rationale = Column(Text)
+
+    conditions = Column(Text)
+
+    decided_by = Column(
+        String,
+        default="Risk Committee"
+    )
+
+    status = Column(
+        String,
+        default="FINAL"
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )

@@ -109,6 +109,7 @@ function Assessment() {
   const [committeeReason, setCommitteeReason] = useState("");
   const [committeeConditions, setCommitteeConditions] = useState("");
   const [committeeSubmitted, setCommitteeSubmitted] = useState(false);
+  const [committeeDecisionRecord, setCommitteeDecisionRecord] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -299,9 +300,45 @@ function Assessment() {
           error
         );
       }
-      
+
      finally {
       setLoading(false);
+    }
+
+    try {
+      const committeeResponse = await api.get(
+        `/change-requests/${changeRequestId}/committee-decision`
+      );
+
+      if (committeeResponse.data.decided) {
+        const decision = committeeResponse.data.decision;
+
+        setCommitteeSubmitted(true);
+        setCommitteeDecisionRecord(decision);
+
+        setCommitteeDecision(
+          decision.decision || ""
+        );
+
+        setCommitteeReason(
+          decision.rationale || ""
+        );
+
+        setCommitteeConditions(
+          decision.conditions || ""
+        );
+      } else {
+        setCommitteeSubmitted(false);
+        setCommitteeDecisionRecord(null);
+        setCommitteeDecision("");
+        setCommitteeReason("");
+        setCommitteeConditions("");
+      }
+    } catch (error) {
+      console.error(
+        "Failed to load committee decision:",
+        error
+      );
     }
   };
 
@@ -796,7 +833,7 @@ function Assessment() {
     }
   };
 
-  const submitCommitteeDecision = () => {
+  const submitCommitteeDecision = async () => {
     if (!committeeDecision) {
       setError("Please select a committee decision.");
       return;
@@ -819,16 +856,35 @@ function Assessment() {
       return;
     }
 
-    setError("");
+    try {
+      setError("");
 
-    setCommitteeSubmitted(true);
+      const response = await api.post(
+        `/change-requests/${changeRequestId}/committee-decision`,
+        null,
+        {
+          params: {
+            decision: committeeDecision,
+            rationale: committeeReason,
+            conditions: committeeConditions,
+          },
+        }
+      );
 
-    console.log("Committee Decision:", {
-      changeRequestId,
-      decision: committeeDecision,
-      rationale: committeeReason,
-      conditions: committeeConditions
-    });
+      setCommitteeSubmitted(true);
+      setCommitteeDecisionRecord(response.data.decision);
+
+    } catch (error) {
+      console.error(
+        "Failed to submit committee decision:",
+        error
+      );
+
+      setError(
+        error.response?.data?.detail ||
+        "Unable to submit committee decision."
+      );
+    }
   };
 
   if (loading) {

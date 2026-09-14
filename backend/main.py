@@ -23,7 +23,8 @@ from backend.models import (
     RiskModelConfig,
     RiskModelWeight,
     RegulatoryEvidence,
-    AnalystOverride
+    AnalystOverride,
+    CommitteeDecision
 )
 
 
@@ -741,5 +742,159 @@ def get_analyst_review(
             "reviewed_by": review.reviewed_by,
             "status": review.status,
             "created_at": review.created_at
+        }
+    }
+
+@app.post("/change-requests/{change_request_id}/committee-decision")
+def submit_committee_decision(
+    change_request_id: int,
+    decision: str,
+    rationale: str,
+    conditions: str = "",
+    db: Session = Depends(get_db)
+):
+    allowed_decisions = {
+        "APPROVE",
+        "APPROVE_WITH_CONDITIONS",
+        "DEFER",
+        "REJECT"
+    }
+
+    if decision not in allowed_decisions:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid committee decision."
+        )
+
+    if not rationale.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Committee rationale is required."
+        )
+
+    if (
+        decision == "APPROVE_WITH_CONDITIONS"
+        and not conditions.strip()
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Conditions are required for APPROVE_WITH_CONDITIONS."
+        )
+
+    # Get latest risk assessment
+    risk_assessment = (
+        db.query(RiskAssessment)
+        .filter(
+            RiskAssessment.change_request_id == change_request_id
+        )
+        .order_by(RiskAssessment.id.desc())
+        .first()
+    )
+
+    if not risk_assessment:
+        raise HTTPException(
+            status_code=404,
+            detail="Risk assessment not found."
+        )
+
+    # Get latest analyst review
+    analyst_review = (
+        db.query(AnalystOverride)
+        .filter(
+            AnalystOverride.change_request_id == change_request_id
+        )
+        .order_by(AnalystOverride.id.desc())
+        .first()
+    )
+
+    committee_decision = CommitteeDecision(
+        change_request_id=change_request_id,
+        risk_assessment_id=risk_assessment.id,
+        analyst_override_id=(
+            analyst_review.id
+            if analyst_review
+            else None
+        ),
+        decision=decision,
+        rationale=rationale,
+        conditions=conditions,
+        decided_by="Risk Committee",
+        status="FINAL"
+    )
+
+    db.add(committee_decision)
+
+    # Store final decision on the risk assessment
+    risk_assessment.final_rating = (
+        analyst_review.analyst_rating
+        if analyst_review
+        else risk_assessment.residual_rating
+    )
+
+    risk_assessment.assessment_status = "DECIDED"
+    risk_assessment.updated_at = datetime.utcnow()
+
+    # Update change request status
+    change_request = (
+        db.query(ChangeRequest)
+        .filter(ChangeRequest.id == change_request_id)
+        .first()
+    )
+
+    if change_request:
+        change_request.status = decision
+
+    db.commit()
+    db.refresh(committee_decision)
+
+    return {
+        "message": "Committee decision submitted successfully.",
+        "decision": {
+            "id": committee_decision.id,
+            "change_request_id": change_request_id,
+            "risk_assessment_id": committee_decision.risk_assessment_id,
+            "analyst_override_id": committee_decision.analyst_override_id,
+            "decision": committee_decision.decision,
+            "rationale": committee_decision.rationale,
+            "conditions": committee_decision.conditions,
+            "decided_by": committee_decision.decided_by,
+            "status": committee_decision.status,
+            "created_at": committee_decision.created_at,
+        }
+    }
+
+@app.get("/change-requests/{change_request_id}/committee-decision")
+def get_committee_decision(
+    change_request_id: int,
+    db: Session = Depends(get_db)
+):
+    decision = (
+        db.query(CommitteeDecision)
+        .filter(
+            CommitteeDecision.change_request_id == change_request_id
+        )
+        .order_by(CommitteeDecision.id.desc())
+        .first()
+    )
+
+    if not decision:
+        return {
+            "decided": False,
+            "decision": None
+        }
+
+    return {
+        "decided": True,
+        "decision": {
+            "id": decision.id,
+            "change_request_id": decision.change_request_id,
+            "risk_assessment_id": decision.risk_assessment_id,
+            "analyst_override_id": decision.analyst_override_id,
+            "decision": decision.decision,
+            "rationale": decision.rationale,
+            "conditions": decision.conditions,
+            "decided_by": decision.decided_by,
+            "status": decision.status,
+            "created_at": decision.created_at,
         }
     }
