@@ -662,3 +662,68 @@ class CommitteeDecision(Base):
         DateTime,
         default=datetime.utcnow
     )
+
+class AuditEvent(Base):
+    __tablename__ = "audit_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    actor = Column(
+        String,
+        nullable=False
+    )
+
+    action = Column(
+        String,
+        nullable=False
+    )
+
+    entity_type = Column(
+        String
+    )
+
+    entity_id = Column(
+        Integer,
+        nullable=True
+    )
+
+    old_value = Column(
+        Text,
+        nullable=True
+    )
+
+    new_value = Column(
+        Text,
+        nullable=True
+    )
+
+    reason = Column(
+        Text,
+        nullable=True
+    )
+
+    evidence = Column(
+        Text,
+        nullable=True
+    )
+
+    model_version = Column(
+        String,
+        nullable=True
+    )
+
+    policy_version = Column(
+        String,
+        nullable=True
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )

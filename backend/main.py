@@ -24,9 +24,41 @@ from backend.models import (
     RiskModelWeight,
     RegulatoryEvidence,
     AnalystOverride,
-    CommitteeDecision
+    CommitteeDecision,
+    AuditEvent
 )
 
+def create_audit_event(
+    db: Session,
+    change_request_id: int,
+    actor: str,
+    action: str,
+    entity_type: str = None,
+    entity_id: int = None,
+    old_value: str = None,
+    new_value: str = None,
+    reason: str = None,
+    evidence: str = None,
+    model_version: str = None,
+    policy_version: str = None,
+):
+    event = AuditEvent(
+        change_request_id=change_request_id,
+        actor=actor,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        old_value=old_value,
+        new_value=new_value,
+        reason=reason,
+        evidence=evidence,
+        model_version=model_version,
+        policy_version=policy_version,
+    )
+
+    db.add(event)
+
+    return event
 
 app = FastAPI(
     title="MiniRiskers",
@@ -172,6 +204,17 @@ def create_change_request(
     )
 
     db.add(change_request)
+    db.flush()
+    create_audit_event(
+        db=db,
+        change_request_id=change_request.id,
+        actor=change_request.requested_by or "Product Owner",
+        action="CREATED_CHANGE_REQUEST",
+        entity_type="ChangeRequest",
+        entity_id=change_request.id,
+        new_value=change_request.status,
+        reason="Change request created."
+    )
     db.commit()
     db.refresh(change_request)
 
@@ -514,6 +557,23 @@ def calculate_risk(
         change_request_id
     )
 
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="System",
+        action="RISK_ASSESSMENT_CALCULATED",
+        entity_type="RiskAssessment",
+        entity_id=assessment.id,
+        new_value=(
+            f"{assessment.inherent_score} "
+            f"({assessment.inherent_rating})"
+        ),
+        reason="Weighted risk assessment calculated.",
+        policy_version=assessment.risk_model_version
+    )
+
+    db.commit()
+
     return assessment
 
 @app.post("/change-requests/{change_request_id}/generate-risk-factors")
@@ -526,6 +586,18 @@ def generate_factors(
         db,
         change_request_id
     )
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="System",
+        action="RISK_FACTORS_GENERATED",
+        entity_type="RiskFactor",
+        new_value=f"{len(factors)} risk factors generated",
+        reason="System generated risk factors from change request inputs."
+    )
+
+    db.commit()
 
     return {
         "change_request_id": change_request_id,
@@ -544,6 +616,18 @@ def generate_regulatory_evidence(
         change_request_id,
         number_of_results=3
     )
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="System",
+        action="REGULATORY_EVIDENCE_GENERATED",
+        entity_type="RegulatoryEvidence",
+        new_value=f"{len(evidence)} evidence records generated",
+        reason="Relevant regulatory evidence retrieved using the RAG pipeline."
+    )
+
+    db.commit()
 
     evidence_response = []
 
@@ -617,6 +701,20 @@ def generate_ai_assessment_endpoint(
         change_request_id
     )
 
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="AI",
+        action="AI_ASSESSMENT_GENERATED",
+        entity_type="AIRecommendation",
+        entity_id=recommendation.id,
+        new_value=recommendation.recommendation,
+        reason="AI assessment generated for analyst review.",
+        model_version=recommendation.model_version
+    )
+
+    db.commit()
+
     return {
         "id": recommendation.id,
         "change_request_id":
@@ -689,6 +787,21 @@ def submit_analyst_review(
     risk_assessment.analyst_rating = analyst_rating
     risk_assessment.final_rating = analyst_rating
     risk_assessment.updated_at = datetime.utcnow()
+
+    db.flush()
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="FCRM Analyst",
+        action="ANALYST_REVIEW_SUBMITTED",
+        entity_type="AnalystOverride",
+        entity_id=analyst_override.id,
+        old_value=system_rating,
+        new_value=analyst_rating,
+        reason=override_reason,
+        evidence=consequences
+    )
 
     db.commit()
     db.refresh(analyst_override)
@@ -844,6 +957,20 @@ def submit_committee_decision(
     if change_request:
         change_request.status = decision
 
+    db.flush()
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="Risk Committee",
+        action="COMMITTEE_DECISION",
+        entity_type="CommitteeDecision",
+        entity_id=committee_decision.id,
+        new_value=committee_decision.decision,
+        reason=committee_decision.rationale,
+        evidence=committee_decision.conditions
+    )
+
     db.commit()
     db.refresh(committee_decision)
 
@@ -897,4 +1024,40 @@ def get_committee_decision(
             "status": decision.status,
             "created_at": decision.created_at,
         }
+    }
+
+@app.get("/change-requests/{change_request_id}/audit-events")
+def get_audit_events(
+    change_request_id: int,
+    db: Session = Depends(get_db)
+):
+    events = (
+        db.query(AuditEvent)
+        .filter(
+            AuditEvent.change_request_id == change_request_id
+        )
+        .order_by(AuditEvent.created_at.asc())
+        .all()
+    )
+
+    return {
+        "change_request_id": change_request_id,
+        "events": [
+            {
+                "id": event.id,
+                "change_request_id": event.change_request_id,
+                "actor": event.actor,
+                "action": event.action,
+                "entity_type": event.entity_type,
+                "entity_id": event.entity_id,
+                "old_value": event.old_value,
+                "new_value": event.new_value,
+                "reason": event.reason,
+                "evidence": event.evidence,
+                "model_version": event.model_version,
+                "policy_version": event.policy_version,
+                "created_at": event.created_at,
+            }
+            for event in events
+        ]
     }

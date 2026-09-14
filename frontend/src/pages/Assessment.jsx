@@ -110,6 +110,7 @@ function Assessment() {
   const [committeeConditions, setCommitteeConditions] = useState("");
   const [committeeSubmitted, setCommitteeSubmitted] = useState(false);
   const [committeeDecisionRecord, setCommitteeDecisionRecord] = useState(null);
+  const [auditEvents, setAuditEvents] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -230,22 +231,14 @@ function Assessment() {
       setLoading(true);
       setError("");
 
+      // 1. Change Request
       const changeRequestResponse = await api.get(
         `/change-requests/${changeRequestId}`
       );
 
       setChangeRequest(changeRequestResponse.data);
-    }
-    catch (error) {
-      console.error(
-        "Failed to load change request:",
-        error
-      );
 
-      setError(
-        "Unable to load the change request."
-      );
-    }
+      // 2. Risk Assessment
       try {
         const riskAssessmentResponse = await api.get(
           `/change-requests/${changeRequestId}/risk-assessment`
@@ -253,13 +246,11 @@ function Assessment() {
 
         setRiskAssessment(riskAssessmentResponse.data);
       } catch (riskError) {
-        console.log(
-          "No risk assessment available yet."
-        );
-
+        console.log("No risk assessment available yet.");
         setRiskAssessment(null);
       }
 
+      // 3. Regulatory Evidence
       try {
         const evidenceResponse = await api.get(
           `/change-requests/${changeRequestId}/regulatory-evidence`
@@ -269,13 +260,11 @@ function Assessment() {
           evidenceResponse.data.evidence || []
         );
       } catch (evidenceError) {
-        console.log(
-          "No regulatory evidence available yet."
-        );
-
+        console.log("No regulatory evidence available yet.");
         setRegulatoryEvidence([]);
       }
 
+      // 4. Analyst Review
       try {
         const analystReviewResponse = await api.get(
           `/change-requests/${changeRequestId}/analyst-review`
@@ -301,44 +290,81 @@ function Assessment() {
         );
       }
 
-     finally {
-      setLoading(false);
-    }
-
-    try {
-      const committeeResponse = await api.get(
-        `/change-requests/${changeRequestId}/committee-decision`
-      );
-
-      if (committeeResponse.data.decided) {
-        const decision = committeeResponse.data.decision;
-
-        setCommitteeSubmitted(true);
-        setCommitteeDecisionRecord(decision);
-
-        setCommitteeDecision(
-          decision.decision || ""
+      // 5. Committee Decision
+      try {
+        const committeeResponse = await api.get(
+          `/change-requests/${changeRequestId}/committee-decision`
         );
 
-        setCommitteeReason(
-          decision.rationale || ""
-        );
+        if (committeeResponse.data.decided) {
+          const decision = committeeResponse.data.decision;
 
-        setCommitteeConditions(
-          decision.conditions || ""
+          setCommitteeSubmitted(true);
+          setCommitteeDecisionRecord(decision);
+
+          setCommitteeDecision(
+            decision.decision || ""
+          );
+
+          setCommitteeReason(
+            decision.rationale || ""
+          );
+
+          setCommitteeConditions(
+            decision.conditions || ""
+          );
+        } else {
+          setCommitteeSubmitted(false);
+          setCommitteeDecisionRecord(null);
+          setCommitteeDecision("");
+          setCommitteeReason("");
+          setCommitteeConditions("");
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load committee decision:",
+          error
         );
-      } else {
-        setCommitteeSubmitted(false);
-        setCommitteeDecisionRecord(null);
-        setCommitteeDecision("");
-        setCommitteeReason("");
-        setCommitteeConditions("");
       }
+
+      // 6. Audit Trail
+      try {
+        const auditResponse = await api.get(
+          `/change-requests/${changeRequestId}/audit-events`
+        );
+
+        // If backend returns an array
+        if (Array.isArray(auditResponse.data)) {
+          setAuditEvents(auditResponse.data);
+        }
+        // If backend returns { events: [...] }
+        else {
+          setAuditEvents(
+            auditResponse.data.events || []
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load audit events:",
+          error
+        );
+
+        // Audit failure should NOT stop the Assessment page
+        setAuditEvents([]);
+      }
+
     } catch (error) {
       console.error(
-        "Failed to load committee decision:",
+        "Failed to load change request:",
         error
       );
+
+      setError(
+        error.response?.data?.detail ||
+        "Unable to load the change request."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -4858,6 +4884,124 @@ function Assessment() {
       )}
 
     </div>
+
+    {/* Audit Trail */}
+<div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
+  <div className="flex items-center justify-between mb-5">
+    <div>
+      <h2 className="text-lg font-semibold text-slate-900">
+        Audit Trail
+      </h2>
+      <p className="text-sm text-slate-500 mt-1">
+        Immutable record of key assessment and decision activities
+      </p>
+    </div>
+
+    <div className="text-sm text-slate-500">
+      {auditEvents.length} event{auditEvents.length !== 1 ? "s" : ""}
+    </div>
+  </div>
+
+  {auditEvents.length === 0 ? (
+    <div className="text-sm text-slate-500 py-6 text-center">
+      No audit events recorded yet.
+    </div>
+  ) : (
+    <div className="space-y-4">
+      {auditEvents.map((event, index) => (
+        <div
+          key={event.id || index}
+          className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200"
+        >
+          {/* Timeline dot */}
+          <div className="flex flex-col items-center">
+            <div className="w-3 h-3 rounded-full bg-slate-700 mt-1" />
+
+            {index !== auditEvents.length - 1 && (
+              <div className="w-px bg-slate-300 flex-1 mt-2" />
+            )}
+          </div>
+
+          {/* Event details */}
+          <div className="flex-1">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-medium text-slate-900">
+                  {event.action}
+                </p>
+
+                <p className="text-sm text-slate-600 mt-1">
+                  Actor: {event.actor || "System"}
+                </p>
+              </div>
+
+              <span className="text-xs text-slate-500 whitespace-nowrap">
+                {event.created_at
+                  ? new Date(event.created_at).toLocaleString("en-IN", {
+                      timeZone: "Asia/Kolkata",
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    })
+                  : ""}
+              </span>
+            </div>
+
+            {event.entity_type && (
+              <p className="text-xs text-slate-500 mt-2">
+                Entity: {event.entity_type}
+                {event.entity_id ? ` #${event.entity_id}` : ""}
+              </p>
+            )}
+
+            {event.old_value && (
+              <p className="text-sm text-slate-700 mt-2">
+                <span className="font-medium">Previous:</span>{" "}
+                {event.old_value}
+              </p>
+            )}
+
+            {event.new_value && (
+              <p className="text-sm text-slate-700 mt-1">
+                <span className="font-medium">New:</span>{" "}
+                {event.new_value}
+              </p>
+            )}
+
+            {event.reason && (
+              <p className="text-sm text-slate-600 mt-2">
+                <span className="font-medium">Reason:</span>{" "}
+                {event.reason}
+              </p>
+            )}
+
+            {event.evidence && (
+              <p className="text-sm text-slate-600 mt-1">
+                <span className="font-medium">Evidence:</span>{" "}
+                {event.evidence}
+              </p>
+            )}
+
+            {event.model_version && (
+              <p className="text-xs text-slate-500 mt-2">
+                Model: {event.model_version}
+              </p>
+            )}
+
+            {event.policy_version && (
+              <p className="text-xs text-slate-500 mt-1">
+                Policy: {event.policy_version}
+              </p>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
   </div>
 
