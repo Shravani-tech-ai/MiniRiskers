@@ -4937,13 +4937,14 @@ function Assessment() {
 
               <span className="text-xs text-slate-500 whitespace-nowrap">
                 {event.created_at
-                  ? new Date(event.created_at).toLocaleString("en-IN", {
+                  ? new Date(`${event.created_at}Z`).toLocaleString("en-IN", {
                       timeZone: "Asia/Kolkata",
                       day: "2-digit",
                       month: "2-digit",
                       year: "numeric",
                       hour: "2-digit",
                       minute: "2-digit",
+                      second: "2-digit",
                       hour12: true,
                     })
                   : ""}
