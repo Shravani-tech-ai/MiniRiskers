@@ -1061,3 +1061,41 @@ def get_audit_events(
             for event in events
         ]
     }
+
+@app.get("/dashboard/risk-summary")
+def get_dashboard_risk_summary(
+    db: Session = Depends(get_db)
+):
+    assessments = (
+        db.query(RiskAssessment)
+        .order_by(RiskAssessment.id.desc())
+        .all()
+    )
+
+    # Keep only the latest assessment for each change request
+    latest_assessments = {}
+
+    for assessment in assessments:
+        if assessment.change_request_id not in latest_assessments:
+            latest_assessments[assessment.change_request_id] = assessment
+
+    risk_counts = {
+        "CRITICAL": 0,
+        "HIGH": 0,
+        "MEDIUM": 0,
+        "LOW": 0
+    }
+
+    for assessment in latest_assessments.values():
+        rating = assessment.final_rating or assessment.residual_rating
+
+        if rating in risk_counts:
+            risk_counts[rating] += 1
+
+    return {
+        "total_assessments": len(latest_assessments),
+        "critical": risk_counts["CRITICAL"],
+        "high": risk_counts["HIGH"],
+        "medium": risk_counts["MEDIUM"],
+        "low": risk_counts["LOW"]
+    }

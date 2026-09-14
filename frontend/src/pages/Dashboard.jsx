@@ -1,15 +1,43 @@
 import { useEffect, useState } from "react";
-import { FileText, Plus, ArrowRight } from "lucide-react";
+import { FileText, Plus, ArrowRight, Clock3, CheckCircle2, ShieldAlert, } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 
 function Dashboard() {
   const [changeRequests, setChangeRequests] = useState([]);
+  const [riskSummary, setRiskSummary] = useState({
+    total_assessments: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const navigate = useNavigate();
+
+  const totalRequests = changeRequests.length;
+
+  const inProgressRequests = changeRequests.filter(
+    (request) =>
+      request.status === "IN_REVIEW" ||
+      request.status === "ANALYST_REVIEW" ||
+      request.status === "COMMITTEE_REVIEW"
+  ).length;
+
+  const completedRequests = changeRequests.filter(
+    (request) =>
+      request.status === "APPROVED" ||
+      request.status === "REJECTED"
+  ).length;
+
+  const highPriorityRequests = changeRequests.filter(
+    (request) =>
+      request.priority === "HIGH" ||
+      request.priority === "CRITICAL"
+  ).length;
 
   useEffect(() => {
     fetchChangeRequests();
@@ -22,6 +50,8 @@ function Dashboard() {
       const response = await api.get("/change-requests");
 
       setChangeRequests(response.data);
+      const riskResponse = await api.get("/dashboard/risk-summary");
+      setRiskSummary(riskResponse.data);
     } catch (error) {
       console.error("Failed to load change requests:", error);
       setError("Unable to load change requests.");
@@ -85,18 +115,15 @@ function Dashboard() {
       {/* Main Content */}
       <div className="mx-auto max-w-7xl px-8 py-8">
 
-        {/* Summary */}
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {/* Dashboard Summary */}
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
-
+          {/* Total */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-3">
 
               <div className="rounded-lg bg-slate-100 p-2">
-                <FileText
-                  size={20}
-                  className="text-slate-700"
-                />
+                <FileText size={20} className="text-slate-700" />
               </div>
 
               <div>
@@ -105,8 +132,196 @@ function Dashboard() {
                 </p>
 
                 <p className="text-2xl font-bold text-slate-900">
-                  {changeRequests.length}
+                  {totalRequests}
                 </p>
+              </div>
+
+            </div>
+          </div>
+
+
+          {/* In Progress */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+
+              <div className="rounded-lg bg-blue-50 p-2">
+                <Clock3 size={20} className="text-blue-600" />
+              </div>
+
+              <div>
+                <p className="text-sm text-slate-500">
+                  In Progress
+                </p>
+
+                <p className="text-2xl font-bold text-slate-900">
+                  {inProgressRequests}
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+
+          {/* Completed */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+
+              <div className="rounded-lg bg-green-50 p-2">
+                <CheckCircle2 size={20} className="text-green-600" />
+              </div>
+
+              <div>
+                <p className="text-sm text-slate-500">
+                  Completed
+                </p>
+
+                <p className="text-2xl font-bold text-slate-900">
+                  {completedRequests}
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+
+          {/* High Priority */}
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+
+              <div className="rounded-lg bg-red-50 p-2">
+                <ShieldAlert size={20} className="text-red-600" />
+              </div>
+
+              <div>
+                <p className="text-sm text-slate-500">
+                  High / Critical Risk
+                </p>
+
+                <p className="text-2xl font-bold text-slate-900">
+                  {riskSummary.high + riskSummary.critical}
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+                {/* Risk Overview */}
+        <div className="mb-8">
+
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-slate-900">
+              Risk Overview
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Current risk distribution across assessed change requests
+            </p>
+          </div>
+
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            {/* Critical */}
+            <div className="rounded-xl border border-red-200 bg-white p-5">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Critical
+                  </p>
+
+                  <p className="mt-2 text-3xl font-bold text-red-700">
+                    {riskSummary.critical}
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-red-50 px-3 py-2">
+                  <span className="text-sm font-semibold text-red-700">
+                    CRITICAL
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* High */}
+            <div className="rounded-xl border border-orange-200 bg-white p-5">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    High
+                  </p>
+
+                  <p className="mt-2 text-3xl font-bold text-orange-700">
+                    {riskSummary.high}
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-orange-50 px-3 py-2">
+                  <span className="text-sm font-semibold text-orange-700">
+                    HIGH
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* Medium */}
+            <div className="rounded-xl border border-yellow-200 bg-white p-5">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Medium
+                  </p>
+
+                  <p className="mt-2 text-3xl font-bold text-yellow-700">
+                    {riskSummary.medium}
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-yellow-50 px-3 py-2">
+                  <span className="text-sm font-semibold text-yellow-700">
+                    MEDIUM
+                  </span>
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* Low */}
+            <div className="rounded-xl border border-green-200 bg-white p-5">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+                  <p className="text-sm font-medium text-slate-500">
+                    Low
+                  </p>
+
+                  <p className="mt-2 text-3xl font-bold text-green-700">
+                    {riskSummary.low}
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-green-50 px-3 py-2">
+                  <span className="text-sm font-semibold text-green-700">
+                    LOW
+                  </span>
+                </div>
+
               </div>
 
             </div>
@@ -114,8 +329,7 @@ function Dashboard() {
           </div>
 
         </div>
-
-
+        
         {/* Loading */}
         {loading && (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
