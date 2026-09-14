@@ -104,6 +104,7 @@ function Assessment() {
   const [overrideReason, setOverrideReason] = useState("");
   const [consequences, setConsequences] = useState("");
   const [analystReviewed, setAnalystReviewed] = useState(false);
+  const [analystReview, setAnalystReview] = useState(null);
   const [committeeDecision, setCommitteeDecision] = useState("");
   const [committeeReason, setCommitteeReason] = useState("");
   const [committeeConditions, setCommitteeConditions] = useState("");
@@ -233,7 +234,17 @@ function Assessment() {
       );
 
       setChangeRequest(changeRequestResponse.data);
+    }
+    catch (error) {
+      console.error(
+        "Failed to load change request:",
+        error
+      );
 
+      setError(
+        "Unable to load the change request."
+      );
+    }
       try {
         const riskAssessmentResponse = await api.get(
           `/change-requests/${changeRequestId}/risk-assessment`
@@ -264,16 +275,32 @@ function Assessment() {
         setRegulatoryEvidence([]);
       }
 
-    } catch (error) {
-      console.error(
-        "Failed to load change request:",
-        error
-      );
+      try {
+        const analystReviewResponse = await api.get(
+          `/change-requests/${changeRequestId}/analyst-review`
+        );
 
-      setError(
-        "Unable to load the change request."
-      );
-    } finally {
+        if (analystReviewResponse.data.reviewed) {
+          const review = analystReviewResponse.data.review;
+
+          setAnalystReviewed(true);
+          setAnalystReview(review);
+
+          setAnalystRating(review.analyst_rating || "");
+          setOverrideReason(review.override_reason || "");
+          setConsequences(review.consequences || "");
+        } else {
+          setAnalystReviewed(false);
+          setAnalystReview(null);
+        }
+      } catch (error) {
+        console.error(
+          "Failed to load analyst review:",
+          error
+        );
+      }
+      
+     finally {
       setLoading(false);
     }
   };
@@ -726,7 +753,7 @@ function Assessment() {
     }
   };
 
-  const submitAnalystReview = () => {
+  const submitAnalystReview = async () => {
     if (!analystRating) {
       setError("Please select an analyst rating.");
       return;
@@ -742,16 +769,31 @@ function Assessment() {
       return;
     }
 
-    setError("");
-    setAnalystReviewed(true);
+    try {
+      setError("");
 
-    console.log("Analyst Review:", {
-      changeRequestId,
-      systemRating: riskAssessment?.residual_rating,
-      analystRating,
-      overrideReason,
-      consequences
-    });
+      await api.post(
+        `/change-requests/${changeRequestId}/analyst-review`,
+        null,
+        {
+          params: {
+            analyst_rating: analystRating,
+            override_reason: overrideReason,
+            consequences: consequences,
+          },
+        }
+      );
+
+      setAnalystReviewed(true);
+
+    } catch (error) {
+      console.error("Failed to submit analyst review:", error);
+
+      setError(
+        error.response?.data?.detail ||
+        "Unable to submit analyst review."
+      );
+    }
   };
 
   const submitCommitteeDecision = () => {

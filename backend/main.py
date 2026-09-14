@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-
+from datetime import datetime
 from backend.database import engine, get_db
 from risk_engine.risk_calculator import generate_risk_assessment
 from risk_engine.risk_factor_generator import generate_risk_factors
@@ -22,7 +22,8 @@ from backend.models import (
     RiskAssessment,
     RiskModelConfig,
     RiskModelWeight,
-    RegulatoryEvidence
+    RegulatoryEvidence,
+    AnalystOverride
 )
 
 
@@ -634,4 +635,111 @@ def generate_ai_assessment_endpoint(
 
         "assessment":
             assessment
+    }
+
+@app.post("/change-requests/{change_request_id}/analyst-review")
+def submit_analyst_review(
+    change_request_id: int,
+    analyst_rating: str,
+    override_reason: str = "",
+    consequences: str = "",
+    db: Session = Depends(get_db)
+):
+    # Find the latest risk assessment
+    risk_assessment = (
+        db.query(RiskAssessment)
+        .filter(
+            RiskAssessment.change_request_id == change_request_id
+        )
+        .order_by(RiskAssessment.id.desc())
+        .first()
+    )
+
+    if not risk_assessment:
+        raise HTTPException(
+            status_code=404,
+            detail="Risk assessment not found."
+        )
+
+    system_rating = risk_assessment.residual_rating
+
+    # Override reason is mandatory when analyst
+    # rating differs from system rating
+    if analyst_rating != system_rating and not override_reason.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Override reason is required when analyst rating differs from system rating."
+        )
+
+    analyst_override = AnalystOverride(
+        change_request_id=change_request_id,
+        risk_assessment_id=risk_assessment.id,
+        system_rating=system_rating,
+        analyst_rating=analyst_rating,
+        override_reason=override_reason,
+        consequences=consequences,
+        reviewed_by="FCRM Analyst",
+        status="SUBMITTED"
+    )
+
+    db.add(analyst_override)
+
+    # Store the analyst rating on the risk assessment itself
+    risk_assessment.analyst_rating = analyst_rating
+    risk_assessment.final_rating = analyst_rating
+    risk_assessment.updated_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(analyst_override)
+
+    return {
+        "message": "Analyst review submitted successfully.",
+        "review": {
+            "id": analyst_override.id,
+            "change_request_id": change_request_id,
+            "risk_assessment_id": risk_assessment.id,
+            "system_rating": system_rating,
+            "analyst_rating": analyst_rating,
+            "override_reason": override_reason,
+            "consequences": consequences,
+            "reviewed_by": analyst_override.reviewed_by,
+            "status": analyst_override.status,
+            "created_at": analyst_override.created_at,
+        }
+    }
+
+@app.get("/change-requests/{change_request_id}/analyst-review")
+def get_analyst_review(
+    change_request_id: int,
+    db: Session = Depends(get_db)
+):
+    review = (
+        db.query(AnalystOverride)
+        .filter(
+            AnalystOverride.change_request_id == change_request_id
+        )
+        .order_by(AnalystOverride.id.desc())
+        .first()
+    )
+
+    if not review:
+        return {
+            "reviewed": False,
+            "review": None
+        }
+
+    return {
+        "reviewed": True,
+        "review": {
+            "id": review.id,
+            "change_request_id": review.change_request_id,
+            "risk_assessment_id": review.risk_assessment_id,
+            "system_rating": review.system_rating,
+            "analyst_rating": review.analyst_rating,
+            "override_reason": review.override_reason,
+            "consequences": review.consequences,
+            "reviewed_by": review.reviewed_by,
+            "status": review.status,
+            "created_at": review.created_at
+        }
     }

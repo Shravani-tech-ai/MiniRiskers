@@ -578,3 +578,43 @@ class AIRecommendation(Base):
         DateTime,
         default=datetime.utcnow
     )
+
+class AnalystOverride(Base):
+    __tablename__ = "analyst_overrides"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True
+    )
+
+    risk_assessment_id = Column(
+        Integer,
+        nullable=True,
+        index=True
+    )
+
+    system_rating = Column(String)
+
+    analyst_rating = Column(String)
+
+    override_reason = Column(Text)
+
+    consequences = Column(Text)
+
+    reviewed_by = Column(
+        String,
+        default="FCRM Analyst"
+    )
+
+    status = Column(
+        String,
+        default="SUBMITTED"
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
