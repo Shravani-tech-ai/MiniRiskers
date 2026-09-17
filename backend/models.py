@@ -46,6 +46,12 @@ class ChangeRequest(Base):
         default="DRAFT"
     )
 
+    current_stage = Column(
+        String,
+        default="REQUEST_CREATED",
+        nullable=False
+    )
+
     priority = Column(
         String,
         default="MEDIUM"
@@ -57,7 +63,7 @@ class ChangeRequest(Base):
         DateTime,
         default=datetime.utcnow
     )
-
+    
 class Product(Base):
 
     __tablename__ = "products"

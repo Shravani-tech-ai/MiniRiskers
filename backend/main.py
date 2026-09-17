@@ -1,5 +1,17 @@
-from fastapi import FastAPI, Depends, HTTPException
+import json
+from pathlib import Path
+
+from fastapi import (
+    FastAPI,
+    Depends,
+    HTTPException,
+    UploadFile,
+    File,
+)
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from pydantic import BaseModel
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from datetime import datetime
 from backend.database import engine, get_db
@@ -25,7 +37,31 @@ from backend.models import (
     RegulatoryEvidence,
     AnalystOverride,
     CommitteeDecision,
-    AuditEvent
+    AuditEvent,
+    AIRecommendation,
+)
+from backend.assessment_inputs import (
+    compute_field_diff,
+    compute_missing_fields,
+    load_assessment_inputs,
+    merge_extraction_with_inputs,
+)
+from backend.export_service import (
+    build_assessment_export,
+    export_to_pdf_bytes,
+)
+from backend.request_numbers import (
+    allocate_request_number,
+    peek_next_request_number,
+)
+from backend.intake_service import (
+    completeness_percent,
+    extract_intake_from_brd,
+    extract_text_from_bytes,
+    get_latest_brd_upload,
+    run_intake_agent_turn,
+    save_assessment_inputs,
+    save_brd_file,
 )
 
 def create_audit_event(
@@ -60,6 +96,30 @@ def create_audit_event(
 
     return event
 
+
+class IntakeChatRequest(BaseModel):
+    message: str
+    actor: str = "Product Owner"
+
+
+class ApplyExtractionRequest(BaseModel):
+    extracted: dict
+
+
+class SyncInputsRequest(BaseModel):
+    inputs: dict
+
+
+class CreateChangeRequestPayload(BaseModel):
+    title: str
+    description: str
+    change_type: str
+    product_type: str
+    business_unit: str
+    customer_segment: str
+    requested_by: str
+
+
 app = FastAPI(
     title="MiniRiskers",
     description="AI-Assisted Financial Crime Risk Assessment Workbench",
@@ -90,9 +150,24 @@ def root():
         "message": "Risk Assessment Workbench API"
     }
 
+@app.get("/request-numbers/next")
+def get_next_request_number(db: Session = Depends(get_db)):
+    return {
+        "request_number": peek_next_request_number(db),
+    }
+
+
+@app.get("/change-requests/suggest-request-number")
+def suggest_request_number_legacy(db: Session = Depends(get_db)):
+    return {
+        "request_number": peek_next_request_number(db),
+    }
+
+
 @app.get("/change-requests")
 def get_change_requests(db: Session = Depends(get_db)):
     return db.query(ChangeRequest).all()
+
 
 @app.get("/change-requests/{change_request_id}")
 def get_change_request(
@@ -125,6 +200,7 @@ def get_change_request(
         "status": change_request.status,
         "priority": change_request.priority,
         "proposed_go_live_date": change_request.proposed_go_live_date,
+        "current_stage": change_request.current_stage,
         "created_at": change_request.created_at
     }
 
@@ -181,44 +257,72 @@ def get_risk_assessment(
 
 @app.post("/change-requests")
 def create_change_request(
-    request_number: str,
-    title: str,
-    description: str,
-    change_type: str,
-    product_type: str,
-    business_unit: str,
-    customer_segment: str,
-    requested_by: str,
-    db: Session = Depends(get_db)
+    payload: CreateChangeRequestPayload,
+    db: Session = Depends(get_db),
 ):
+    title = payload.title.strip()
+    description = payload.description.strip()
+    change_type = payload.change_type.strip()
+    product_type = payload.product_type.strip()
+    business_unit = payload.business_unit.strip()
+    customer_segment = payload.customer_segment.strip()
+    requested_by = payload.requested_by.strip()
 
-    change_request = ChangeRequest(
-        request_number=request_number,
-        title=title,
-        description=description,
-        change_type=change_type,
-        product_type=product_type,
-        business_unit=business_unit,
-        customer_segment=customer_segment,
-        requested_by=requested_by
+    if not all(
+        [
+            title,
+            description,
+            change_type,
+            product_type,
+            business_unit,
+            customer_segment,
+            requested_by,
+        ]
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="All change request fields are required.",
+        )
+
+    for _ in range(5):
+        normalized_number = allocate_request_number(db)
+
+        change_request = ChangeRequest(
+            request_number=normalized_number,
+            title=title,
+            description=description,
+            change_type=change_type,
+            product_type=product_type,
+            business_unit=business_unit,
+            customer_segment=customer_segment,
+            requested_by=requested_by,
+        )
+
+        db.add(change_request)
+
+        try:
+            db.flush()
+            create_audit_event(
+                db=db,
+                change_request_id=change_request.id,
+                actor=change_request.requested_by or "Product Owner",
+                action="CREATED_CHANGE_REQUEST",
+                entity_type="ChangeRequest",
+                entity_id=change_request.id,
+                new_value=change_request.status,
+                reason="Change request created.",
+            )
+            db.commit()
+            db.refresh(change_request)
+            return change_request
+        except IntegrityError:
+            db.rollback()
+            continue
+
+    raise HTTPException(
+        status_code=500,
+        detail="Could not assign a unique request number. Please retry.",
     )
-
-    db.add(change_request)
-    db.flush()
-    create_audit_event(
-        db=db,
-        change_request_id=change_request.id,
-        actor=change_request.requested_by or "Product Owner",
-        action="CREATED_CHANGE_REQUEST",
-        entity_type="ChangeRequest",
-        entity_id=change_request.id,
-        new_value=change_request.status,
-        reason="Change request created."
-    )
-    db.commit()
-    db.refresh(change_request)
-
-    return change_request
 
 @app.post("/change-requests/{change_request_id}/product")
 def create_product(
@@ -572,10 +676,35 @@ def calculate_risk(
         policy_version=assessment.risk_model_version
     )
 
+    change_request = (
+        db.query(ChangeRequest)
+        .filter(ChangeRequest.id == change_request_id)
+        .first()
+    )
+
+    if not change_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Change request not found"
+        )
+
+    change_request.current_stage = "RISK_ASSESSMENT"
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="System",
+        action="WORKFLOW_STAGE_CHANGED",
+        entity_type="ChangeRequest",
+        entity_id=change_request.id,
+        new_value="RISK_ASSESSMENT",
+        reason="Risk assessment calculated successfully."
+    )
+
     db.commit()
 
     return assessment
-
+    
 @app.post("/change-requests/{change_request_id}/generate-risk-factors")
 def generate_factors(
     change_request_id: int,
@@ -713,27 +842,46 @@ def generate_ai_assessment_endpoint(
         model_version=recommendation.model_version
     )
 
+    change_request = (
+        db.query(ChangeRequest)
+        .filter(ChangeRequest.id == change_request_id)
+        .first()
+    )
+
+    if not change_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Change request not found"
+        )
+
+    change_request.current_stage = "ANALYST_REVIEW"
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="System",
+        action="WORKFLOW_STAGE_CHANGED",
+        entity_type="ChangeRequest",
+        entity_id=change_request.id,
+        new_value="ANALYST_REVIEW",
+        reason="AI assessment generated successfully and is ready for analyst review."
+    )
+
     db.commit()
 
     return {
         "id": recommendation.id,
-        "change_request_id":
-            recommendation.change_request_id,
+        "change_request_id": recommendation.change_request_id,
 
-        "model":
-            recommendation.model_name,
+        "model": recommendation.model_name,
 
-        "model_version":
-            recommendation.model_version,
+        "model_version": recommendation.model_version,
 
-        "status":
-            recommendation.status,
+        "status": recommendation.status,
 
-        "recommendation":
-            recommendation.recommendation,
+        "recommendation": recommendation.recommendation,
 
-        "assessment":
-            assessment
+        "assessment": assessment
     }
 
 @app.post("/change-requests/{change_request_id}/analyst-review")
@@ -801,6 +949,32 @@ def submit_analyst_review(
         new_value=analyst_rating,
         reason=override_reason,
         evidence=consequences
+    )
+
+    # Move workflow to Committee Review
+    change_request = (
+        db.query(ChangeRequest)
+        .filter(ChangeRequest.id == change_request_id)
+        .first()
+    )
+
+    if not change_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Change request not found."
+        )
+
+    change_request.current_stage = "COMMITTEE_REVIEW"
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="System",
+        action="WORKFLOW_STAGE_CHANGED",
+        entity_type="ChangeRequest",
+        entity_id=change_request.id,
+        new_value="COMMITTEE_REVIEW",
+        reason="Analyst review submitted successfully and is ready for committee review."
     )
 
     db.commit()
@@ -954,8 +1128,25 @@ def submit_committee_decision(
         .first()
     )
 
-    if change_request:
-        change_request.status = decision
+    if not change_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Change request not found."
+        )
+
+    change_request.status = decision
+    change_request.current_stage = "COMPLETED"
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="System",
+        action="WORKFLOW_STAGE_CHANGED",
+        entity_type="ChangeRequest",
+        entity_id=change_request.id,
+        new_value="COMPLETED",
+        reason="Committee decision submitted and workflow completed."
+    )
 
     db.flush()
 
@@ -1025,6 +1216,477 @@ def get_committee_decision(
             "created_at": decision.created_at,
         }
     }
+
+@app.get("/change-requests/{change_request_id}/assessment-inputs")
+def get_assessment_inputs(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+    inputs = load_assessment_inputs(db, change_request_id)
+    missing = compute_missing_fields(inputs)
+
+    return {
+        "change_request_id": change_request_id,
+        "inputs": inputs,
+        "missing_fields": missing,
+        "completeness_percent": completeness_percent(missing),
+    }
+
+
+@app.get("/change-requests/{change_request_id}/intake/completeness")
+def get_intake_completeness(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+):
+    inputs = load_assessment_inputs(db, change_request_id)
+    missing = compute_missing_fields(inputs)
+
+    return {
+        "change_request_id": change_request_id,
+        "missing_fields": missing,
+        "completeness_percent": completeness_percent(missing),
+        "ready_for_risk_calculation": len(missing) == 0,
+    }
+
+
+@app.get("/change-requests/{change_request_id}/intake/brd-status")
+def get_brd_status(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+    upload = get_latest_brd_upload(change_request_id)
+
+    return {
+        "change_request_id": change_request_id,
+        "uploaded": upload is not None,
+        "upload": upload,
+    }
+
+
+@app.post("/change-requests/{change_request_id}/intake/upload-brd")
+async def upload_brd(
+    change_request_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+
+    file_bytes = await file.read()
+    filename = file.filename or "brd-upload.pdf"
+
+    try:
+        text = extract_text_from_bytes(file_bytes, filename)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+    save_brd_file(change_request_id, file_bytes, filename)
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="Product Owner",
+        action="BRD_UPLOADED",
+        entity_type="IntakeDocument",
+        new_value=filename,
+        reason=f"BRD uploaded ({len(text)} characters extracted for processing).",
+    )
+    db.commit()
+
+    return {
+        "change_request_id": change_request_id,
+        "filename": filename,
+        "character_count": len(text),
+        "preview": text[:1500],
+    }
+
+
+@app.post("/change-requests/{change_request_id}/intake/extract-brd")
+async def extract_brd_intake(
+    change_request_id: int,
+    file: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+
+    if file is not None:
+        file_bytes = await file.read()
+        filename = file.filename or "brd-upload.pdf"
+        document_text = extract_text_from_bytes(file_bytes, filename)
+        save_brd_file(change_request_id, file_bytes, filename)
+    else:
+        folder = (
+            Path(__file__).resolve().parent.parent
+            / "data"
+            / "uploads"
+            / str(change_request_id)
+        )
+        if not folder.exists():
+            raise HTTPException(
+                status_code=400,
+                detail="Upload a BRD before extraction.",
+            )
+
+        files = sorted(
+            [
+                path
+                for path in folder.iterdir()
+                if path.is_file()
+            ],
+            key=lambda path: path.stat().st_mtime,
+        )
+        if not files:
+            raise HTTPException(
+                status_code=400,
+                detail="Upload a BRD before extraction.",
+            )
+
+        latest = files[-1]
+        document_text = extract_text_from_bytes(
+            latest.read_bytes(),
+            latest.name,
+        )
+        filename = latest.name
+
+    try:
+        extracted, extraction_method = extract_intake_from_brd(
+            document_text
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=502, detail=str(error))
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"BRD extraction failed: {error}",
+        )
+
+    current = load_assessment_inputs(db, change_request_id)
+    merged = merge_extraction_with_inputs(current, extracted)
+    missing = compute_missing_fields(merged)
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="AI Intake",
+        action="BRD_EXTRACTED",
+        entity_type="IntakeDocument",
+        new_value=filename,
+        reason=json.dumps(
+            {
+                "extraction_method": extraction_method,
+                "missing_count": len(missing),
+                "low_confidence": (
+                    extracted.get("provenance_notes", {}).get(
+                        "low_confidence_fields",
+                        [],
+                    )
+                ),
+            }
+        ),
+    )
+    db.commit()
+
+    return {
+        "filename": filename,
+        "extraction_method": extraction_method,
+        "extracted": extracted,
+        "merged_preview": merged,
+        "missing_fields": missing,
+        "completeness_percent": completeness_percent(missing),
+        "diff_from_saved": compute_field_diff(current, merged),
+    }
+
+
+@app.post("/change-requests/{change_request_id}/assessment-inputs/sync")
+def sync_assessment_inputs(
+    change_request_id: int,
+    body: SyncInputsRequest,
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+    save_assessment_inputs(db, change_request_id, body.inputs)
+
+    refreshed = load_assessment_inputs(db, change_request_id)
+    missing = compute_missing_fields(refreshed)
+
+    return {
+        "inputs": refreshed,
+        "missing_fields": missing,
+        "completeness_percent": completeness_percent(missing),
+        "ready_for_risk_calculation": len(missing) == 0,
+    }
+
+
+@app.post("/change-requests/{change_request_id}/intake/apply-extraction")
+def apply_extraction(
+    change_request_id: int,
+    body: ApplyExtractionRequest,
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+
+    current = load_assessment_inputs(db, change_request_id)
+    merged = merge_extraction_with_inputs(
+        current,
+        body.extracted,
+    )
+
+    try:
+        save_assessment_inputs(db, change_request_id, merged)
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Could not save all extracted fields. Some required values "
+                f"are still missing (e.g. product name). Details: {error.orig}"
+            ),
+        )
+
+    missing = compute_missing_fields(merged)
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="Product Owner",
+        action="INTAKE_APPLIED",
+        entity_type="ChangeRequest",
+        entity_id=change_request_id,
+        reason="BRD extraction applied to assessment inputs.",
+    )
+    db.commit()
+
+    return {
+        "inputs": merged,
+        "missing_fields": missing,
+        "completeness_percent": completeness_percent(missing),
+        "ready_for_risk_calculation": len(missing) == 0,
+    }
+
+
+@app.post("/change-requests/{change_request_id}/intake/chat")
+def intake_chat(
+    change_request_id: int,
+    body: IntakeChatRequest,
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+
+    if not body.message.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Message is required.",
+        )
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor=body.actor,
+        action="INTAKE_AGENT_USER",
+        entity_type="IntakeChat",
+        new_value=body.message.strip(),
+        reason="User message to intake assistant.",
+    )
+    db.flush()
+
+    try:
+        result = run_intake_agent_turn(
+            db,
+            change_request_id,
+            body.message.strip(),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=502, detail=str(error))
+    except Exception as error:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Intake assistant failed: {error}",
+        )
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor="AI Intake Agent",
+        action="INTAKE_AGENT_ASSISTANT",
+        entity_type="IntakeChat",
+        new_value=result["assistant_message"],
+        reason=json.dumps(result.get("field_updates") or {}),
+    )
+    db.commit()
+
+    return result
+
+
+@app.get("/change-requests/{change_request_id}/controls")
+def get_controls(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+
+    controls = (
+        db.query(Control)
+        .filter(Control.change_request_id == change_request_id)
+        .order_by(Control.id.asc())
+        .all()
+    )
+
+    return {
+        "change_request_id": change_request_id,
+        "controls": [
+            {
+                "id": control.id,
+                "control_name": control.control_name,
+                "control_category": control.control_category,
+                "description": control.description,
+                "control_type": control.control_type,
+                "control_strength": control.control_strength,
+                "implemented": control.implemented,
+                "implementation_status": control.implementation_status,
+                "owner": control.owner,
+                "effectiveness_score": control.effectiveness_score,
+            }
+            for control in controls
+        ],
+    }
+
+
+@app.get("/change-requests/{change_request_id}/risk-factors")
+def get_risk_factors(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+
+    factors = (
+        db.query(RiskFactor)
+        .filter(RiskFactor.change_request_id == change_request_id)
+        .all()
+    )
+
+    return {
+        "change_request_id": change_request_id,
+        "risk_factors": [
+            {
+                "id": factor.id,
+                "risk_category": factor.risk_category,
+                "risk_factor": factor.risk_factor,
+                "factor_value": factor.factor_value,
+                "factor_score": factor.factor_score,
+                "factor_weight": factor.factor_weight,
+                "source_reference": factor.source_reference,
+            }
+            for factor in factors
+        ],
+    }
+
+
+@app.get("/change-requests/{change_request_id}/ai-assessment")
+def get_ai_assessment(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+):
+    recommendation = (
+        db.query(AIRecommendation)
+        .filter(
+            AIRecommendation.change_request_id == change_request_id
+        )
+        .order_by(AIRecommendation.id.desc())
+        .first()
+    )
+
+    if not recommendation:
+        raise HTTPException(
+            status_code=404,
+            detail="AI assessment not found.",
+        )
+
+    assessment_payload = {}
+
+    try:
+        assessment_payload = json.loads(
+            recommendation.risk_analysis or "{}"
+        )
+    except json.JSONDecodeError:
+        assessment_payload = {}
+
+    return {
+        "id": recommendation.id,
+        "change_request_id": recommendation.change_request_id,
+        "model": recommendation.model_name,
+        "model_version": recommendation.model_version,
+        "status": recommendation.status,
+        "recommendation": recommendation.recommendation,
+        "assessment": {
+            "executive_summary": recommendation.assessment_summary,
+            "risk_assessment": assessment_payload,
+            "regulatory_considerations": json.loads(
+                recommendation.regulatory_considerations or "[]"
+            ),
+            "rationale": recommendation.rationale,
+        },
+    }
+
+
+@app.get("/change-requests/{change_request_id}/export")
+def export_assessment(
+    change_request_id: int,
+    format: str = "json",
+    db: Session = Depends(get_db),
+):
+    _ensure_change_request(db, change_request_id)
+
+    try:
+        export_data = build_assessment_export(db, change_request_id)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error))
+
+    request_number = (
+        export_data.get("change_request", {}).get(
+            "request_number",
+            str(change_request_id),
+        )
+    )
+
+    if format.lower() == "pdf":
+        pdf_bytes = export_to_pdf_bytes(export_data)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="{request_number}-assessment.pdf"'
+                )
+            },
+        )
+
+    return Response(
+        content=json.dumps(export_data, indent=2),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{request_number}-assessment.json"'
+            )
+        },
+    )
+
+
+def _ensure_change_request(db: Session, change_request_id: int):
+    change_request = (
+        db.query(ChangeRequest)
+        .filter(ChangeRequest.id == change_request_id)
+        .first()
+    )
+
+    if not change_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Change request not found",
+        )
+
+    return change_request
+
 
 @app.get("/change-requests/{change_request_id}/audit-events")
 def get_audit_events(
