@@ -5,6 +5,7 @@ __pycache__/
 chroma_db/
 data/processed/
 data/synthetic/
+data/uploads/
 .vscode/
 *.db
 .env
