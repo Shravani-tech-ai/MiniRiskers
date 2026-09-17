@@ -1,15 +1,18 @@
 import json
+import re
 
 from sqlalchemy.orm import Session
 
 from backend.assessment_context import build_assessment_context
 from backend.assessment_prompt import build_assessment_prompt
-from backend.gemini_service import generate_text
+from backend.gemini_service import generate_json
 from backend.models import AIRecommendation
 
 def parse_gemini_json(response_text: str):
+    if not response_text or not str(response_text).strip():
+        raise ValueError("Gemini returned an empty response.")
 
-    response_text = response_text.strip()
+    response_text = str(response_text).strip()
 
     # Remove Markdown code fences if Gemini adds them
     if response_text.startswith("```json"):
@@ -23,7 +26,23 @@ def parse_gemini_json(response_text: str):
 
     response_text = response_text.strip()
 
-    return json.loads(response_text)
+    try:
+        return json.loads(response_text)
+    except json.JSONDecodeError as first_error:
+        match = re.search(
+            r"\{[\s\S]*\}",
+            response_text,
+        )
+
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                pass
+
+        raise ValueError(
+            f"Gemini returned invalid JSON: {first_error}"
+        )
 
 def generate_ai_assessment(
     db: Session,
@@ -42,9 +61,7 @@ def generate_ai_assessment(
     )
 
     # 3. Call Gemini
-    response_text = generate_text(
-        prompt
-    )
+    response_text = generate_json(prompt)
 
     # 4. Try to parse Gemini JSON
     try:
