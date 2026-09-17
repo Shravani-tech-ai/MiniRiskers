@@ -37,14 +37,14 @@ function WorkflowStepper({
   const stageTimestamps = buildStageTimestamps(auditEvents);
 
   return (
-    <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5 flex items-center justify-between gap-4">
+    <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:p-8">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h3 className="font-semibold text-slate-900">
+          <h3 className="text-xl font-bold text-slate-900 lg:text-2xl">
             Assessment Workflow
           </h3>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-2 text-base text-slate-600">
             Current stage:{" "}
             <span className="font-medium text-indigo-600">
               {WORKFLOW_STAGES[currentIndex]?.label || "Request"}
@@ -52,13 +52,13 @@ function WorkflowStepper({
           </p>
         </div>
 
-        <span className="shrink-0 rounded-full bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700">
+        <span className="shrink-0 rounded-full bg-indigo-50 px-4 py-2 text-sm font-bold text-indigo-700">
           Step {currentIndex + 1} of {WORKFLOW_STAGES.length}
         </span>
       </div>
 
       <div className="overflow-x-auto">
-        <div className="flex min-w-[640px] items-start">
+        <div className="flex min-w-[720px] items-start">
           {WORKFLOW_STAGES.map((stage, index) => {
             const Icon = stageIcons[stage.key] || CircleDot;
             const completed = index < currentIndex;
@@ -82,7 +82,7 @@ function WorkflowStepper({
                     disabled={!navigable}
                     onClick={() => navigable && onStageSelect(stage.key)}
                     className={[
-                      "flex h-10 w-10 items-center justify-center rounded-full border-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+                      "flex h-12 w-12 items-center justify-center rounded-full border-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 lg:h-14 lg:w-14",
                       completed
                         ? "border-green-500 bg-green-50 text-green-600"
                         : isCurrentStage
@@ -111,7 +111,7 @@ function WorkflowStepper({
 
                   <span
                     className={[
-                      "mt-2 text-center text-xs font-semibold",
+                      "mt-3 text-center text-sm font-bold lg:text-base",
                       isActiveView
                         ? "text-indigo-700"
                         : isCurrentStage
@@ -125,11 +125,11 @@ function WorkflowStepper({
                   </span>
 
                   {timestamp ? (
-                    <span className="mt-1 max-w-[7.5rem] text-center text-[10px] leading-tight text-slate-500">
+                    <span className="mt-1 max-w-[9rem] text-center text-xs leading-tight text-slate-500 lg:text-sm">
                       {timestamp}
                     </span>
                   ) : (
-                    <span className="mt-1 text-[10px] text-slate-300">
+                    <span className="mt-1 text-xs text-slate-300">
                       —
                     </span>
                   )}

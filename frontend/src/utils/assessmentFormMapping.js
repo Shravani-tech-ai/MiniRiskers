@@ -122,3 +122,21 @@ export function mergeExtractedPreview(currentForms, mergedPreview) {
 
   return mapped;
 }
+
+export function formsToAssessmentInputs({
+  productForm,
+  customerForm,
+  geographyForm,
+  transactionForm,
+  channelForm,
+  vendorForm,
+}) {
+  return {
+    product: { ...productForm },
+    customer: { ...customerForm },
+    geography: { ...geographyForm },
+    transaction: { ...transactionForm },
+    channel: { ...channelForm },
+    vendor: { ...vendorForm },
+  };
+}

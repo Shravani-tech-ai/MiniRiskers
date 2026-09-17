@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  AlertTriangle,
-  FileText,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import AssessmentHeader from "../components/assessment/AssessmentHeader";
 import ProductInformation from "../components/assessment/ProductInformation";
@@ -17,6 +12,21 @@ import RiskOverview from "../components/assessment/RiskOverview";
 import AIAssessment from "../components/assessment/AIAssessment";
 import AnalystReview from "../components/assessment/AnalystReview";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
+import IntakePanel from "../components/assessment/IntakePanel";
+import WorkflowStepper from "../components/assessment/WorkflowStepper";
+import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
+import RequestInputTabs from "../components/assessment/RequestInputTabs";
+import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
+import CompletedStageSummary from "../components/assessment/CompletedStageSummary";
+import {
+  mapInputsToFormState,
+  formsToAssessmentInputs,
+} from "../utils/assessmentFormMapping";
+import {
+  canNavigateToWorkflowStage,
+  normalizeWorkflowStage,
+} from "../components/assessment/workflowStages";
+import PageContainer from "../components/layout/PageContainer";
 
 import api from "../services/api";
 
@@ -150,6 +160,76 @@ function Assessment() {
     cross_border_processing: false,
   });
 
+  const [intakeMode, setIntakeMode] = useState("brd");
+  const [completenessPercent, setCompletenessPercent] = useState(0);
+  const [missingFields, setMissingFields] = useState([]);
+  const [activeView, setActiveView] = useState("REQUEST_CREATED");
+  const [inputTab, setInputTab] = useState("product");
+  const [advancingStage, setAdvancingStage] = useState(false);
+
+  const applyMappedForms = (mapped) => {
+    if (!mapped) {
+      return;
+    }
+
+    setProductForm(mapped.productForm);
+    setCustomerForm(mapped.customerForm);
+    setGeographyForm(mapped.geographyForm);
+    setTransactionForm(mapped.transactionForm);
+    setChannelForm(mapped.channelForm);
+    setVendorForm(mapped.vendorForm);
+    setProductSaved(true);
+    setCustomerSaved(true);
+    setGeographySaved(true);
+    setTransactionSaved(true);
+    setChannelSaved(true);
+    setVendorSaved(true);
+  };
+
+  const refreshCompleteness = async () => {
+    try {
+      const response = await api.get(
+        `/change-requests/${changeRequestId}/intake/completeness`
+      );
+      setCompletenessPercent(response.data.completeness_percent ?? 0);
+      setMissingFields(response.data.missing_fields ?? []);
+    } catch {
+      setCompletenessPercent(0);
+      setMissingFields([]);
+    }
+  };
+
+  const hydrateAssessmentInputs = async () => {
+    try {
+      const response = await api.get(
+        `/change-requests/${changeRequestId}/assessment-inputs`
+      );
+      const mapped = mapInputsToFormState(response.data.inputs);
+      if (mapped) {
+        applyMappedForms(mapped);
+      }
+      setCompletenessPercent(response.data.completeness_percent ?? 0);
+      setMissingFields(response.data.missing_fields ?? []);
+    } catch (inputsError) {
+      console.log("No assessment inputs yet.", inputsError);
+      await refreshCompleteness();
+    }
+  };
+
+  const handleExtractionApplied = async (mergedPreview) => {
+    const mapped = mapInputsToFormState(mergedPreview);
+    applyMappedForms(mapped);
+    await hydrateAssessmentInputs();
+  };
+
+  const handleIntakeAgentUpdate = async (agentResponse) => {
+    if (agentResponse?.inputs) {
+      const mapped = mapInputsToFormState(agentResponse.inputs);
+      applyMappedForms(mapped);
+    }
+    await hydrateAssessmentInputs();
+  };
+
   useEffect(() => {
     loadAssessment();
   }, [changeRequestId]);
@@ -165,6 +245,12 @@ function Assessment() {
       );
 
       setChangeRequest(changeRequestResponse.data);
+      const stage = normalizeWorkflowStage(
+        changeRequestResponse.data.current_stage
+      );
+      setActiveView(stage);
+
+      await hydrateAssessmentInputs();
 
       // 2. Risk Assessment
       try {
@@ -190,6 +276,15 @@ function Assessment() {
       } catch (evidenceError) {
         console.log("No regulatory evidence available yet.");
         setRegulatoryEvidence([]);
+      }
+
+      try {
+        const aiResponse = await api.get(
+          `/change-requests/${changeRequestId}/ai-assessment`
+        );
+        setAiAssessment(aiResponse.data);
+      } catch {
+        setAiAssessment(null);
       }
 
       // 4. Analyst Review
@@ -684,6 +779,29 @@ function Assessment() {
       setRunningRiskAssessment(true);
       setError("");
 
+      const syncResponse = await api.post(
+        `/change-requests/${changeRequestId}/assessment-inputs/sync`,
+        {
+          inputs: formsToAssessmentInputs({
+            productForm,
+            customerForm,
+            geographyForm,
+            transactionForm,
+            channelForm,
+            vendorForm,
+          }),
+        }
+      );
+      setCompletenessPercent(syncResponse.data.completeness_percent ?? 0);
+      setMissingFields(syncResponse.data.missing_fields ?? []);
+      if ((syncResponse.data.missing_fields || []).length > 0) {
+        setError(
+          `Complete required intake fields before risk calculation (${syncResponse.data.missing_fields.length} missing).`
+        );
+        setRunningRiskAssessment(false);
+        return false;
+      }
+
       // Step 1: Generate risk factors
       await api.post(
         `/change-requests/${changeRequestId}/generate-risk-factors`
@@ -701,6 +819,7 @@ function Assessment() {
 
       // Step 4: Reload risk assessment + evidence
       await loadAssessment();
+      return true;
 
     } catch (error) {
       console.error(
@@ -712,6 +831,7 @@ function Assessment() {
         error.response?.data?.detail ||
         "Unable to complete the risk assessment."
       );
+      return false;
     } finally {
       setRunningRiskAssessment(false);
     }
@@ -727,6 +847,7 @@ function Assessment() {
       );
 
       setAiAssessment(response.data);
+      return true;
 
     } catch (error) {
       console.error("Failed to generate AI assessment:", error);
@@ -735,6 +856,7 @@ function Assessment() {
         error.response?.data?.detail ||
         "Unable to generate AI assessment."
       );
+      return false;
     } finally {
       setGeneratingAI(false);
     }
@@ -772,6 +894,8 @@ function Assessment() {
       );
 
       setAnalystReviewed(true);
+      await loadAssessment();
+      setActiveView("COMMITTEE_REVIEW");
 
     } catch (error) {
       console.error("Failed to submit analyst review:", error);
@@ -822,6 +946,8 @@ function Assessment() {
       );
 
       setCommitteeSubmitted(true);
+      await loadAssessment();
+      setActiveView("COMPLETED");
 
     } catch (error) {
       console.error(
@@ -833,6 +959,47 @@ function Assessment() {
         error.response?.data?.detail ||
         "Unable to submit committee decision."
       );
+    }
+  };
+
+  const handleStageSelect = (stage) => {
+    if (
+      canNavigateToWorkflowStage(
+        stage,
+        changeRequest?.current_stage
+      )
+    ) {
+      setActiveView(stage);
+    }
+  };
+
+  const completeRequestStage = async () => {
+    try {
+      setAdvancingStage(true);
+      const ok = await runRiskAssessment();
+      if (ok) {
+        setActiveView("RISK_ASSESSMENT");
+      }
+    } finally {
+      setAdvancingStage(false);
+    }
+  };
+
+  const advanceToAnalystStage = async () => {
+    try {
+      setAdvancingStage(true);
+
+      if (!aiAssessment) {
+        const generated = await generateAIAssessment();
+        if (!generated) {
+          return;
+        }
+      }
+
+      await loadAssessment();
+      setActiveView("ANALYST_REVIEW");
+    } finally {
+      setAdvancingStage(false);
     }
   };
 
@@ -890,842 +1057,188 @@ function Assessment() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-
-      {/* ========================================================= */}
-      {/* PAGE HEADER */}
-      {/* ========================================================= */}
-
+    <div className="w-full">
       <AssessmentHeader
         changeRequest={changeRequest}
         navigate={navigate}
       />
 
-      {/* ========================================================= */}
-      {/* MAIN CONTENT */}
-      {/* ========================================================= */}
-
-      <main className="mx-auto max-w-7xl px-8 py-8">
-        {/* ========================================================= */}
-{/* ASSESSMENT INPUTS */}
-{/* ========================================================= */}
-
-<div className="mb-8">
-
-  <div className="mb-6">
-
-    <h2 className="text-xl font-semibold text-slate-900">
-      Assessment Inputs
-    </h2>
-
-    <p className="mt-1 text-sm text-slate-500">
-      Provide structured information required for the financial
-      crime risk assessment.
-    </p>
-
-  </div>
-
-
-  {/* ======================================================= */}
-  {/* PRODUCT INFORMATION */}
-  {/* ======================================================= */}
-
-  <ProductInformation
-    productForm={productForm}
-    setProductForm={setProductForm}
-    productSaved={productSaved}
-    savingProduct={savingProduct}
-    saveProduct={saveProduct}
-  />
-
-</div>
-
-{/* ======================================================= */}
-{/* CUSTOMER PROFILE */}
-{/* ======================================================= */}
-
-  <CustomerProfile
-    customerForm={customerForm}
-    setCustomerForm={setCustomerForm}
-    customerSaved={customerSaved}
-    savingCustomer={savingCustomer}
-    saveCustomerProfile={saveCustomerProfile}
-  />
-
-        {/* ========================================================= */}
-        {/* GEOGRAPHY */}
-        {/* ========================================================= */}
-
-        <Geography
-          geographyForm={geographyForm}
-          setGeographyForm={setGeographyForm}
-          geographySaved={geographySaved}
-          savingGeography={savingGeography}
-          saveGeography={saveGeography}
+      <PageContainer className="pb-12">
+        <WorkflowStepper
+          currentStage={changeRequest?.current_stage}
+          activeView={activeView}
+          auditEvents={auditEvents}
+          onStageSelect={handleStageSelect}
         />
 
-                {/* ========================================================= */}
-        {/* TRANSACTION PROFILE */}
-        {/* ========================================================= */}
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
-        <TransactionProfile
-          transactionForm={transactionForm}
-          setTransactionForm={setTransactionForm}
-          transactionSaved={transactionSaved}
-          savingTransaction={savingTransaction}
-          saveTransactionProfile={saveTransactionProfile}
+        {activeView === "REQUEST_CREATED" && (
+          <>
+        <div className="space-y-8 xl:grid xl:grid-cols-12 xl:items-start xl:gap-10 xl:space-y-0">
+          <div className="space-y-6 xl:col-span-5">
+        <IntakePanel
+          changeRequestId={changeRequestId}
+          intakeMode={intakeMode}
+          setIntakeMode={setIntakeMode}
+          completenessPercent={completenessPercent}
+          missingFields={missingFields}
+          onExtractionApplied={handleExtractionApplied}
+          onAgentUpdate={handleIntakeAgentUpdate}
+          setError={setError}
         />
 
-        {/* ======================================================= */}
-{/* CHANNEL INFORMATION */}
-{/* ======================================================= */}
-
-<ChannelInformation
-  channelForm={channelForm}
-  setChannelForm={setChannelForm}
-  channelSaved={channelSaved}
-  savingChannel={savingChannel}
-  saveChannel={saveChannel}
-/>
-
-{/* ======================================================= */}
-{/* VENDOR / THIRD-PARTY INFORMATION */}
-{/* ======================================================= */}
-
-<VendorInformation
-  vendorForm={vendorForm}
-  setVendorForm={setVendorForm}
-  vendorSaved={vendorSaved}
-  savingVendor={savingVendor}
-  saveVendor={saveVendor}
-/>
-
-{/* ========================================================= */}
-{/* RUN RISK ASSESSMENT */}
-{/* ========================================================= */}
-
-{/* ========================================================= */}
-{/* RISK OVERVIEW */}
-{/* ========================================================= */}
-
-<RiskOverview
-  riskAssessment={riskAssessment}
-  runningRiskAssessment={runningRiskAssessment}
-  runRiskAssessment={runRiskAssessment}
-/>
-
-<AIAssessment
-  aiAssessment={aiAssessment}
-  generatingAI={generatingAI}
-  generateAIAssessment={generateAIAssessment}
-/>
-
-        {/* ========================================================= */}
-        {/* NEXT SECTIONS PLACEHOLDER */}
-        {/* ========================================================= */}
-
-        <div className="mt-8">
-
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-
-            {/* Evidence Header */}
-
-            <div className="border-b border-slate-200 p-6">
-
-                <div className="flex items-center justify-between">
-
-                <div className="flex items-center gap-3">
-
-                    <div className="rounded-lg bg-blue-50 p-2">
-
-                    <FileText
-                        size={20}
-                        className="text-blue-600"
-                    />
-
-                    </div>
-
-                    <div>
-
-                    <h3 className="font-semibold text-slate-900">
-                        Regulatory Evidence
-                    </h3>
-
-                    <p className="mt-1 text-sm text-slate-500">
-                        Regulatory sources retrieved to support the risk assessment
-                    </p>
-
-                    </div>
-
-                </div>
-
-
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-
-                    {regulatoryEvidence.length} Evidence Records
-
-                </span>
-
-                </div>
-
-            </div>
-
-
-            {/* Evidence Records */}
-
-            <div className="divide-y divide-slate-100">
-
-                {regulatoryEvidence.length === 0 ? (
-
-                <div className="p-6">
-
-                    <p className="text-sm text-slate-500">
-                    No regulatory evidence available.
-                    </p>
-
-                </div>
-
-                ) : (
-
-                regulatoryEvidence.map((evidence, index) => (
-
-                    <div
-                    key={evidence.id || index}
-                    className="p-6"
-                    >
-
-                    {/* Top row */}
-
-                    <div className="flex items-start justify-between gap-4">
-
-                        <div className="flex-1">
-
-                        <div className="flex flex-wrap items-center gap-2">
-
-                            <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                            {evidence.authority || "Unknown Authority"}
-                            </span>
-
-                            {evidence.page_number && (
-
-                            <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-
-                                Page {evidence.page_number}
-
-                            </span>
-
-                            )}
-
-                        </div>
-
-
-                        <h4 className="mt-3 font-semibold text-slate-900">
-
-                            {evidence.document_name ||
-                            "Regulatory Document"}
-
-                        </h4>
-
-                        </div>
-
-
-                        {/* Relevance */}
-
-                        {evidence.relevance_score !== null &&
-                        evidence.relevance_score !== undefined && (
-
-                        <div className="text-right">
-
-                            <p className="text-xs text-slate-400">
-                            Retrieval Score
-                            </p>
-
-                            <p className="mt-1 text-sm font-semibold text-slate-700">
-                            {Number(
-                                evidence.relevance_score
-                            ).toFixed(4)}
-                            </p>
-
-                        </div>
-
-                        )}
-
-                    </div>
-
-
-                    {/* Query */}
-
-                    {evidence.query && (
-
-                        <div className="mt-4 rounded-lg bg-slate-50 p-4">
-
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            Regulatory Query
-                        </p>
-
-                        <p className="mt-1 text-sm leading-6 text-slate-700">
-                            {evidence.query}
-                        </p>
-
-                        </div>
-
-                    )}
-
-
-                    {/* Evidence text */}
-
-                    {evidence.evidence_text && (
-
-                        <div className="mt-4">
-
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                            Evidence
-                        </p>
-
-                        <p className="mt-2 text-sm leading-7 text-slate-600">
-                            {evidence.evidence_text}
-                        </p>
-
-                        </div>
-
-                    )}
-
-
-                    {/* Source reference */}
-
-                    {evidence.source_reference && (
-
-                        <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
-
-                        <FileText size={14} />
-
-                        <span>
-                            {evidence.source_reference}
-                        </span>
-
-                        </div>
-
-                    )}
-
-                    </div>
-
-                ))
-
-                )}
-
-            </div>
-
-            </div>
-
-
-          <div className="mt-6 rounded-xl border border-indigo-200 bg-white shadow-sm">
-
-  {/* Header */}
-  <div className="border-b border-indigo-100 bg-indigo-50/40 p-6">
-
-    <div className="flex items-start justify-between gap-4">
-
-      <div className="flex items-center gap-3">
-
-        <div className="rounded-lg bg-indigo-100 p-2.5">
-          <Sparkles
-            size={22}
-            className="text-indigo-600"
-          />
+        {missingFields.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-base text-amber-900">
+            Missing required fields: {missingFields.join(", ")}
+          </div>
+        )}
+          </div>
+
+          <div className="xl:col-span-7">
+        <RequestInputTabs
+          activeTab={inputTab}
+          onTabChange={setInputTab}
+        >
+          {inputTab === "product" && (
+            <ProductInformation
+              productForm={productForm}
+              setProductForm={setProductForm}
+              productSaved={productSaved}
+              savingProduct={savingProduct}
+              saveProduct={saveProduct}
+            />
+          )}
+          {inputTab === "customer" && (
+            <CustomerProfile
+              customerForm={customerForm}
+              setCustomerForm={setCustomerForm}
+              customerSaved={customerSaved}
+              savingCustomer={savingCustomer}
+              saveCustomerProfile={saveCustomerProfile}
+            />
+          )}
+          {inputTab === "geography" && (
+            <Geography
+              geographyForm={geographyForm}
+              setGeographyForm={setGeographyForm}
+              geographySaved={geographySaved}
+              savingGeography={savingGeography}
+              saveGeography={saveGeography}
+            />
+          )}
+          {inputTab === "transaction" && (
+            <TransactionProfile
+              transactionForm={transactionForm}
+              setTransactionForm={setTransactionForm}
+              transactionSaved={transactionSaved}
+              savingTransaction={savingTransaction}
+              saveTransactionProfile={saveTransactionProfile}
+            />
+          )}
+          {inputTab === "channel" && (
+            <ChannelInformation
+              channelForm={channelForm}
+              setChannelForm={setChannelForm}
+              channelSaved={channelSaved}
+              savingChannel={savingChannel}
+              saveChannel={saveChannel}
+            />
+          )}
+          {inputTab === "vendor" && (
+            <VendorInformation
+              vendorForm={vendorForm}
+              setVendorForm={setVendorForm}
+              vendorSaved={vendorSaved}
+              savingVendor={savingVendor}
+              saveVendor={saveVendor}
+            />
+          )}
+        </RequestInputTabs>
+          </div>
         </div>
 
-        <div>
+        <AssessmentStageFooter
+          hint="Syncs intake, generates risk factors, calculates scores, and retrieves regulatory evidence."
+        >
+          <button
+            type="button"
+            onClick={() => setActiveView("RISK_ASSESSMENT")}
+            disabled={
+              !canNavigateToWorkflowStage(
+                "RISK_ASSESSMENT",
+                changeRequest?.current_stage
+              )
+            }
+            className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            View risk step
+          </button>
+          <button
+            type="button"
+            onClick={completeRequestStage}
+            disabled={advancingStage || runningRiskAssessment}
+            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          >
+            {advancingStage || runningRiskAssessment
+              ? "Calculating risk..."
+              : "Complete inputs & calculate risk →"}
+          </button>
+        </AssessmentStageFooter>
+          </>
+        )}
 
-          <h3 className="font-semibold text-slate-900">
-            AI-Assisted FCRM Assessment
-          </h3>
-
-          <p className="mt-1 text-sm text-slate-500">
-            AI prepares the assessment using the calculated risk
-            and regulatory evidence. FCRM retains the final decision.
-          </p>
-
+        {activeView === "RISK_ASSESSMENT" && (
+          <>
+        <div className="space-y-8 xl:grid xl:grid-cols-12 xl:items-start xl:gap-10 xl:space-y-0">
+          <div className="space-y-8 xl:col-span-7">
+            <RiskOverview
+              riskAssessment={riskAssessment}
+              runningRiskAssessment={runningRiskAssessment}
+              runRiskAssessment={runRiskAssessment}
+            />
+            <AIAssessment
+              aiAssessment={aiAssessment}
+              generatingAI={generatingAI}
+              generateAIAssessment={generateAIAssessment}
+            />
+          </div>
+          <div className="xl:col-span-5">
+            <RegulatoryEvidence regulatoryEvidence={regulatoryEvidence} />
+          </div>
         </div>
 
-      </div>
-
-      {aiAssessment?.recommendation && (
-        <span className="rounded-full bg-orange-100 px-3 py-1.5 text-xs font-semibold text-orange-700">
-          {aiAssessment.recommendation}
-        </span>
-      )}
-
-    </div>
-
-  </div>
-
-
-  {/* Before AI Assessment is generated */}
-
-  {!aiAssessment && (
-
-    <div className="p-8 text-center">
-
-      <Sparkles
-        size={32}
-        className="mx-auto text-indigo-400"
-      />
-
-      <h4 className="mt-4 font-semibold text-slate-800">
-        AI assessment not generated yet
-      </h4>
-
-      <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
-        Generate an AI-assisted assessment using the calculated
-        financial crime risk factors and retrieved regulatory evidence.
-      </p>
-
-      <button
-        onClick={generateAIAssessment}
-        disabled={generatingAI}
-        className="mt-5 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-
-        <Sparkles size={16} />
-
-        {generatingAI
-          ? "Generating Assessment..."
-          : "Generate AI Assessment"}
-
-      </button>
-
-    </div>
-
-  )}
-
-
-  {/* AI Assessment Result */}
-
-  {aiAssessment && (
-
-    <div className="space-y-8 p-6">
-
-      {/* Model + Status */}
-
-      <div className="flex flex-wrap items-center gap-3">
-
-        {aiAssessment.model && (
-          <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-            Model: {aiAssessment.model}
-          </span>
+        <AssessmentStageFooter
+          hint="Generate AI assessment to unlock analyst review (required by workflow)."
+        >
+          <button
+            type="button"
+            onClick={runRiskAssessment}
+            disabled={runningRiskAssessment}
+            className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+          >
+            Recalculate risk
+          </button>
+          <button
+            type="button"
+            onClick={advanceToAnalystStage}
+            disabled={advancingStage || generatingAI || !riskAssessment}
+            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+          >
+            {advancingStage || generatingAI
+              ? "Preparing analyst step..."
+              : "Continue to analyst review →"}
+          </button>
+        </AssessmentStageFooter>
+          </>
         )}
 
-        {aiAssessment.model_version && (
-          <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
-            Version: {aiAssessment.model_version}
-          </span>
-        )}
-
-        {aiAssessment.status && (
-          <span className="rounded-md bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-            {aiAssessment.status}
-          </span>
-        )}
-
-      </div>
-
-
-      {/* Executive Summary */}
-
-      {aiAssessment.assessment?.executive_summary && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Executive Summary
-          </h4>
-
-          <p className="mt-3 text-sm leading-7 text-slate-700">
-            {aiAssessment.assessment.executive_summary}
-          </p>
-
-        </section>
-
-      )}
-
-
-      {/* Change Description */}
-
-      {aiAssessment.assessment?.change_description && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Change Description
-          </h4>
-
-          <p className="mt-3 text-sm leading-7 text-slate-700">
-            {aiAssessment.assessment.change_description}
-          </p>
-
-        </section>
-
-      )}
-
-
-      {/* Risk Assessment */}
-
-      {aiAssessment.assessment?.risk_assessment && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Risk Assessment
-          </h4>
-
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-
-            {Object.entries(
-              aiAssessment.assessment.risk_assessment
-            ).map(([category, analysis]) => (
-
-              <div
-                key={category}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-4"
-              >
-
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                  {category.replaceAll("_", " ")}
-                </p>
-
-                <p className="mt-2 text-sm leading-6 text-slate-700">
-                  {analysis}
-                </p>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Inherent Risk */}
-
-      {aiAssessment.assessment?.inherent_risk && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Inherent Risk Analysis
-          </h4>
-
-          <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-5">
-
-            <div className="flex items-center gap-4">
-
-              <span className="text-3xl font-bold text-red-600">
-                {Number(
-                  aiAssessment.assessment.inherent_risk.score
-                ).toFixed(1)}
-              </span>
-
-              <span
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${getRiskClass(
-                  aiAssessment.assessment.inherent_risk.rating
-                )}`}
-              >
-                {aiAssessment.assessment.inherent_risk.rating}
-              </span>
-
-            </div>
-
-            <p className="mt-4 text-sm leading-7 text-slate-700">
-              {aiAssessment.assessment.inherent_risk.analysis}
-            </p>
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Key Risk Factors */}
-
-      {aiAssessment.assessment?.key_risk_factors?.length > 0 && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Key Risk Factors
-          </h4>
-
-          <div className="mt-4 space-y-3">
-
-            {aiAssessment.assessment.key_risk_factors.map(
-              (factor, index) => (
-
-                <div
-                  key={index}
-                  className="flex items-start gap-3 rounded-lg border border-slate-200 p-4"
-                >
-
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-orange-500" />
-
-                  <p className="text-sm leading-6 text-slate-700">
-                    {factor}
-                  </p>
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Control Assessment */}
-
-      {aiAssessment.assessment?.control_assessment && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Control Assessment
-          </h4>
-
-          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-5">
-
-            <p className="text-sm leading-7 text-slate-700">
-              {aiAssessment.assessment.control_assessment}
-            </p>
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Residual Risk */}
-
-      {aiAssessment.assessment?.residual_risk && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Residual Risk Analysis
-          </h4>
-
-          <div className="mt-4 rounded-lg border border-orange-100 bg-orange-50 p-5">
-
-            <div className="flex items-center gap-4">
-
-              <span className="text-3xl font-bold text-orange-600">
-                {Number(
-                  aiAssessment.assessment.residual_risk.score
-                ).toFixed(1)}
-              </span>
-
-              <span
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${getRiskClass(
-                  aiAssessment.assessment.residual_risk.rating
-                )}`}
-              >
-                {aiAssessment.assessment.residual_risk.rating}
-              </span>
-
-            </div>
-
-            <p className="mt-4 text-sm leading-7 text-slate-700">
-              {aiAssessment.assessment.residual_risk.analysis}
-            </p>
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Regulatory Considerations */}
-
-      {aiAssessment.assessment?.regulatory_considerations?.length > 0 && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Regulatory Considerations
-          </h4>
-
-          <div className="mt-4 space-y-3">
-
-            {aiAssessment.assessment.regulatory_considerations.map(
-              (item, index) => (
-
-                <div
-                  key={index}
-                  className="rounded-lg border border-blue-100 bg-blue-50/40 p-4"
-                >
-
-                  <div className="flex flex-wrap items-center gap-2">
-
-                    <span className="rounded-md bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                      {item.authority}
-                    </span>
-
-                    {item.page_number && (
-                      <span className="rounded-md bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
-                        Page {item.page_number}
-                      </span>
-                    )}
-
-                  </div>
-
-                  <p className="mt-3 text-sm font-semibold text-slate-800">
-                    {item.document_name}
-                  </p>
-
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    {item.requirement_summary}
-                  </p>
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Regulatory Evidence */}
-
-      {aiAssessment.assessment?.regulatory_evidence?.length > 0 && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Regulatory Evidence Used by AI
-          </h4>
-
-          <div className="mt-4 space-y-3">
-
-            {aiAssessment.assessment.regulatory_evidence.map(
-              (item, index) => (
-
-                <div
-                  key={index}
-                  className="rounded-lg border border-slate-200 p-4"
-                >
-
-                  <div className="flex flex-wrap items-center gap-2">
-
-                    <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                      {item.authority}
-                    </span>
-
-                    {item.page_number && (
-                      <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-                        Page {item.page_number}
-                      </span>
-                    )}
-
-                  </div>
-
-                  <p className="mt-2 text-sm font-semibold text-slate-800">
-                    {item.document_name}
-                  </p>
-
-                  <p className="mt-3 text-sm leading-7 text-slate-600">
-                    {item.excerpt}
-                  </p>
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Analyst Review Questions */}
-
-      {aiAssessment.assessment?.analyst_review_questions?.length > 0 && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Analyst Review Questions
-          </h4>
-
-          <div className="mt-4 space-y-3">
-
-            {aiAssessment.assessment.analyst_review_questions.map(
-              (question, index) => (
-
-                <div
-                  key={index}
-                  className="flex items-start gap-3 rounded-lg border border-amber-100 bg-amber-50 p-4"
-                >
-
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
-                    {index + 1}
-                  </span>
-
-                  <p className="text-sm leading-6 text-slate-700">
-                    {question}
-                  </p>
-
-                </div>
-
-              )
-            )}
-
-          </div>
-
-        </section>
-
-      )}
-
-
-      {/* Rationale */}
-
-      {aiAssessment.assessment?.rationale && (
-
-        <section>
-
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            AI Rationale
-          </h4>
-
-          <div className="mt-4 rounded-lg border border-indigo-100 bg-indigo-50 p-5">
-
-            <p className="text-sm leading-7 text-slate-700">
-              {aiAssessment.assessment.rationale}
-            </p>
-
-          </div>
-
-        </section>
-
-      )}
-
-    </div>
-
-  )}
-
-</div>
+        {activeView === "ANALYST_REVIEW" && (
+          <>
 
 <AnalystReview
   riskAssessment={riskAssessment}
@@ -1740,6 +1253,11 @@ function Assessment() {
   submitAnalystReview={submitAnalystReview}
  />
 
+          </>
+        )}
+
+        {activeView === "COMMITTEE_REVIEW" && (
+          <>
 
 <CommitteeDecision
   riskAssessment={riskAssessment}
@@ -1755,7 +1273,16 @@ function Assessment() {
   submitCommitteeDecision={submitCommitteeDecision}
  />
 
+          </>
+        )}
 
+        {activeView === "COMPLETED" && (
+          <>
+            <CompletedStageSummary
+              changeRequest={changeRequest}
+              riskAssessment={riskAssessment}
+              committeeSubmitted={committeeSubmitted}
+            />
 
     {/* Audit Trail */}
 <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
@@ -1875,11 +1402,10 @@ function Assessment() {
     </div>
   )}
 </div>
+          </>
+        )}
 
-        </div>
-
-      </main>
-
+      </PageContainer>
     </div>
   );
 }

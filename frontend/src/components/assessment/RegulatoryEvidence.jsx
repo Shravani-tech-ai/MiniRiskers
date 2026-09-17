@@ -2,7 +2,7 @@ import { FileText } from "lucide-react";
 
 function RegulatoryEvidence({ regulatoryEvidence }) {
   return (
-    <div className="mt-8">
+    <div className="mt-8 xl:mt-0">
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
 
         {/* Evidence Header */}

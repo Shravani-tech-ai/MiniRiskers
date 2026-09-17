@@ -1,30 +1,48 @@
-import { Link } from "react-router-dom";
+import { Bell, UserCircle2 } from "lucide-react";
+
+import AppSidebar from "../components/layout/AppSidebar";
+import AppTopBar from "../components/layout/AppTopBar";
+import MobileNav from "../components/layout/MobileNav";
 
 function MainLayout({ children }) {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f4f6f9]">
+      <AppTopBar compact />
 
-      <header className="border-b border-slate-200 bg-white">
-        <div className="flex items-center justify-between px-8 py-4">
+      <div className="flex min-h-screen">
+        <AppSidebar />
 
-          <Link
-            to="/"
-            className="text-xl font-bold text-slate-900"
-          >
-            MiniRiskers
-          </Link>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="hidden border-b border-slate-200 bg-white px-8 py-4 lg:flex">
+            <div className="flex w-full items-center justify-between gap-3">
+              <p className="text-base font-semibold text-slate-700">
+                FCRM Workbench
+              </p>
+              <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="relative rounded-xl border border-slate-200 p-2.5 text-slate-600 hover:bg-slate-50"
+                aria-label="Notifications"
+              >
+                <Bell size={18} />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+              </button>
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <UserCircle2 size={20} />
+                FCRM Analyst
+              </button>
+              </div>
+            </div>
+          </header>
 
-          <div className="text-sm text-slate-500">
-            FCRM Risk Assessment Workbench
-          </div>
-
+          <main className="flex-1 pb-20 lg:pb-8">{children}</main>
         </div>
-      </header>
+      </div>
 
-      <main>
-        {children}
-      </main>
-
+      <MobileNav />
     </div>
   );
 }

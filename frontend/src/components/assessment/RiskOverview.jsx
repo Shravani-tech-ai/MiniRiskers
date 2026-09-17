@@ -100,11 +100,11 @@ function RiskOverview({
 
           <div>
 
-            <h3 className="text-lg font-semibold text-slate-900">
+            <h3 className="text-xl font-bold text-slate-900 lg:text-2xl">
               Run Financial Crime Risk Assessment
             </h3>
 
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+            <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-600">
               Generate risk factors, calculate inherent and residual risk,
               and retrieve relevant regulatory evidence for this change request.
             </p>
@@ -148,11 +148,11 @@ function RiskOverview({
 
         <div>
 
-          <h2 className="text-xl font-semibold text-slate-900">
+          <h2 className="text-2xl font-bold text-slate-900">
             Risk Overview
           </h2>
 
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-2 text-base text-slate-600">
             Calculated financial crime risk across key assessment dimensions
           </p>
 

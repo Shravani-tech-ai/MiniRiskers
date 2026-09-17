@@ -18,19 +18,19 @@ function AppSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
+    <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white xl:w-72 lg:flex lg:flex-col">
       <div className="flex items-center gap-3 border-b border-slate-200 px-6 py-5">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900">
           <Shield className="text-white" size={20} />
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900">MiniRiskers</span>
-            <span className="rounded-md bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-700">
+            <span className="text-lg font-bold text-slate-900">MiniRiskers</span>
+            <span className="rounded-md bg-violet-100 px-2 py-0.5 text-[11px] font-bold text-violet-700">
               PRO
             </span>
           </div>
-          <p className="text-xs text-slate-500">FCRM Workbench</p>
+          <p className="text-sm text-slate-500">FCRM Workbench</p>
         </div>
       </div>
 
@@ -60,7 +60,7 @@ function AppSidebar() {
               key={item.label}
               to={item.to}
               className={[
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition",
+                "flex items-center gap-3 rounded-xl px-3 py-3 text-base font-semibold transition",
                 active
                   ? "bg-indigo-50 text-indigo-700"
                   : "text-slate-600 hover:bg-slate-50 hover:text-slate-900",
