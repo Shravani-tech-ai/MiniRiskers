@@ -19,15 +19,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from datetime import datetime
 from backend.auth import (
-    LoginRequest,
-    RegisterRequest,
     audit_actor_name,
-    authenticate_user,
-    create_access_token,
     get_current_user,
-    register_user,
-    user_to_public,
 )
+from backend.auth_routes import router as auth_router
 from backend.database import SessionLocal, engine, get_db
 from backend.permissions import (
     ROLE_ADMIN,
@@ -166,6 +161,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -250,42 +247,6 @@ def root():
         "application": "MiniRiskers",
         "status": "running",
         "message": "Risk Assessment Workbench API"
-    }
-
-
-@app.post("/auth/login")
-def login(
-    body: LoginRequest,
-    db: Session = Depends(get_db),
-):
-    user = authenticate_user(db, body.username, body.password)
-    if not user:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid credentials.",
-        )
-
-    return {
-        "access_token": create_access_token(user),
-        "token_type": "bearer",
-    }
-
-
-@app.get("/auth/me")
-def auth_me(current_user: User = Depends(get_current_user)):
-    return user_to_public(current_user)
-
-
-@app.post("/auth/register")
-def register(
-    body: RegisterRequest,
-    db: Session = Depends(get_db),
-):
-    user = register_user(db, body)
-    return {
-        "access_token": create_access_token(user),
-        "token_type": "bearer",
-        "user": user_to_public(user),
     }
 
 

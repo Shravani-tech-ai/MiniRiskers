@@ -19,6 +19,9 @@ import RequestInputTabs from "../components/assessment/RequestInputTabs";
 import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
 import CompletedStageSummary from "../components/assessment/CompletedStageSummary";
 import {
+  EMPTY_ASSESSMENT_FORMS,
+  formatMissingFieldLabels,
+  getPersistedSectionFlags,
   mapInputsToFormState,
   formsToAssessmentInputs,
 } from "../utils/assessmentFormMapping";
@@ -64,37 +67,11 @@ function Assessment() {
   const [savingCustomer, setSavingCustomer] = useState(false);
 
   const [productForm, setProductForm] = useState({
-    product_name: "",
-    product_category: "",
-    product_description: "",
-    digital_channel: true,
-    branch_channel: false,
-    agent_channel: false,
-    cross_border: true,
-    cash_involved: false,
-    transaction_type: "",
-    transaction_limit: "",
-    expected_transaction_volume: "",
-    expected_transaction_frequency: "",
-    currency: "INR",
-    countries_supported: "",
-    new_product_flag: true,
+    ...EMPTY_ASSESSMENT_FORMS.productForm,
   });
 
   const [customerForm, setCustomerForm] = useState({
-    customer_type: "INDIVIDUAL",
-    customer_segment: "",
-    individual_customer: true,
-    business_customer: false,
-    foreign_customer: false,
-    onboarding_method: "",
-    kyc_required: true,
-    kyc_method: "",
-    beneficial_owner_required: false,
-    pep_exposure: false,
-    high_risk_customer_exposure: false,
-    expected_customer_count: "",
-    customer_geographic_distribution: "",
+    ...EMPTY_ASSESSMENT_FORMS.customerForm,
   });
 
   const [geographySaved, setGeographySaved] = useState(false);
@@ -104,29 +81,11 @@ function Assessment() {
   const [savingTransaction, setSavingTransaction] = useState(false);
 
   const [geographyForm, setGeographyForm] = useState({
-    country: "",
-    country_code: "",
-    domestic_or_cross_border: "CROSS_BORDER",
-    customer_country: "India",
-    transaction_country: "",
-    beneficiary_country: "",
-    high_risk_jurisdiction_flag: false,
-    sanctions_exposure: false,
+    ...EMPTY_ASSESSMENT_FORMS.geographyForm,
   });
 
   const [transactionForm, setTransactionForm] = useState({
-    transaction_type: "",
-    average_transaction_amount: "",
-    maximum_transaction_amount: "",
-    expected_daily_volume: "",
-    expected_monthly_volume: "",
-    expected_frequency: "",
-    cash_involved: false,
-    cross_border: true,
-    number_of_countries: 4,
-    transaction_velocity: 8,
-    round_amount_risk: false,
-    rapid_movement_possible: false,
+    ...EMPTY_ASSESSMENT_FORMS.transactionForm,
   });
 
   const [channelSaved, setChannelSaved] = useState(false);
@@ -136,32 +95,11 @@ function Assessment() {
   const [savingVendor, setSavingVendor] = useState(false);
 
   const [channelForm, setChannelForm] = useState({
-    channel_type: "DIGITAL",
-    mobile_banking: true,
-    internet_banking: false,
-    branch: false,
-    agent: false,
-    api: false,
-    third_party_channel: false,
-    remote_onboarding: true,
+    ...EMPTY_ASSESSMENT_FORMS.channelForm,
   });
 
   const [vendorForm, setVendorForm] = useState({
-    vendor_name: "",
-    vendor_type: "",
-    country: "India",
-    india_based: true,
-    service_description: "",
-    handles_customer_data: false,
-    handles_transactions: false,
-    handles_payment_data: false,
-    criticality: "MEDIUM",
-    outsourcing_type: "",
-    due_diligence_completed: false,
-    contract_completed: false,
-    audit_rights: false,
-    business_continuity_plan: false,
-    cross_border_processing: false,
+    ...EMPTY_ASSESSMENT_FORMS.vendorForm,
   });
 
   const [intakeMode, setIntakeMode] = useState("brd");
@@ -171,7 +109,7 @@ function Assessment() {
   const [inputTab, setInputTab] = useState("product");
   const [advancingStage, setAdvancingStage] = useState(false);
 
-  const applyMappedForms = (mapped) => {
+  const applyMappedForms = (mapped, inputs) => {
     if (!mapped) {
       return;
     }
@@ -182,12 +120,14 @@ function Assessment() {
     setTransactionForm(mapped.transactionForm);
     setChannelForm(mapped.channelForm);
     setVendorForm(mapped.vendorForm);
-    setProductSaved(true);
-    setCustomerSaved(true);
-    setGeographySaved(true);
-    setTransactionSaved(true);
-    setChannelSaved(true);
-    setVendorSaved(true);
+
+    const persisted = getPersistedSectionFlags(inputs);
+    setProductSaved(persisted.productSaved);
+    setCustomerSaved(persisted.customerSaved);
+    setGeographySaved(persisted.geographySaved);
+    setTransactionSaved(persisted.transactionSaved);
+    setChannelSaved(persisted.channelSaved);
+    setVendorSaved(persisted.vendorSaved);
   };
 
   const refreshCompleteness = async () => {
@@ -210,7 +150,7 @@ function Assessment() {
       );
       const mapped = mapInputsToFormState(response.data.inputs);
       if (mapped) {
-        applyMappedForms(mapped);
+        applyMappedForms(mapped, response.data.inputs);
       }
       setCompletenessPercent(response.data.completeness_percent ?? 0);
       setMissingFields(response.data.missing_fields ?? []);
@@ -222,14 +162,14 @@ function Assessment() {
 
   const handleExtractionApplied = async (mergedPreview) => {
     const mapped = mapInputsToFormState(mergedPreview);
-    applyMappedForms(mapped);
+    applyMappedForms(mapped, mergedPreview);
     await hydrateAssessmentInputs();
   };
 
   const handleIntakeAgentUpdate = async (agentResponse) => {
     if (agentResponse?.inputs) {
       const mapped = mapInputsToFormState(agentResponse.inputs);
-      applyMappedForms(mapped);
+      applyMappedForms(mapped, agentResponse.inputs);
     }
     await hydrateAssessmentInputs();
   };
@@ -242,6 +182,18 @@ function Assessment() {
     try {
       setLoading(true);
       setError("");
+      setProductSaved(false);
+      setCustomerSaved(false);
+      setGeographySaved(false);
+      setTransactionSaved(false);
+      setChannelSaved(false);
+      setVendorSaved(false);
+      setProductForm({ ...EMPTY_ASSESSMENT_FORMS.productForm });
+      setCustomerForm({ ...EMPTY_ASSESSMENT_FORMS.customerForm });
+      setGeographyForm({ ...EMPTY_ASSESSMENT_FORMS.geographyForm });
+      setTransactionForm({ ...EMPTY_ASSESSMENT_FORMS.transactionForm });
+      setChannelForm({ ...EMPTY_ASSESSMENT_FORMS.channelForm });
+      setVendorForm({ ...EMPTY_ASSESSMENT_FORMS.vendorForm });
 
       // 1. Change Request
       const changeRequestResponse = await api.get(
@@ -1099,7 +1051,8 @@ function Assessment() {
 
         {missingFields.length > 0 && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-base text-amber-900">
-            Missing required fields: {missingFields.join(", ")}
+            Missing required fields:{" "}
+            {formatMissingFieldLabels(missingFields)}
           </div>
         )}
           </div>

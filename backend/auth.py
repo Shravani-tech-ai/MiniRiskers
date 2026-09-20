@@ -7,8 +7,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from sqlalchemy.orm import Session
+
+from sqlalchemy.exc import IntegrityError
 
 from backend.database import get_db
 from backend.models import User
@@ -31,16 +33,33 @@ class TokenPayload(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    username: str = Field(..., min_length=1)
+    username: str = Field(
+        ...,
+        min_length=1,
+        description="Username or email address",
+    )
     password: str = Field(..., min_length=1)
 
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=64)
-    email: str = Field(..., min_length=3, max_length=255)
+    email: EmailStr
     password: str = Field(..., min_length=8, max_length=128)
     full_name: str = Field(..., min_length=2, max_length=128)
     role: str = Field(..., min_length=1)
+
+    @field_validator("username")
+    @classmethod
+    def normalize_username(cls, value: str) -> str:
+        return value.strip().lower()
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_full_name(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Full name is required.")
+        return cleaned
 
 
 USERNAME_PATTERN = re.compile(r"^[a-z0-9_]+$")
@@ -101,6 +120,25 @@ def get_user_by_username(db: Session, username: str) -> User | None:
     )
 
 
+def get_user_by_email(db: Session, email: str) -> User | None:
+    normalized = email.strip().lower()
+    return (
+        db.query(User)
+        .filter(User.email == normalized)
+        .first()
+    )
+
+
+def get_user_by_login(db: Session, login: str) -> User | None:
+    normalized = login.strip().lower()
+    user = get_user_by_username(db, normalized)
+    if user:
+        return user
+    if "@" in normalized:
+        return get_user_by_email(db, normalized)
+    return None
+
+
 def register_user(db: Session, body: RegisterRequest) -> User:
     username = body.username.strip().lower()
     email = body.email.strip().lower()
@@ -146,13 +184,20 @@ def register_user(db: Session, body: RegisterRequest) -> User:
         is_active=True,
     )
     db.add(user)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Username or email is already registered.",
+        ) from error
     db.refresh(user)
     return user
 
 
 def authenticate_user(db: Session, username: str, password: str) -> User | None:
-    user = get_user_by_username(db, username)
+    user = get_user_by_login(db, username)
     if not user or not user.is_active:
         return None
     if not verify_password(password, user.password_hash):

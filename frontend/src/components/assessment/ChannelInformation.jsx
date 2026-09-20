@@ -54,6 +54,7 @@ function ChannelInformation({
             }
             className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 md:w-1/2"
           >
+            <option value="">Select channel type</option>
             <option value="DIGITAL">Digital</option>
             <option value="BRANCH">Branch</option>
             <option value="AGENT">Agent</option>

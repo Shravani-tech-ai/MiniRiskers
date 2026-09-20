@@ -53,6 +53,7 @@ function CustomerProfile({
             }
             className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
           >
+            <option value="">Select customer type</option>
             <option value="INDIVIDUAL">Individual</option>
             <option value="BUSINESS">Business</option>
             <option value="BOTH">Individual & Business</option>

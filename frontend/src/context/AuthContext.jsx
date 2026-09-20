@@ -78,6 +78,11 @@ export function AuthProvider({ children }) {
     setAuthToken(accessToken);
     setToken(accessToken);
 
+    if (response.data?.user) {
+      setUser(response.data.user);
+      return response.data.user;
+    }
+
     const meResponse = await api.get("/auth/me");
     setUser(meResponse.data);
     return meResponse.data;

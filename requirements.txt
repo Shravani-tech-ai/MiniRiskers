@@ -7,6 +7,7 @@ langchain-community
 sentence-transformers
 chromadb
 pydantic
+email-validator
 sqlalchemy
 langchain-chroma
 google-genai
