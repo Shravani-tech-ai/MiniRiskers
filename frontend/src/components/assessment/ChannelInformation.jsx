@@ -4,6 +4,7 @@ function ChannelInformation({
   channelSaved,
   savingChannel,
   saveChannel,
+  readOnly = false,
 }) {
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -215,7 +216,7 @@ function ChannelInformation({
 
         <button
           onClick={saveChannel}
-          disabled={savingChannel}
+          disabled={readOnly || savingChannel}
           className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {savingChannel

@@ -5,7 +5,7 @@ function AssessmentHeader({ changeRequest, navigate }) {
     <div className="border-b border-slate-200 bg-white">
       <div className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8 xl:px-12">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/dashboard")}
           className="mb-5 flex items-center gap-2 text-base font-medium text-slate-600 hover:text-slate-900"
         >
           <ArrowLeft size={18} />

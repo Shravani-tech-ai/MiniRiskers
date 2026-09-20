@@ -4,6 +4,7 @@ function VendorInformation({
   vendorSaved,
   savingVendor,
   saveVendor,
+  readOnly = false,
 }) {
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -383,7 +384,7 @@ function VendorInformation({
 
         <button
           onClick={saveVendor}
-          disabled={savingVendor}
+          disabled={readOnly || savingVendor}
           className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {savingVendor

@@ -185,3 +185,28 @@ AI-Assisted FCRM Assessment
 Human Analyst Review
       ↓
 Risk Committee Decision
+
+---
+
+## Authentication (local development)
+
+The API uses JWT bearer tokens. On first startup, if the `users` table is empty, development accounts are seeded automatically.
+
+| Username | Role | Default password (dev only) |
+|----------|------|-----------------------------|
+| `business_owner` | BUSINESS_OWNER | `dev-business-owner` |
+| `risk_analyst` | RISK_ANALYST | `dev-risk-analyst` |
+| `risk_committee` | RISK_COMMITTEE | `dev-risk-committee` |
+| `auditor` | AUDITOR | `dev-auditor` |
+| `admin` | ADMIN | `dev-admin` |
+
+1. Copy `.env.example` to `.env` and set `JWT_SECRET` for non-local use.
+2. Install backend dependencies: `pip install -r requirements.txt`
+3. Start API: `uvicorn backend.main:app --reload`
+4. Start frontend: `cd frontend && npm run dev`
+5. Open `http://localhost:5173/` (landing page) → **Create account** or **Sign in**
+6. After login you are redirected to `/dashboard` with role-based access
+
+**Self-registration:** `POST /auth/register` with username, email, password, full_name, and role (`BUSINESS_OWNER`, `RISK_ANALYST`, `RISK_COMMITTEE`, `AUDITOR`). Admin self-signup is disabled by default (`ALLOW_ADMIN_SELF_SIGNUP=false`).
+
+Existing change requests and assessment data are preserved. New requests record `requested_by` from the signed-in user (`full_name`).

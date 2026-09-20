@@ -58,6 +58,7 @@ function AIAssessment({
   aiAssessment,
   generatingAI,
   generateAIAssessment,
+  canGenerate = true,
 }) {
   return (
     <div className="mt-6 rounded-xl border border-indigo-200 bg-white shadow-sm">
@@ -129,7 +130,7 @@ function AIAssessment({
 
           <button
             onClick={generateAIAssessment}
-            disabled={generatingAI}
+            disabled={!canGenerate || generatingAI}
             className="mt-5 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
 

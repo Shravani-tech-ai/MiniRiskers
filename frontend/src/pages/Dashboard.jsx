@@ -13,6 +13,11 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 import PageContainer from "../components/layout/PageContainer";
+import { useAuth } from "../context/AuthContext";
+import {
+  getAssessmentPermissions,
+  getDashboardTitle,
+} from "../utils/rolePermissions";
 
 const FILTER_OPTIONS = [
   { id: "ALL", label: "All" },
@@ -96,6 +101,9 @@ function matchesFilter(request, filterId) {
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const permissions = getAssessmentPermissions(user?.role);
+  const dashboardTitle = getDashboardTitle(user?.role);
 
   const [changeRequests, setChangeRequests] = useState([]);
   const [riskSummary, setRiskSummary] = useState({
@@ -262,7 +270,7 @@ function Dashboard() {
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 lg:text-4xl">
-                Change Requests
+                {dashboardTitle}
               </h1>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
                 <span className="relative flex h-2 w-2">
@@ -278,14 +286,16 @@ function Dashboard() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/new-request")}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-slate-800"
-          >
-            <Plus size={18} />
-            New request
-          </button>
+          {permissions.canCreateRequest ? (
+            <button
+              type="button"
+              onClick={() => navigate("/new-request")}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-6 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-slate-800"
+            >
+              <Plus size={18} />
+              New request
+            </button>
+          ) : null}
         </div>
 
         <div className="relative">

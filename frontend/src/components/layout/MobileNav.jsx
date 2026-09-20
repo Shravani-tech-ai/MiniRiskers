@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 const items = [
-  { to: "/", label: "Requests", icon: LayoutGrid },
+  { to: "/dashboard", label: "Requests", icon: LayoutGrid },
   { to: "/", label: "Assessments", icon: ClipboardList },
   { to: "/", label: "Analytics", icon: BarChart3 },
   { to: "/", label: "Settings", icon: Settings },
@@ -23,7 +23,7 @@ function MobileNav() {
           const Icon = item.icon;
           const active =
             item.label === "Requests" &&
-            (location.pathname === "/" ||
+            (location.pathname === "/dashboard" ||
               location.pathname.startsWith("/assessment") ||
               location.pathname === "/new-request");
 

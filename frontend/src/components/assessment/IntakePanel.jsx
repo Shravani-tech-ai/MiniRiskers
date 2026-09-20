@@ -19,6 +19,7 @@ function IntakePanel({
   onExtractionApplied,
   onAgentUpdate,
   setError,
+  readOnly = false,
 }) {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -259,7 +260,7 @@ function IntakePanel({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
+              disabled={readOnly || uploading}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
             >
               {uploading ? (
@@ -273,7 +274,7 @@ function IntakePanel({
             <button
               type="button"
               onClick={handleExtract}
-              disabled={extracting || !canExtract}
+              disabled={readOnly || extracting || !canExtract}
               title={
                 canExtract
                   ? "Extract intake fields from uploaded BRD"
@@ -438,7 +439,8 @@ function IntakePanel({
               <button
                 type="button"
                 onClick={handleApplyExtraction}
-                className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                disabled={readOnly}
+                className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
                 Apply to forms
               </button>
@@ -501,7 +503,7 @@ function IntakePanel({
           />
           <button
             type="submit"
-            disabled={chatLoading}
+            disabled={readOnly || chatLoading}
             className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             Send

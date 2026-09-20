@@ -29,10 +29,14 @@ import {
 import PageContainer from "../components/layout/PageContainer";
 
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
+import { getAssessmentPermissions } from "../utils/rolePermissions";
 
 function Assessment() {
   const { changeRequestId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const permissions = getAssessmentPermissions(user?.role);
 
   const [changeRequest, setChangeRequest] = useState(null);
   const [riskAssessment, setRiskAssessment] = useState(null);
@@ -1026,7 +1030,7 @@ function Assessment() {
         <div className="mx-auto max-w-7xl">
 
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/dashboard")}
             className="mb-6 flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
           >
             <ArrowLeft size={16} />
@@ -1090,6 +1094,7 @@ function Assessment() {
           onExtractionApplied={handleExtractionApplied}
           onAgentUpdate={handleIntakeAgentUpdate}
           setError={setError}
+          readOnly={!permissions.canEditIntake}
         />
 
         {missingFields.length > 0 && (
@@ -1111,6 +1116,7 @@ function Assessment() {
               productSaved={productSaved}
               savingProduct={savingProduct}
               saveProduct={saveProduct}
+              readOnly={!permissions.canEditIntake}
             />
           )}
           {inputTab === "customer" && (
@@ -1120,6 +1126,7 @@ function Assessment() {
               customerSaved={customerSaved}
               savingCustomer={savingCustomer}
               saveCustomerProfile={saveCustomerProfile}
+              readOnly={!permissions.canEditIntake}
             />
           )}
           {inputTab === "geography" && (
@@ -1129,6 +1136,7 @@ function Assessment() {
               geographySaved={geographySaved}
               savingGeography={savingGeography}
               saveGeography={saveGeography}
+              readOnly={!permissions.canEditIntake}
             />
           )}
           {inputTab === "transaction" && (
@@ -1138,6 +1146,7 @@ function Assessment() {
               transactionSaved={transactionSaved}
               savingTransaction={savingTransaction}
               saveTransactionProfile={saveTransactionProfile}
+              readOnly={!permissions.canEditIntake}
             />
           )}
           {inputTab === "channel" && (
@@ -1147,6 +1156,7 @@ function Assessment() {
               channelSaved={channelSaved}
               savingChannel={savingChannel}
               saveChannel={saveChannel}
+              readOnly={!permissions.canEditIntake}
             />
           )}
           {inputTab === "vendor" && (
@@ -1156,6 +1166,7 @@ function Assessment() {
               vendorSaved={vendorSaved}
               savingVendor={savingVendor}
               saveVendor={saveVendor}
+              readOnly={!permissions.canEditIntake}
             />
           )}
         </RequestInputTabs>
@@ -1181,7 +1192,11 @@ function Assessment() {
           <button
             type="button"
             onClick={completeRequestStage}
-            disabled={advancingStage || runningRiskAssessment}
+            disabled={
+              !permissions.canRunRiskPipeline ||
+              advancingStage ||
+              runningRiskAssessment
+            }
             className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {advancingStage || runningRiskAssessment
@@ -1200,11 +1215,13 @@ function Assessment() {
               riskAssessment={riskAssessment}
               runningRiskAssessment={runningRiskAssessment}
               runRiskAssessment={runRiskAssessment}
+              canRun={permissions.canRunRiskPipeline}
             />
             <AIAssessment
               aiAssessment={aiAssessment}
               generatingAI={generatingAI}
               generateAIAssessment={generateAIAssessment}
+              canGenerate={permissions.canRunRiskPipeline}
             />
           </div>
           <div className="xl:col-span-5">
@@ -1218,7 +1235,7 @@ function Assessment() {
           <button
             type="button"
             onClick={runRiskAssessment}
-            disabled={runningRiskAssessment}
+            disabled={!permissions.canRunRiskPipeline || runningRiskAssessment}
             className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
             Recalculate risk
@@ -1226,7 +1243,12 @@ function Assessment() {
           <button
             type="button"
             onClick={advanceToAnalystStage}
-            disabled={advancingStage || generatingAI || !riskAssessment}
+            disabled={
+              !permissions.canRunRiskPipeline ||
+              advancingStage ||
+              generatingAI ||
+              !riskAssessment
+            }
             className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {advancingStage || generatingAI
@@ -1251,6 +1273,7 @@ function Assessment() {
   setConsequences={setConsequences}
   analystReviewed={analystReviewed}
   submitAnalystReview={submitAnalystReview}
+  canSubmit={permissions.canAnalystReview}
  />
 
           </>
@@ -1271,6 +1294,7 @@ function Assessment() {
   setCommitteeReason={setCommitteeReason}
   committeeSubmitted={committeeSubmitted}
   submitCommitteeDecision={submitCommitteeDecision}
+  canSubmit={permissions.canCommitteeDecide}
  />
 
           </>

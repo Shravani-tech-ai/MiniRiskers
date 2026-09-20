@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { to: "/", label: "Requests", icon: LayoutGrid },
+  { to: "/dashboard", label: "Requests", icon: LayoutGrid },
   { to: "/", label: "Assessments", icon: ClipboardList, disabled: true },
   { to: "/", label: "Analytics", icon: BarChart3, disabled: true },
   { to: "/", label: "Settings", icon: Settings, disabled: true },
@@ -39,7 +39,7 @@ function AppSidebar() {
           const Icon = item.icon;
           const active =
             item.label === "Requests" &&
-            (location.pathname === "/" ||
+            (location.pathname === "/dashboard" ||
               location.pathname.startsWith("/assessment") ||
               location.pathname === "/new-request");
 

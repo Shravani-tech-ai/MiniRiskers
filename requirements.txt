@@ -10,3 +10,6 @@ pydantic
 sqlalchemy
 langchain-chroma
 google-genai
+passlib[bcrypt]
+python-jose[cryptography]
+bcrypt>=4.0.1,<4.1

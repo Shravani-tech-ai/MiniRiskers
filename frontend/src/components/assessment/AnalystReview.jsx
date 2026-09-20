@@ -26,6 +26,7 @@ function AnalystReview({
   setConsequences,
   analystReviewed,
   submitAnalystReview,
+  canSubmit = true,
 }) {
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -146,7 +147,7 @@ function AnalystReview({
           ) : (
             <p className="text-xs text-slate-400">Final committee decision remains separate from analyst review.</p>
           )}
-          {!analystReviewed && (
+          {!analystReviewed && canSubmit && (
             <button onClick={submitAnalystReview} className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
               Submit Analyst Review
             </button>

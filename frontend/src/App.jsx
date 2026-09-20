@@ -4,26 +4,55 @@ import Dashboard from "./pages/Dashboard";
 import Assessment from "./pages/Assessment";
 import MainLayout from "./layouts/MainLayout";
 import NewRequest from "./pages/NewRequest";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Landing from "./pages/Landing";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { ROLES } from "./utils/rolePermissions";
 
 function App() {
   return (
     <BrowserRouter>
-      <MainLayout>
-        <Routes>
-          <Route
-            path="/"
-            element={<Dashboard />}
-          />
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
-          <Route
-            path="/assessment/:changeRequestId"
-            element={<Assessment />}
-          />
-          
-          <Route path="/new-request" element={<NewRequest />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
 
-        </Routes>
-      </MainLayout>
+        <Route
+          path="/assessment/:changeRequestId"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Assessment />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/new-request"
+          element={
+            <ProtectedRoute
+              allowedRoles={[ROLES.BUSINESS_OWNER, ROLES.ADMIN]}
+            >
+              <MainLayout>
+                <NewRequest />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }

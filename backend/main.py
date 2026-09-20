@@ -1,6 +1,10 @@
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import (
     FastAPI,
     Depends,
@@ -14,7 +18,30 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from datetime import datetime
-from backend.database import engine, get_db
+from backend.auth import (
+    LoginRequest,
+    RegisterRequest,
+    audit_actor_name,
+    authenticate_user,
+    create_access_token,
+    get_current_user,
+    register_user,
+    user_to_public,
+)
+from backend.database import SessionLocal, engine, get_db
+from backend.permissions import (
+    ROLE_ADMIN,
+    ROLE_AUDITOR,
+    ROLE_BUSINESS_OWNER,
+    ROLE_RISK_ANALYST,
+    ROLE_RISK_COMMITTEE,
+    assert_not_auditor_write,
+    assert_role,
+    assert_workflow_stage,
+    filter_change_requests_for_user,
+    get_change_request_or_404,
+)
+from backend.seed_users import seed_development_users
 from risk_engine.risk_calculator import generate_risk_assessment
 from risk_engine.risk_factor_generator import generate_risk_factors
 from rag.evidence_service import generate_evidence_for_change_request
@@ -39,6 +66,7 @@ from backend.models import (
     CommitteeDecision,
     AuditEvent,
     AIRecommendation,
+    User,
 )
 from backend.assessment_inputs import (
     compute_field_diff,
@@ -77,10 +105,12 @@ def create_audit_event(
     evidence: str = None,
     model_version: str = None,
     policy_version: str = None,
+    user_id: int = None,
 ):
     event = AuditEvent(
         change_request_id=change_request_id,
         actor=actor,
+        user_id=user_id,
         action=action,
         entity_type=entity_type,
         entity_id=entity_id,
@@ -99,7 +129,6 @@ def create_audit_event(
 
 class IntakeChatRequest(BaseModel):
     message: str
-    actor: str = "Product Owner"
 
 
 class ApplyExtractionRequest(BaseModel):
@@ -141,6 +170,79 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 
+def apply_sqlite_schema_patches():
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(engine)
+    if "audit_events" not in inspector.get_table_names():
+        return
+
+    column_names = {
+        column["name"]
+        for column in inspector.get_columns("audit_events")
+    }
+    if "user_id" not in column_names:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE audit_events "
+                    "ADD COLUMN user_id INTEGER"
+                )
+            )
+
+
+def get_change_request_access(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> ChangeRequest:
+    return get_change_request_or_404(
+        db,
+        change_request_id,
+        current_user,
+    )
+
+
+def authorize_intake_write(
+    db: Session,
+    change_request_id: int,
+    current_user: User,
+) -> ChangeRequest:
+    change_request = get_change_request_or_404(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
+    assert_not_auditor_write(current_user)
+    return change_request
+
+
+def authorize_analyst_action(
+    db: Session,
+    change_request_id: int,
+    current_user: User,
+) -> ChangeRequest:
+    change_request = get_change_request_or_404(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_role(current_user, ROLE_RISK_ANALYST, ROLE_ADMIN)
+    assert_not_auditor_write(current_user)
+    return change_request
+
+
+@app.on_event("startup")
+def on_startup():
+    apply_sqlite_schema_patches()
+    db = SessionLocal()
+    try:
+        seed_development_users(db)
+    finally:
+        db.close()
+
+
 @app.get("/")
 def root():
 
@@ -150,42 +252,77 @@ def root():
         "message": "Risk Assessment Workbench API"
     }
 
+
+@app.post("/auth/login")
+def login(
+    body: LoginRequest,
+    db: Session = Depends(get_db),
+):
+    user = authenticate_user(db, body.username, body.password)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials.",
+        )
+
+    return {
+        "access_token": create_access_token(user),
+        "token_type": "bearer",
+    }
+
+
+@app.get("/auth/me")
+def auth_me(current_user: User = Depends(get_current_user)):
+    return user_to_public(current_user)
+
+
+@app.post("/auth/register")
+def register(
+    body: RegisterRequest,
+    db: Session = Depends(get_db),
+):
+    user = register_user(db, body)
+    return {
+        "access_token": create_access_token(user),
+        "token_type": "bearer",
+        "user": user_to_public(user),
+    }
+
+
 @app.get("/request-numbers/next")
-def get_next_request_number(db: Session = Depends(get_db)):
+def get_next_request_number(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     return {
         "request_number": peek_next_request_number(db),
     }
 
 
 @app.get("/change-requests/suggest-request-number")
-def suggest_request_number_legacy(db: Session = Depends(get_db)):
+def suggest_request_number_legacy(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     return {
         "request_number": peek_next_request_number(db),
     }
 
 
 @app.get("/change-requests")
-def get_change_requests(db: Session = Depends(get_db)):
-    return db.query(ChangeRequest).all()
+def get_change_requests(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(ChangeRequest)
+    query = filter_change_requests_for_user(current_user, query)
+    return query.order_by(ChangeRequest.id.desc()).all()
 
 
 @app.get("/change-requests/{change_request_id}")
 def get_change_request(
-    change_request_id: int,
-    db: Session = Depends(get_db)
+    change_request: ChangeRequest = Depends(get_change_request_access),
 ):
-    change_request = (
-        db.query(ChangeRequest)
-        .filter(ChangeRequest.id == change_request_id)
-        .first()
-    )
-
-    if not change_request:
-        raise HTTPException(
-            status_code=404,
-            detail="Change request not found"
-        )
-
     return {
         "id": change_request.id,
         "request_number": change_request.request_number,
@@ -207,8 +344,11 @@ def get_change_request(
 @app.get("/change-requests/{change_request_id}/risk-assessment")
 def get_risk_assessment(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    get_change_request_or_404(db, change_request_id, current_user)
+
     risk_assessment = (
         db.query(RiskAssessment)
         .filter(
@@ -259,14 +399,20 @@ def get_risk_assessment(
 def create_change_request(
     payload: CreateChangeRequestPayload,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
+    assert_not_auditor_write(current_user)
+
     title = payload.title.strip()
     description = payload.description.strip()
     change_type = payload.change_type.strip()
     product_type = payload.product_type.strip()
     business_unit = payload.business_unit.strip()
     customer_segment = payload.customer_segment.strip()
-    requested_by = payload.requested_by.strip()
+    requested_by = audit_actor_name(current_user)
+    if current_user.role == ROLE_ADMIN and payload.requested_by.strip():
+        requested_by = payload.requested_by.strip()
 
     if not all(
         [
@@ -276,7 +422,6 @@ def create_change_request(
             product_type,
             business_unit,
             customer_segment,
-            requested_by,
         ]
     ):
         raise HTTPException(
@@ -305,7 +450,8 @@ def create_change_request(
             create_audit_event(
                 db=db,
                 change_request_id=change_request.id,
-                actor=change_request.requested_by or "Product Owner",
+                actor=audit_actor_name(current_user),
+                user_id=current_user.id,
                 action="CREATED_CHANGE_REQUEST",
                 entity_type="ChangeRequest",
                 entity_id=change_request.id,
@@ -342,8 +488,11 @@ def create_product(
     currency: str,
     countries_supported: str,
     new_product_flag: bool,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_intake_write(db, change_request_id, current_user)
+
     product = Product(
         change_request_id=change_request_id,
         product_name=product_name,
@@ -385,8 +534,11 @@ def create_customer_profile(
     high_risk_customer_exposure: bool,
     expected_customer_count: int,
     customer_geographic_distribution: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_intake_write(db, change_request_id, current_user)
+
     customer_profile = CustomerProfile(
         change_request_id=change_request_id,
         customer_type=customer_type,
@@ -421,8 +573,11 @@ def create_geography(
     beneficiary_country: str,
     high_risk_jurisdiction_flag: bool,
     sanctions_exposure: bool,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_intake_write(db, change_request_id, current_user)
+
     geography = Geography(
         change_request_id=change_request_id,
         country=country,
@@ -456,8 +611,11 @@ def create_transaction_profile(
     transaction_velocity: float,
     round_amount_risk: bool,
     rapid_movement_possible: bool,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_intake_write(db, change_request_id, current_user)
+
     transaction_profile = TransactionProfile(
         change_request_id=change_request_id,
         transaction_type=transaction_type,
@@ -491,8 +649,11 @@ def create_channel(
     api: bool,
     third_party_channel: bool,
     remote_onboarding: bool,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_intake_write(db, change_request_id, current_user)
+
     channel = Channel(
         change_request_id=change_request_id,
         channel_type=channel_type,
@@ -529,8 +690,11 @@ def create_vendor(
     audit_rights: bool,
     business_continuity_plan: bool,
     cross_border_processing: bool,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_intake_write(db, change_request_id, current_user)
+
     vendor = Vendor(
         change_request_id=change_request_id,
         vendor_name=vendor_name,
@@ -569,8 +733,11 @@ def create_control(
     owner: str,
     evidence_document_id: int | None = None,
     effectiveness_score: float | None = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_analyst_action(db, change_request_id, current_user)
+
     control = Control(
         change_request_id=change_request_id,
         control_name=control_name,
@@ -600,8 +767,14 @@ def create_control_effectiveness(
     automation_level: float,
     evidence_quality: float,
     effectiveness_score: float,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    control = db.query(Control).filter(Control.id == control_id).first()
+    if not control:
+        raise HTTPException(status_code=404, detail="Control not found.")
+    authorize_analyst_action(db, control.change_request_id, current_user)
+
     effectiveness = ControlEffectiveness(
         control_id=control_id,
         design_effectiveness=design_effectiveness,
@@ -628,8 +801,11 @@ def create_risk_factor(
     factor_weight: float,
     source_type: str,
     source_reference: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    authorize_analyst_action(db, change_request_id, current_user)
+
     contribution = factor_score * factor_weight
 
     risk_factor_record = RiskFactor(
@@ -653,8 +829,24 @@ def create_risk_factor(
 @app.post("/change-requests/{change_request_id}/calculate-risk")
 def calculate_risk(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    change_request = authorize_analyst_action(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_workflow_stage(
+        change_request,
+        {
+            "REQUEST_CREATED",
+            "RISK_ASSESSMENT",
+            "REGULATORY_EVIDENCE",
+            "AI_ASSESSMENT",
+        },
+        "Risk calculation is not allowed at the current workflow stage.",
+    )
 
     assessment = generate_risk_assessment(
         db,
@@ -676,18 +868,6 @@ def calculate_risk(
         policy_version=assessment.risk_model_version
     )
 
-    change_request = (
-        db.query(ChangeRequest)
-        .filter(ChangeRequest.id == change_request_id)
-        .first()
-    )
-
-    if not change_request:
-        raise HTTPException(
-            status_code=404,
-            detail="Change request not found"
-        )
-
     change_request.current_stage = "RISK_ASSESSMENT"
 
     create_audit_event(
@@ -698,7 +878,7 @@ def calculate_risk(
         entity_type="ChangeRequest",
         entity_id=change_request.id,
         new_value="RISK_ASSESSMENT",
-        reason="Risk assessment calculated successfully."
+        reason="Risk assessment calculated successfully.",
     )
 
     db.commit()
@@ -708,8 +888,24 @@ def calculate_risk(
 @app.post("/change-requests/{change_request_id}/generate-risk-factors")
 def generate_factors(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    change_request = authorize_analyst_action(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_workflow_stage(
+        change_request,
+        {
+            "REQUEST_CREATED",
+            "RISK_ASSESSMENT",
+            "REGULATORY_EVIDENCE",
+            "AI_ASSESSMENT",
+        },
+        "Risk factor generation is not allowed at the current workflow stage.",
+    )
 
     factors = generate_risk_factors(
         db,
@@ -737,8 +933,24 @@ def generate_factors(
 @app.post("/change-requests/{change_request_id}/generate-regulatory-evidence")
 def generate_regulatory_evidence(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    change_request = authorize_analyst_action(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_workflow_stage(
+        change_request,
+        {
+            "REQUEST_CREATED",
+            "RISK_ASSESSMENT",
+            "REGULATORY_EVIDENCE",
+            "AI_ASSESSMENT",
+        },
+        "Regulatory evidence generation is not allowed at the current workflow stage.",
+    )
 
     evidence = generate_evidence_for_change_request(
         db,
@@ -784,8 +996,10 @@ def generate_regulatory_evidence(
 @app.get("/change-requests/{change_request_id}/regulatory-evidence")
 def get_regulatory_evidence(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    get_change_request_or_404(db, change_request_id, current_user)
 
     evidence = (
         db.query(RegulatoryEvidence)
@@ -822,8 +1036,24 @@ def get_regulatory_evidence(
 )
 def generate_ai_assessment_endpoint(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    change_request = authorize_analyst_action(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_workflow_stage(
+        change_request,
+        {
+            "RISK_ASSESSMENT",
+            "REGULATORY_EVIDENCE",
+            "AI_ASSESSMENT",
+            "ANALYST_REVIEW",
+        },
+        "AI assessment generation is not allowed at the current workflow stage.",
+    )
 
     recommendation, assessment = generate_ai_assessment(
         db,
@@ -842,18 +1072,6 @@ def generate_ai_assessment_endpoint(
         model_version=recommendation.model_version
     )
 
-    change_request = (
-        db.query(ChangeRequest)
-        .filter(ChangeRequest.id == change_request_id)
-        .first()
-    )
-
-    if not change_request:
-        raise HTTPException(
-            status_code=404,
-            detail="Change request not found"
-        )
-
     change_request.current_stage = "ANALYST_REVIEW"
 
     create_audit_event(
@@ -864,7 +1082,7 @@ def generate_ai_assessment_endpoint(
         entity_type="ChangeRequest",
         entity_id=change_request.id,
         new_value="ANALYST_REVIEW",
-        reason="AI assessment generated successfully and is ready for analyst review."
+        reason="AI assessment generated successfully and is ready for analyst review.",
     )
 
     db.commit()
@@ -890,8 +1108,19 @@ def submit_analyst_review(
     analyst_rating: str,
     override_reason: str = "",
     consequences: str = "",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    change_request = authorize_analyst_action(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_workflow_stage(
+        change_request,
+        {"ANALYST_REVIEW"},
+        "Analyst review is not allowed at the current workflow stage.",
+    )
     # Find the latest risk assessment
     risk_assessment = (
         db.query(RiskAssessment)
@@ -925,7 +1154,7 @@ def submit_analyst_review(
         analyst_rating=analyst_rating,
         override_reason=override_reason,
         consequences=consequences,
-        reviewed_by="FCRM Analyst",
+        reviewed_by=audit_actor_name(current_user),
         status="SUBMITTED"
     )
 
@@ -941,7 +1170,8 @@ def submit_analyst_review(
     create_audit_event(
         db=db,
         change_request_id=change_request_id,
-        actor="FCRM Analyst",
+        actor=audit_actor_name(current_user),
+        user_id=current_user.id,
         action="ANALYST_REVIEW_SUBMITTED",
         entity_type="AnalystOverride",
         entity_id=analyst_override.id,
@@ -950,19 +1180,6 @@ def submit_analyst_review(
         reason=override_reason,
         evidence=consequences
     )
-
-    # Move workflow to Committee Review
-    change_request = (
-        db.query(ChangeRequest)
-        .filter(ChangeRequest.id == change_request_id)
-        .first()
-    )
-
-    if not change_request:
-        raise HTTPException(
-            status_code=404,
-            detail="Change request not found."
-        )
 
     change_request.current_stage = "COMMITTEE_REVIEW"
 
@@ -999,8 +1216,11 @@ def submit_analyst_review(
 @app.get("/change-requests/{change_request_id}/analyst-review")
 def get_analyst_review(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    get_change_request_or_404(db, change_request_id, current_user)
+
     review = (
         db.query(AnalystOverride)
         .filter(
@@ -1038,8 +1258,22 @@ def submit_committee_decision(
     decision: str,
     rationale: str,
     conditions: str = "",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    change_request = get_change_request_or_404(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_role(current_user, ROLE_RISK_COMMITTEE, ROLE_ADMIN)
+    assert_not_auditor_write(current_user)
+    assert_workflow_stage(
+        change_request,
+        {"COMMITTEE_REVIEW"},
+        "Committee decision is not allowed at the current workflow stage.",
+    )
+
     allowed_decisions = {
         "APPROVE",
         "APPROVE_WITH_CONDITIONS",
@@ -1105,7 +1339,7 @@ def submit_committee_decision(
         decision=decision,
         rationale=rationale,
         conditions=conditions,
-        decided_by="Risk Committee",
+        decided_by=audit_actor_name(current_user),
         status="FINAL"
     )
 
@@ -1120,19 +1354,6 @@ def submit_committee_decision(
 
     risk_assessment.assessment_status = "DECIDED"
     risk_assessment.updated_at = datetime.utcnow()
-
-    # Update change request status
-    change_request = (
-        db.query(ChangeRequest)
-        .filter(ChangeRequest.id == change_request_id)
-        .first()
-    )
-
-    if not change_request:
-        raise HTTPException(
-            status_code=404,
-            detail="Change request not found."
-        )
 
     change_request.status = decision
     change_request.current_stage = "COMPLETED"
@@ -1153,7 +1374,8 @@ def submit_committee_decision(
     create_audit_event(
         db=db,
         change_request_id=change_request_id,
-        actor="Risk Committee",
+        actor=audit_actor_name(current_user),
+        user_id=current_user.id,
         action="COMMITTEE_DECISION",
         entity_type="CommitteeDecision",
         entity_id=committee_decision.id,
@@ -1184,8 +1406,11 @@ def submit_committee_decision(
 @app.get("/change-requests/{change_request_id}/committee-decision")
 def get_committee_decision(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    get_change_request_or_404(db, change_request_id, current_user)
+
     decision = (
         db.query(CommitteeDecision)
         .filter(
@@ -1221,8 +1446,9 @@ def get_committee_decision(
 def get_assessment_inputs(
     change_request_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    get_change_request_or_404(db, change_request_id, current_user)
     inputs = load_assessment_inputs(db, change_request_id)
     missing = compute_missing_fields(inputs)
 
@@ -1238,7 +1464,9 @@ def get_assessment_inputs(
 def get_intake_completeness(
     change_request_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    get_change_request_or_404(db, change_request_id, current_user)
     inputs = load_assessment_inputs(db, change_request_id)
     missing = compute_missing_fields(inputs)
 
@@ -1254,8 +1482,9 @@ def get_intake_completeness(
 def get_brd_status(
     change_request_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    get_change_request_or_404(db, change_request_id, current_user)
     upload = get_latest_brd_upload(change_request_id)
 
     return {
@@ -1270,8 +1499,9 @@ async def upload_brd(
     change_request_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    authorize_intake_write(db, change_request_id, current_user)
 
     file_bytes = await file.read()
     filename = file.filename or "brd-upload.pdf"
@@ -1286,7 +1516,8 @@ async def upload_brd(
     create_audit_event(
         db=db,
         change_request_id=change_request_id,
-        actor="Product Owner",
+        actor=audit_actor_name(current_user),
+        user_id=current_user.id,
         action="BRD_UPLOADED",
         entity_type="IntakeDocument",
         new_value=filename,
@@ -1307,8 +1538,9 @@ async def extract_brd_intake(
     change_request_id: int,
     file: UploadFile | None = File(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    authorize_intake_write(db, change_request_id, current_user)
 
     if file is not None:
         file_bytes = await file.read()
@@ -1403,8 +1635,9 @@ def sync_assessment_inputs(
     change_request_id: int,
     body: SyncInputsRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    authorize_intake_write(db, change_request_id, current_user)
     save_assessment_inputs(db, change_request_id, body.inputs)
 
     refreshed = load_assessment_inputs(db, change_request_id)
@@ -1423,8 +1656,9 @@ def apply_extraction(
     change_request_id: int,
     body: ApplyExtractionRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    authorize_intake_write(db, change_request_id, current_user)
 
     current = load_assessment_inputs(db, change_request_id)
     merged = merge_extraction_with_inputs(
@@ -1449,7 +1683,8 @@ def apply_extraction(
     create_audit_event(
         db=db,
         change_request_id=change_request_id,
-        actor="Product Owner",
+        actor=audit_actor_name(current_user),
+        user_id=current_user.id,
         action="INTAKE_APPLIED",
         entity_type="ChangeRequest",
         entity_id=change_request_id,
@@ -1470,8 +1705,9 @@ def intake_chat(
     change_request_id: int,
     body: IntakeChatRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    authorize_intake_write(db, change_request_id, current_user)
 
     if not body.message.strip():
         raise HTTPException(
@@ -1482,7 +1718,8 @@ def intake_chat(
     create_audit_event(
         db=db,
         change_request_id=change_request_id,
-        actor=body.actor,
+        actor=audit_actor_name(current_user),
+        user_id=current_user.id,
         action="INTAKE_AGENT_USER",
         entity_type="IntakeChat",
         new_value=body.message.strip(),
@@ -1522,8 +1759,9 @@ def intake_chat(
 def get_controls(
     change_request_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    get_change_request_or_404(db, change_request_id, current_user)
 
     controls = (
         db.query(Control)
@@ -1556,8 +1794,9 @@ def get_controls(
 def get_risk_factors(
     change_request_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    get_change_request_or_404(db, change_request_id, current_user)
 
     factors = (
         db.query(RiskFactor)
@@ -1586,7 +1825,10 @@ def get_risk_factors(
 def get_ai_assessment(
     change_request_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    get_change_request_or_404(db, change_request_id, current_user)
+
     recommendation = (
         db.query(AIRecommendation)
         .filter(
@@ -1634,8 +1876,9 @@ def export_assessment(
     change_request_id: int,
     format: str = "json",
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    _ensure_change_request(db, change_request_id)
+    get_change_request_or_404(db, change_request_id, current_user)
 
     try:
         export_data = build_assessment_export(db, change_request_id)
@@ -1672,27 +1915,22 @@ def export_assessment(
     )
 
 
-def _ensure_change_request(db: Session, change_request_id: int):
-    change_request = (
-        db.query(ChangeRequest)
-        .filter(ChangeRequest.id == change_request_id)
-        .first()
-    )
-
-    if not change_request:
-        raise HTTPException(
-            status_code=404,
-            detail="Change request not found",
-        )
-
-    return change_request
-
-
 @app.get("/change-requests/{change_request_id}/audit-events")
 def get_audit_events(
     change_request_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    get_change_request_or_404(db, change_request_id, current_user)
+    assert_role(
+        current_user,
+        ROLE_BUSINESS_OWNER,
+        ROLE_RISK_ANALYST,
+        ROLE_RISK_COMMITTEE,
+        ROLE_AUDITOR,
+        ROLE_ADMIN,
+    )
+
     events = (
         db.query(AuditEvent)
         .filter(
@@ -1726,10 +1964,29 @@ def get_audit_events(
 
 @app.get("/dashboard/risk-summary")
 def get_dashboard_risk_summary(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    accessible_ids = {
+        row.id
+        for row in filter_change_requests_for_user(
+            current_user,
+            db.query(ChangeRequest),
+        ).all()
+    }
+
+    if not accessible_ids:
+        return {
+            "total_assessments": 0,
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        }
+
     assessments = (
         db.query(RiskAssessment)
+        .filter(RiskAssessment.change_request_id.in_(accessible_ids))
         .order_by(RiskAssessment.id.desc())
         .all()
     )

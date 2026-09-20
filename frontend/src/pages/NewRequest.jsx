@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 import PageContainer from "../components/layout/PageContainer";
+import { useAuth } from "../context/AuthContext";
 
 const STEPS = [
   { id: 1, title: "Change details", subtitle: "Describe the proposed change" },
@@ -46,6 +47,7 @@ const CUSTOMER_SEGMENTS = [
 
 function NewRequest() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -60,6 +62,15 @@ function NewRequest() {
     customer_segment: "",
     requested_by: "",
   });
+
+  useEffect(() => {
+    if (user?.full_name || user?.username) {
+      setFormData((previous) => ({
+        ...previous,
+        requested_by: user.full_name || user.username,
+      }));
+    }
+  }, [user]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -96,13 +107,6 @@ function NewRequest() {
         !formData.customer_segment
       ) {
         setError("Complete product type, business unit, and customer segment.");
-        return false;
-      }
-    }
-
-    if (currentStep === 3) {
-      if (!formData.requested_by.trim()) {
-        setError("Requested by is required before submit.");
         return false;
       }
     }
@@ -174,7 +178,7 @@ function NewRequest() {
     <PageContainer className="max-w-6xl">
         <button
           type="button"
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/dashboard")}
           className="mb-6 inline-flex items-center gap-2 text-base font-medium text-slate-600 transition hover:text-slate-900"
         >
           <ArrowLeft size={18} />
@@ -456,10 +460,12 @@ function NewRequest() {
                     id="requested_by"
                     name="requested_by"
                     value={formData.requested_by}
-                    onChange={handleChange}
-                    placeholder="Product owner or business sponsor"
-                    className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3.5 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                    readOnly
+                    className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5 text-base text-slate-700"
                   />
+                  <p className="mt-2 text-xs text-slate-500">
+                    Taken from your signed-in account.
+                  </p>
                 </div>
               </div>
 
@@ -521,7 +527,7 @@ function NewRequest() {
             <button
               type="button"
               onClick={() =>
-                step === 1 ? navigate("/") : goBack()
+                step === 1 ? navigate("/dashboard") : goBack()
               }
               className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >

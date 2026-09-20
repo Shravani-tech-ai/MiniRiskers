@@ -4,6 +4,7 @@ function TransactionProfile({
   transactionSaved,
   savingTransaction,
   saveTransactionProfile,
+  readOnly = false,
 }) {
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -291,7 +292,7 @@ function TransactionProfile({
 
         <button
           onClick={saveTransactionProfile}
-          disabled={savingTransaction}
+          disabled={readOnly || savingTransaction}
           className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {savingTransaction

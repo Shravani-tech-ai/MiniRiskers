@@ -27,6 +27,7 @@ function CommitteeDecision({
   setCommitteeReason,
   committeeSubmitted,
   submitCommitteeDecision,
+  canSubmit = true,
 }) {
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -119,7 +120,7 @@ function CommitteeDecision({
           ) : (
             <p className="text-xs text-slate-400">This decision represents the final governance outcome.</p>
           )}
-          {!committeeSubmitted && (
+          {!committeeSubmitted && canSubmit && (
             <button onClick={submitCommitteeDecision} disabled={!committeeDecision} className="rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50">
               Submit Committee Decision
             </button>

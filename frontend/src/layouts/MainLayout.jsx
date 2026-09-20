@@ -1,10 +1,21 @@
-import { Bell, UserCircle2 } from "lucide-react";
+import { Bell, LogOut, UserCircle2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import AppSidebar from "../components/layout/AppSidebar";
 import AppTopBar from "../components/layout/AppTopBar";
 import MobileNav from "../components/layout/MobileNav";
+import { useAuth } from "../context/AuthContext";
+import { roleLabel } from "../utils/rolePermissions";
 
 function MainLayout({ children }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-[#f4f6f9]">
       <AppTopBar compact />
@@ -29,10 +40,15 @@ function MainLayout({ children }) {
               </button>
               <button
                 type="button"
+                onClick={handleLogout}
                 className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
                 <UserCircle2 size={20} />
-                FCRM Analyst
+                {user?.full_name || user?.username || "User"}
+                <span className="text-xs text-slate-500">
+                  ({roleLabel(user?.role)})
+                </span>
+                <LogOut size={16} className="text-slate-500" />
               </button>
               </div>
             </div>

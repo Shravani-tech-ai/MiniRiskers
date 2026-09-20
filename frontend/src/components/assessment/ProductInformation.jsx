@@ -4,6 +4,7 @@ function ProductInformation({
   productSaved,
   savingProduct,
   saveProduct,
+  readOnly = false,
 }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -330,7 +331,7 @@ function ProductInformation({
 
         <button
           onClick={saveProduct}
-          disabled={savingProduct}
+          disabled={readOnly || savingProduct}
           className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {savingProduct

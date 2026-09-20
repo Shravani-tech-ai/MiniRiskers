@@ -4,6 +4,7 @@ function CustomerProfile({
   customerSaved,
   savingCustomer,
   saveCustomerProfile,
+  readOnly = false,
 }) {
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -310,7 +311,7 @@ function CustomerProfile({
 
         <button
           onClick={saveCustomerProfile}
-          disabled={savingCustomer}
+          disabled={readOnly || savingCustomer}
           className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {savingCustomer
