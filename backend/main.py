@@ -245,6 +245,29 @@ def authorize_analyst_action(
     return change_request
 
 
+def authorize_assessment_inputs_sync(
+    db: Session,
+    change_request_id: int,
+    current_user: User,
+) -> ChangeRequest:
+    # Business Owners sync inputs while completing intake, and
+    # Risk Analysts sync the already-saved inputs as the first step
+    # of running the risk calculation pipeline.
+    change_request = get_change_request_or_404(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_role(
+        current_user,
+        ROLE_BUSINESS_OWNER,
+        ROLE_RISK_ANALYST,
+        ROLE_ADMIN,
+    )
+    assert_not_auditor_write(current_user)
+    return change_request
+
+
 @app.on_event("startup")
 def on_startup():
     apply_sqlite_schema_patches()
@@ -858,9 +881,10 @@ def calculate_risk(
     )
 
     db.commit()
+    db.refresh(assessment)
 
     return assessment
-    
+
 @app.post("/change-requests/{change_request_id}/generate-risk-factors")
 def generate_factors(
     change_request_id: int,
@@ -899,6 +923,9 @@ def generate_factors(
     )
 
     db.commit()
+
+    for factor in factors:
+        db.refresh(factor)
 
     return {
         "change_request_id": change_request_id,
@@ -1613,7 +1640,7 @@ def sync_assessment_inputs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    authorize_intake_write(db, change_request_id, current_user)
+    authorize_assessment_inputs_sync(db, change_request_id, current_user)
     save_assessment_inputs(db, change_request_id, body.inputs)
 
     refreshed = load_assessment_inputs(db, change_request_id)

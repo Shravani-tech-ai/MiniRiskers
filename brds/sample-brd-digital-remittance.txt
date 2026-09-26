@@ -1,0 +1,87 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Launch of Digital International Remittance Service
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Payments
+Summary: The bank proposes to launch a new digital outbound international
+remittance product allowing retail customers to send cross-border payments
+via the mobile banking app and internet banking portal. The service will be
+new product, mobile-first, and will use a third-party payment vendor for
+settlement in supported corridors.
+
+2. Product Description
+Product Name: Digital International Remittance
+Product Category: Cross-Border Payments
+Description: Outbound retail remittance product enabling customers to send
+funds abroad via mobile banking and internet banking, with cash pickup and
+bank account credit options for beneficiaries.
+Transaction Type: Cross-border remittance
+Currency: INR, USD, AED
+Countries Supported: India, United Arab Emirates, United States, Philippines
+Per-Transaction Limit: 500000
+Expected Monthly Volume: 20000
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Retail Customers
+Onboarding Method: Digital / Remote onboarding via mobile app
+KYC Method: Aadhaar e-KYC and video KYC
+Expected Customer Count: 15000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: United Arab Emirates
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Outbound cross-border remittance
+Average Transaction Amount: 45000
+Maximum Transaction Amount: 500000
+Expected Daily Volume: 700
+Expected Monthly Volume (Transaction): 20000
+Expected Frequency: 2
+Number of Countries: 4
+Transaction Velocity: 3
+Round Amount Risk: No
+Rapid Movement Possible: No
+
+6. Channel Information
+Channel Type: Digital
+Delivery Channel: Mobile Banking and Internet Banking
+Mobile Banking: Yes
+Internet Banking: Yes
+Branch: No
+Agent: No
+API: Yes
+Third Party Channel: Yes
+Remote Onboarding: Yes
+
+7. Vendor / Third-Party Information
+Vendor Name: GlobalPay Remit Solutions Pvt Ltd
+Vendor Type: Payment Processor / Settlement Partner
+Vendor Country: Singapore
+India Based: No
+Service Description: Provides cross-border settlement rails, FX conversion,
+and beneficiary payout network for outbound remittance transactions.
+Criticality: High
+Outsourcing Type: Material Outsourcing
+Due Diligence Completed: Yes
+Contract Completed: Yes
+Audit Rights: Yes
+Business Continuity Plan: Yes
+Cross Border Processing: Yes
+
+8. Additional Notes
+This is a new product launch requiring full FCRM assessment across product,
+customer, geography, transaction, channel, and vendor risk dimensions prior
+to go-live approval by the Risk Committee.

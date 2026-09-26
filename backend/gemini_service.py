@@ -12,14 +12,18 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv(
     "GEMINI_MODEL",
-    "gemini-2.0-flash",
+    "gemini-flash-latest",
 )
 
+# gemini-2.0-flash, gemini-2.5-flash, and gemini-1.5-flash have been
+# retired by Google and now return 404s. gemini-flash-latest is a
+# Google-maintained alias that keeps pointing at a current model, so
+# it's kept first among the fallbacks to survive future retirements.
 FALLBACK_MODELS = [
     GEMINI_MODEL,
-    "gemini-2.0-flash",
-    "gemini-2.5-flash",
-    "gemini-1.5-flash",
+    "gemini-flash-latest",
+    "gemini-3.6-flash",
+    "gemini-3.8-flash",
 ]
 
 client = None

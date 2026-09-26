@@ -1127,7 +1127,11 @@ function Assessment() {
         </div>
 
         <AssessmentStageFooter
-          hint="Syncs intake, generates risk factors, calculates scores, and retrieves regulatory evidence."
+          hint={
+            permissions.canRunRiskPipeline
+              ? "Syncs intake, generates risk factors, calculates scores, and retrieves regulatory evidence."
+              : "Intake is complete. Risk calculation is performed by a Risk Analyst — this request is now visible in the Risk Analyst queue and will move forward once they run it."
+          }
         >
           <button
             type="button"
@@ -1142,20 +1146,22 @@ function Assessment() {
           >
             View risk step
           </button>
-          <button
-            type="button"
-            onClick={completeRequestStage}
-            disabled={
-              !permissions.canRunRiskPipeline ||
-              advancingStage ||
-              runningRiskAssessment
-            }
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
-          >
-            {advancingStage || runningRiskAssessment
-              ? "Calculating risk..."
-              : "Complete inputs & calculate risk →"}
-          </button>
+          {permissions.canRunRiskPipeline ? (
+            <button
+              type="button"
+              onClick={completeRequestStage}
+              disabled={advancingStage || runningRiskAssessment}
+              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            >
+              {advancingStage || runningRiskAssessment
+                ? "Calculating risk..."
+                : "Complete inputs & calculate risk →"}
+            </button>
+          ) : (
+            <span className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-800">
+              Awaiting Risk Analyst
+            </span>
+          )}
         </AssessmentStageFooter>
           </>
         )}
