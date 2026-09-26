@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -7,54 +8,51 @@ import {
   Lock,
   Network,
   Shield,
+  ShieldCheck,
   Sparkles,
   TrendingDown,
   TrendingUp,
   Users,
 } from "lucide-react";
 
+import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 
-const METRICS = [
+const METRIC_DEFS = [
   {
+    key: "change_requests",
     label: "Change Requests",
-    value: "247",
-    change: "+12%",
-    up: true,
     icon: Layers,
     border: "border-blue-200",
+    format: (value) => value.toLocaleString(),
   },
   {
-    label: "Assessment Accuracy",
-    value: "98.5%",
-    change: "+2.3%",
-    up: true,
-    icon: Shield,
+    key: "approval_rate",
+    label: "Committee Approval Rate",
+    icon: ShieldCheck,
     border: "border-emerald-200",
+    format: (value) => `${value}%`,
   },
   {
+    key: "evidence_items",
     label: "Evidence Items",
-    value: "1,243",
-    change: "+18%",
-    up: true,
     icon: Globe2,
     border: "border-violet-200",
+    format: (value) => value.toLocaleString(),
   },
   {
+    key: "ai_assessments",
     label: "AI Assessments",
-    value: "892",
-    change: "+15%",
-    up: true,
     icon: Sparkles,
     border: "border-indigo-200",
+    format: (value) => value.toLocaleString(),
   },
   {
+    key: "high_risk_alerts",
     label: "High-Risk Alerts",
-    value: "24",
-    change: "-33%",
-    up: false,
     icon: TrendingDown,
     border: "border-amber-200",
+    format: (value) => value.toLocaleString(),
   },
 ];
 
@@ -92,28 +90,52 @@ const INPUTS = [
 
 function Landing() {
   const { isAuthenticated } = useAuth();
+  const [metrics, setMetrics] = useState(null);
+  const [metricsError, setMetricsError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    api
+      .get("/dashboard/landing-metrics")
+      .then((response) => {
+        if (!cancelled) {
+          setMetrics(response.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to load landing metrics:", error);
+        if (!cancelled) {
+          setMetricsError(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#f4f7fb] text-slate-900">
+    <div className="flex min-h-screen flex-col bg-[#f4f7fb] text-slate-900">
       <header className="shrink-0 border-b border-slate-200/80 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
               <Shield size={20} />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-lg font-bold leading-tight">MiniRiskers</p>
-              <p className="text-[11px] text-slate-500">
+              <p className="truncate text-[11px] text-slate-500">
                 Financial Crime Risk Management Workbench
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {isAuthenticated ? (
               <Link
                 to="/dashboard"
-                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:px-4"
               >
                 Open workbench
                 <ArrowRight size={16} />
@@ -122,13 +144,13 @@ function Landing() {
               <>
                 <Link
                   to="/login"
-                  className="rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  className="rounded-xl px-2.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 sm:px-3"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/signup"
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700 sm:px-4"
                 >
                   Create account
                   <ArrowRight size={16} />
@@ -139,8 +161,8 @@ function Landing() {
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col px-4 py-5 sm:px-6 lg:px-8 lg:py-6">
-        <section className="grid min-h-0 flex-1 gap-6 lg:grid-cols-2 lg:items-center lg:gap-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <section className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-10">
           <div className="flex flex-col justify-center">
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-blue-700">
@@ -178,14 +200,15 @@ function Landing() {
           </div>
 
           <div className="flex items-center justify-center lg:justify-end">
-            <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-blue-50 p-5 shadow-lg lg:max-w-lg">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-                <Lock size={34} />
+            <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-gradient-to-br from-white to-blue-50 p-5 shadow-lg sm:p-6 lg:max-w-lg">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md sm:h-20 sm:w-20">
+                <Lock size={30} className="sm:hidden" />
+                <Lock size={34} className="hidden sm:block" />
               </div>
               <p className="mt-4 text-center text-xs font-medium text-slate-600">
                 Connected risk inputs across the change lifecycle
               </p>
-              <div className="mt-4 grid grid-cols-3 gap-2">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {INPUTS.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -205,39 +228,61 @@ function Landing() {
           </div>
         </section>
 
-        <section className="shrink-0 pt-2">
+        <section className="mt-10 shrink-0">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
                 Key Impact Metrics
               </h2>
               <p className="text-xs text-slate-500 sm:text-sm">
-                Illustrative operational indicators for assessment workflows
+                {metricsError
+                  ? "Live operational indicators are temporarily unavailable."
+                  : "Live operational indicators for assessment workflows"}
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 lg:gap-3">
-            {METRICS.map((metric) => {
-              const Icon = metric.icon;
-              const TrendIcon = metric.up ? TrendingUp : TrendingDown;
+            {METRIC_DEFS.map((metricDef) => {
+              const Icon = metricDef.icon;
+              const metric = metrics?.[metricDef.key];
+              const hasValue = metric && metric.value !== null && metric.value !== undefined;
+              const changePct = metric?.change_pct ?? 0;
+              const isUp = changePct >= 0;
+              const TrendIcon = isUp ? TrendingUp : TrendingDown;
+
               return (
                 <div
-                  key={metric.label}
-                  className={`rounded-xl border bg-white p-3 shadow-sm sm:p-4 ${metric.border}`}
+                  key={metricDef.key}
+                  className={`rounded-xl border bg-white p-3 shadow-sm sm:p-4 ${metricDef.border}`}
                 >
                   <div className="flex items-center justify-between">
                     <Icon size={16} className="text-slate-500" />
-                    <TrendIcon size={14} className="text-emerald-600" />
+                    {hasValue && (
+                      <TrendIcon
+                        size={14}
+                        className={isUp ? "text-emerald-600" : "text-red-500"}
+                      />
+                    )}
                   </div>
                   <p className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">
-                    {metric.value}
+                    {hasValue ? metricDef.format(metric.value) : "—"}
                   </p>
                   <p className="mt-0.5 text-[11px] font-medium leading-snug text-slate-700 sm:text-xs">
-                    {metric.label}
+                    {metricDef.label}
                   </p>
-                  <p className="mt-1 text-[10px] text-emerald-700 sm:text-xs">
-                    {metric.change} vs last 30 days
+                  <p
+                    className={`mt-1 text-[10px] sm:text-xs ${
+                      hasValue
+                        ? isUp
+                          ? "text-emerald-700"
+                          : "text-red-600"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    {hasValue
+                      ? `${changePct > 0 ? "+" : ""}${changePct}% vs last 30 days`
+                      : "No data yet"}
                   </p>
                 </div>
               );
@@ -245,7 +290,7 @@ function Landing() {
           </div>
         </section>
 
-        <section className="mt-4 hidden shrink-0 grid-cols-2 gap-2 lg:grid lg:grid-cols-4">
+        <section className="mt-6 grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {PILLARS.map((item) => {
             const Icon = item.icon;
             return (

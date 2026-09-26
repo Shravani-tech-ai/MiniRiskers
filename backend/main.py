@@ -17,7 +17,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 from backend.auth import (
     audit_actor_name,
     get_current_user,
@@ -171,21 +171,36 @@ def apply_sqlite_schema_patches():
     from sqlalchemy import inspect, text
 
     inspector = inspect(engine)
-    if "audit_events" not in inspector.get_table_names():
-        return
+    table_names = inspector.get_table_names()
 
-    column_names = {
-        column["name"]
-        for column in inspector.get_columns("audit_events")
-    }
-    if "user_id" not in column_names:
-        with engine.begin() as connection:
-            connection.execute(
-                text(
-                    "ALTER TABLE audit_events "
-                    "ADD COLUMN user_id INTEGER"
+    if "audit_events" in table_names:
+        column_names = {
+            column["name"]
+            for column in inspector.get_columns("audit_events")
+        }
+        if "user_id" not in column_names:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "ALTER TABLE audit_events "
+                        "ADD COLUMN user_id INTEGER"
+                    )
                 )
-            )
+
+    if "change_requests" in table_names:
+        column_names = {
+            column["name"]
+            for column in inspector.get_columns("change_requests")
+        }
+        if "current_stage" not in column_names:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "ALTER TABLE change_requests "
+                        "ADD COLUMN current_stage VARCHAR "
+                        "NOT NULL DEFAULT 'REQUEST_CREATED'"
+                    )
+                )
 
 
 def get_change_request_access(
@@ -1922,6 +1937,157 @@ def get_audit_events(
             for event in events
         ]
     }
+
+def _period_growth_pct(current_count: int, previous_count: int) -> float:
+    if previous_count == 0:
+        return 100.0 if current_count > 0 else 0.0
+    return round(
+        ((current_count - previous_count) / previous_count) * 100,
+        1,
+    )
+
+
+@app.get("/dashboard/landing-metrics")
+def get_landing_metrics(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+
+    now = datetime.utcnow()
+    last_30_start = now - timedelta(days=30)
+    prior_30_start = now - timedelta(days=60)
+
+    def counts_in_windows(model, timestamp_column):
+        total = db.query(func.count(model.id)).scalar() or 0
+        last_30 = (
+            db.query(func.count(model.id))
+            .filter(timestamp_column >= last_30_start)
+            .scalar()
+            or 0
+        )
+        prior_30 = (
+            db.query(func.count(model.id))
+            .filter(
+                timestamp_column >= prior_30_start,
+                timestamp_column < last_30_start,
+            )
+            .scalar()
+            or 0
+        )
+        return total, _period_growth_pct(last_30, prior_30)
+
+    change_request_total, change_request_growth = counts_in_windows(
+        ChangeRequest, ChangeRequest.created_at
+    )
+    evidence_total, evidence_growth = counts_in_windows(
+        RegulatoryEvidence, RegulatoryEvidence.created_at
+    )
+    ai_assessment_total, ai_assessment_growth = counts_in_windows(
+        AIRecommendation, AIRecommendation.generated_at
+    )
+
+    high_risk_ratings = ("CRITICAL", "HIGH")
+    latest_assessment_ids = (
+        db.query(func.max(RiskAssessment.id))
+        .group_by(RiskAssessment.change_request_id)
+        .all()
+    )
+    latest_ids = [row[0] for row in latest_assessment_ids]
+    high_risk_total = 0
+    if latest_ids:
+        high_risk_total = (
+            db.query(func.count(RiskAssessment.id))
+            .filter(
+                RiskAssessment.id.in_(latest_ids),
+                func.coalesce(
+                    RiskAssessment.final_rating,
+                    RiskAssessment.residual_rating,
+                ).in_(high_risk_ratings),
+            )
+            .scalar()
+            or 0
+        )
+
+    high_risk_last_30 = (
+        db.query(func.count(RiskAssessment.id))
+        .filter(
+            RiskAssessment.created_at >= last_30_start,
+            func.coalesce(
+                RiskAssessment.final_rating,
+                RiskAssessment.residual_rating,
+            ).in_(high_risk_ratings),
+        )
+        .scalar()
+        or 0
+    )
+    high_risk_prior_30 = (
+        db.query(func.count(RiskAssessment.id))
+        .filter(
+            RiskAssessment.created_at >= prior_30_start,
+            RiskAssessment.created_at < last_30_start,
+            func.coalesce(
+                RiskAssessment.final_rating,
+                RiskAssessment.residual_rating,
+            ).in_(high_risk_ratings),
+        )
+        .scalar()
+        or 0
+    )
+    high_risk_growth = _period_growth_pct(high_risk_last_30, high_risk_prior_30)
+
+    def approval_rate(query):
+        decisions = query.all()
+        total = len(decisions)
+        if total == 0:
+            return None
+        approved = sum(
+            1
+            for decision in decisions
+            if decision.decision
+            in ("APPROVE", "APPROVE_WITH_CONDITIONS")
+        )
+        return round((approved / total) * 100, 1)
+
+    overall_approval_rate = approval_rate(db.query(CommitteeDecision))
+    last_30_approval_rate = approval_rate(
+        db.query(CommitteeDecision).filter(
+            CommitteeDecision.created_at >= last_30_start
+        )
+    )
+    prior_30_approval_rate = approval_rate(
+        db.query(CommitteeDecision).filter(
+            CommitteeDecision.created_at >= prior_30_start,
+            CommitteeDecision.created_at < last_30_start,
+        )
+    )
+    if last_30_approval_rate is None or prior_30_approval_rate is None:
+        approval_rate_growth = 0.0
+    else:
+        approval_rate_growth = round(
+            last_30_approval_rate - prior_30_approval_rate, 1
+        )
+
+    return {
+        "change_requests": {
+            "value": change_request_total,
+            "change_pct": change_request_growth,
+        },
+        "approval_rate": {
+            "value": overall_approval_rate,
+            "change_pct": approval_rate_growth,
+        },
+        "evidence_items": {
+            "value": evidence_total,
+            "change_pct": evidence_growth,
+        },
+        "ai_assessments": {
+            "value": ai_assessment_total,
+            "change_pct": ai_assessment_growth,
+        },
+        "high_risk_alerts": {
+            "value": high_risk_total,
+            "change_pct": high_risk_growth,
+        },
+    }
+
 
 @app.get("/dashboard/risk-summary")
 def get_dashboard_risk_summary(
