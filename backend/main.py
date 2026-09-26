@@ -81,6 +81,7 @@ from backend.intake_service import (
     completeness_percent,
     extract_intake_from_brd,
     extract_text_from_bytes,
+    delete_brd_uploads,
     get_latest_brd_upload,
     run_intake_agent_turn,
     save_assessment_inputs,
@@ -1534,6 +1535,32 @@ async def upload_brd(
         "character_count": len(text),
         "preview": text[:1500],
     }
+
+
+@app.delete("/change-requests/{change_request_id}/intake/brd")
+def delete_brd(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    authorize_intake_write(db, change_request_id, current_user)
+
+    removed = delete_brd_uploads(change_request_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="No BRD upload found.")
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor=audit_actor_name(current_user),
+        user_id=current_user.id,
+        action="BRD_REMOVED",
+        entity_type="IntakeDocument",
+        reason="BRD upload removed by user.",
+    )
+    db.commit()
+
+    return {"change_request_id": change_request_id, "removed": True}
 
 
 @app.post("/change-requests/{change_request_id}/intake/extract-brd")
