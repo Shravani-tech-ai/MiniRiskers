@@ -3,6 +3,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
+  Eye,
   FileText,
   Plus,
   Search,
@@ -13,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 import api from "../services/api";
 import PageContainer from "../components/layout/PageContainer";
+import RequestPreviewModal from "../components/assessment/RequestPreviewModal";
 import { useAuth } from "../context/AuthContext";
 import {
   getAssessmentPermissions,
@@ -118,6 +120,7 @@ function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
   const [selectedId, setSelectedId] = useState(null);
+  const [previewId, setPreviewId] = useState(null);
 
   const totalRequests = changeRequests.length;
 
@@ -522,14 +525,24 @@ function Dashboard() {
                     </div>
                   </dl>
 
-                  <button
-                    type="button"
-                    onClick={() => openAssessment(request.id)}
-                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                  >
-                    Open assessment
-                    <ArrowRight size={16} />
-                  </button>
+                  <div className="mt-4 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewId(request.id)}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                    >
+                      <Eye size={16} />
+                      Preview
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => openAssessment(request.id)}
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                    >
+                      Open assessment
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -592,17 +605,30 @@ function Dashboard() {
                               {request.priority || "MEDIUM"}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  openAssessment(request.id);
-                                }}
-                                className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
-                              >
-                                Open
-                                <ArrowRight size={14} />
-                              </button>
+                              <div className="inline-flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setPreviewId(request.id);
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
+                                >
+                                  <Eye size={14} />
+                                  Preview
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    openAssessment(request.id);
+                                  }}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
+                                >
+                                  Open
+                                  <ArrowRight size={14} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -691,14 +717,24 @@ function Dashboard() {
                         </div>
                       </dl>
 
-                      <button
-                        type="button"
-                        onClick={() => openAssessment(selectedRequest.id)}
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
-                      >
-                        Open assessment
-                        <ArrowRight size={16} />
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewId(selectedRequest.id)}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                        >
+                          <Eye size={16} />
+                          Preview
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openAssessment(selectedRequest.id)}
+                          className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+                        >
+                          Open assessment
+                          <ArrowRight size={16} />
+                        </button>
+                      </div>
                     </div>
                   </>
                 ) : (
@@ -709,6 +745,13 @@ function Dashboard() {
               </aside>
             </div>
           </>
+        )}
+
+        {previewId && (
+          <RequestPreviewModal
+            requestId={previewId}
+            onClose={() => setPreviewId(null)}
+          />
         )}
     </PageContainer>
   );

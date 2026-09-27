@@ -153,27 +153,14 @@ function IntakePanel({
     }
   };
 
-  const handleApplyExtraction = async () => {
+  const handleApplyExtraction = () => {
     if (!extractionResult?.merged_preview) {
       return;
     }
 
-    try {
-      setError("");
-
-      await api.post(
-        `/change-requests/${changeRequestId}/intake/apply-extraction`,
-        { extracted: extractionResult.merged_preview }
-      );
-
-      await onExtractionApplied(extractionResult.merged_preview);
-      setExtractionResult(null);
-    } catch (err) {
-      setError(
-        err?.response?.data?.detail ||
-          "Failed to apply extracted values."
-      );
-    }
+    setError("");
+    onExtractionApplied(extractionResult.merged_preview);
+    setExtractionResult(null);
   };
 
   const handleChat = async (event) => {

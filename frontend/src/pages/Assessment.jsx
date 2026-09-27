@@ -16,6 +16,9 @@ import IntakePanel from "../components/assessment/IntakePanel";
 import WorkflowStepper from "../components/assessment/WorkflowStepper";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
 import RequestInputTabs from "../components/assessment/RequestInputTabs";
+import AssessmentPreview from "../components/assessment/AssessmentPreview";
+import ConfirmDialog from "../components/assessment/ConfirmDialog";
+import ResultDialog from "../components/assessment/ResultDialog";
 import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
 import CompletedStageSummary from "../components/assessment/CompletedStageSummary";
 import {
@@ -109,7 +112,11 @@ function Assessment() {
   const [inputTab, setInputTab] = useState("product");
   const [advancingStage, setAdvancingStage] = useState(false);
 
-  const applyMappedForms = (mapped, inputs) => {
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [submittingForAnalyst, setSubmittingForAnalyst] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null);
+
+  const applyFormValues = (mapped) => {
     if (!mapped) {
       return;
     }
@@ -120,6 +127,14 @@ function Assessment() {
     setTransactionForm(mapped.transactionForm);
     setChannelForm(mapped.channelForm);
     setVendorForm(mapped.vendorForm);
+  };
+
+  const applyMappedForms = (mapped, inputs) => {
+    if (!mapped) {
+      return;
+    }
+
+    applyFormValues(mapped);
 
     const persisted = getPersistedSectionFlags(inputs);
     setProductSaved(persisted.productSaved);
@@ -160,10 +175,9 @@ function Assessment() {
     }
   };
 
-  const handleExtractionApplied = async (mergedPreview) => {
+  const handleExtractionApplied = (mergedPreview) => {
     const mapped = mapInputsToFormState(mergedPreview);
-    applyMappedForms(mapped, mergedPreview);
-    await hydrateAssessmentInputs();
+    applyFormValues(mapped);
   };
 
   const handleIntakeAgentUpdate = async (agentResponse) => {
@@ -918,6 +932,34 @@ function Assessment() {
     }
   };
 
+  const submitForAnalystReview = async () => {
+    try {
+      setSubmittingForAnalyst(true);
+      setShowSubmitConfirm(false);
+
+      const response = await api.post(
+        `/change-requests/${changeRequestId}/submit-for-analyst`
+      );
+
+      setSubmitResult({
+        success: true,
+        message:
+          response.data?.message ||
+          "Change request submitted for Risk Analyst review.",
+      });
+      await loadAssessment();
+    } catch (error) {
+      setSubmitResult({
+        success: false,
+        message:
+          error.response?.data?.detail ||
+          "Unable to submit the change request.",
+      });
+    } finally {
+      setSubmittingForAnalyst(false);
+    }
+  };
+
   const handleStageSelect = (stage) => {
     if (
       canNavigateToWorkflowStage(
@@ -1120,6 +1162,20 @@ function Assessment() {
               savingVendor={savingVendor}
               saveVendor={saveVendor}
               readOnly={!permissions.canEditIntake}
+            />
+          )}
+          {inputTab === "preview" && (
+            <AssessmentPreview
+              productForm={productForm}
+              customerForm={customerForm}
+              geographyForm={geographyForm}
+              transactionForm={transactionForm}
+              channelForm={channelForm}
+              vendorForm={vendorForm}
+              onSubmit={() => setShowSubmitConfirm(true)}
+              submitting={submittingForAnalyst}
+              canSubmit={permissions.canEditIntake}
+              alreadySubmitted={changeRequest?.status === "SUBMITTED"}
             />
           )}
         </RequestInputTabs>
@@ -1389,6 +1445,26 @@ function Assessment() {
         )}
 
       </PageContainer>
+
+      {showSubmitConfirm && (
+        <ConfirmDialog
+          title="Submit this change request?"
+          message="Once submitted, it will move into the Risk Analyst queue for review. Do you really want to submit?"
+          confirmLabel="Yes, submit"
+          onConfirm={submitForAnalystReview}
+          onCancel={() => setShowSubmitConfirm(false)}
+          confirmDisabled={submittingForAnalyst}
+        />
+      )}
+
+      {submitResult && (
+        <ResultDialog
+          success={submitResult.success}
+          title={submitResult.success ? "Submitted successfully" : "Submission failed"}
+          message={submitResult.message}
+          onClose={() => setSubmitResult(null)}
+        />
+      )}
     </div>
   );
 }

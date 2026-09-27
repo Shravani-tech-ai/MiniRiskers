@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 
@@ -474,20 +475,20 @@ def create_change_request(
 def create_product(
     change_request_id: int,
     product_name: str,
-    product_category: str,
-    product_description: str,
-    digital_channel: bool,
-    branch_channel: bool,
-    agent_channel: bool,
-    cross_border: bool,
-    cash_involved: bool,
     transaction_type: str,
-    transaction_limit: float,
-    expected_transaction_volume: float,
-    expected_transaction_frequency: str,
-    currency: str,
-    countries_supported: str,
-    new_product_flag: bool,
+    product_category: str = "",
+    product_description: str = "",
+    digital_channel: bool = False,
+    branch_channel: bool = False,
+    agent_channel: bool = False,
+    cross_border: bool = False,
+    cash_involved: bool = False,
+    transaction_limit: Optional[float] = None,
+    expected_transaction_volume: Optional[float] = None,
+    expected_transaction_frequency: str = "",
+    currency: str = "",
+    countries_supported: str = "",
+    new_product_flag: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -522,18 +523,18 @@ def create_product(
 def create_customer_profile(
     change_request_id: int,
     customer_type: str,
-    customer_segment: str,
-    individual_customer: bool,
-    business_customer: bool,
-    foreign_customer: bool,
     onboarding_method: str,
-    kyc_required: bool,
-    kyc_method: str,
-    beneficial_owner_required: bool,
-    pep_exposure: bool,
-    high_risk_customer_exposure: bool,
-    expected_customer_count: int,
-    customer_geographic_distribution: str,
+    customer_segment: str = "",
+    individual_customer: bool = False,
+    business_customer: bool = False,
+    foreign_customer: bool = False,
+    kyc_required: bool = False,
+    kyc_method: str = "",
+    beneficial_owner_required: bool = False,
+    pep_exposure: bool = False,
+    high_risk_customer_exposure: bool = False,
+    expected_customer_count: Optional[int] = None,
+    customer_geographic_distribution: str = "",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -566,13 +567,13 @@ def create_customer_profile(
 def create_geography(
     change_request_id: int,
     country: str,
-    country_code: str,
-    domestic_or_cross_border: str,
-    customer_country: str,
     transaction_country: str,
     beneficiary_country: str,
-    high_risk_jurisdiction_flag: bool,
-    sanctions_exposure: bool,
+    country_code: str = "",
+    domestic_or_cross_border: str = "",
+    customer_country: str = "",
+    high_risk_jurisdiction_flag: bool = False,
+    sanctions_exposure: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -600,17 +601,17 @@ def create_geography(
 def create_transaction_profile(
     change_request_id: int,
     transaction_type: str,
-    average_transaction_amount: float,
-    maximum_transaction_amount: float,
-    expected_daily_volume: float,
-    expected_monthly_volume: float,
-    expected_frequency: str,
-    cash_involved: bool,
-    cross_border: bool,
-    number_of_countries: int,
-    transaction_velocity: float,
-    round_amount_risk: bool,
-    rapid_movement_possible: bool,
+    average_transaction_amount: Optional[float] = None,
+    maximum_transaction_amount: Optional[float] = None,
+    expected_daily_volume: Optional[float] = None,
+    expected_monthly_volume: Optional[float] = None,
+    expected_frequency: str = "",
+    cash_involved: bool = False,
+    cross_border: bool = False,
+    number_of_countries: Optional[int] = None,
+    transaction_velocity: Optional[float] = None,
+    round_amount_risk: bool = False,
+    rapid_movement_possible: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -642,13 +643,13 @@ def create_transaction_profile(
 def create_channel(
     change_request_id: int,
     channel_type: str,
-    mobile_banking: bool,
-    internet_banking: bool,
-    branch: bool,
-    agent: bool,
-    api: bool,
-    third_party_channel: bool,
-    remote_onboarding: bool,
+    mobile_banking: bool = False,
+    internet_banking: bool = False,
+    branch: bool = False,
+    agent: bool = False,
+    api: bool = False,
+    third_party_channel: bool = False,
+    remote_onboarding: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -677,19 +678,19 @@ def create_vendor(
     change_request_id: int,
     vendor_name: str,
     vendor_type: str,
-    country: str,
-    india_based: bool,
-    service_description: str,
-    handles_customer_data: bool,
-    handles_transactions: bool,
-    handles_payment_data: bool,
-    criticality: str,
-    outsourcing_type: str,
-    due_diligence_completed: bool,
-    contract_completed: bool,
-    audit_rights: bool,
-    business_continuity_plan: bool,
-    cross_border_processing: bool,
+    country: str = "",
+    india_based: bool = False,
+    service_description: str = "",
+    handles_customer_data: bool = False,
+    handles_transactions: bool = False,
+    handles_payment_data: bool = False,
+    criticality: str = "",
+    outsourcing_type: str = "",
+    due_diligence_completed: bool = False,
+    contract_completed: bool = False,
+    audit_rights: bool = False,
+    business_continuity_plan: bool = False,
+    cross_border_processing: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -1479,6 +1480,55 @@ def get_intake_completeness(
         "missing_fields": missing,
         "completeness_percent": completeness_percent(missing),
         "ready_for_risk_calculation": len(missing) == 0,
+    }
+
+
+@app.post("/change-requests/{change_request_id}/submit-for-analyst")
+def submit_for_analyst(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    change_request = authorize_intake_write(db, change_request_id, current_user)
+
+    if change_request.status == "SUBMITTED":
+        raise HTTPException(
+            status_code=400,
+            detail="This change request has already been submitted.",
+        )
+
+    inputs = load_assessment_inputs(db, change_request_id)
+    missing = compute_missing_fields(inputs)
+
+    if missing:
+        labels = ", ".join(item["label"] for item in missing)
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Please save all required fields before submitting. "
+                f"Missing: {labels}."
+            ),
+        )
+
+    change_request.status = "SUBMITTED"
+
+    create_audit_event(
+        db=db,
+        change_request_id=change_request_id,
+        actor=audit_actor_name(current_user),
+        user_id=current_user.id,
+        action="CHANGE_REQUEST_SUBMITTED",
+        entity_type="ChangeRequest",
+        entity_id=change_request_id,
+        new_value="SUBMITTED",
+        reason="Business owner submitted the request for Risk Analyst review.",
+    )
+    db.commit()
+
+    return {
+        "change_request_id": change_request_id,
+        "status": "SUBMITTED",
+        "message": "Change request submitted. It is now visible in the Risk Analyst queue.",
     }
 
 
