@@ -52,6 +52,7 @@ function NewRequest() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [navLocked, setNavLocked] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -116,19 +117,31 @@ function NewRequest() {
   };
 
   const goNext = () => {
+    if (navLocked) {
+      return;
+    }
     if (!validateStep(step)) {
       return;
     }
+    setNavLocked(true);
     setStep((previous) => Math.min(previous + 1, STEPS.length));
+    setTimeout(() => setNavLocked(false), 400);
   };
 
   const goBack = () => {
+    if (navLocked) {
+      return;
+    }
     setError("");
+    setNavLocked(true);
     setStep((previous) => Math.max(previous - 1, 1));
+    setTimeout(() => setNavLocked(false), 400);
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
+    if (step !== STEPS.length) {
+      return;
+    }
 
     if (!validateStep(3)) {
       return;
@@ -251,10 +264,7 @@ function NewRequest() {
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-6"
-        >
+        <div className="space-y-6">
           {step === 1 && (
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
               <div className="border-b border-slate-200 p-5">
@@ -529,7 +539,8 @@ function NewRequest() {
               onClick={() =>
                 step === 1 ? navigate("/dashboard") : goBack()
               }
-              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              disabled={navLocked}
+              className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {step === 1 ? "Cancel" : "Back"}
             </button>
@@ -538,15 +549,17 @@ function NewRequest() {
               <button
                 type="button"
                 onClick={goNext}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+                disabled={navLocked}
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Continue
                 <ArrowRight size={16} />
               </button>
             ) : (
               <button
-                type="submit"
-                disabled={loading}
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading || navLocked}
                 className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? (
@@ -563,7 +576,7 @@ function NewRequest() {
               </button>
             )}
           </div>
-        </form>
+        </div>
         </div>
         </div>
     </PageContainer>

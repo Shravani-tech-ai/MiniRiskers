@@ -6,6 +6,7 @@ import {
   Loader2,
   MessageSquare,
   Sparkles,
+  Trash2,
 } from "lucide-react";
 
 import api from "../../services/api";
@@ -30,6 +31,7 @@ function IntakePanel({
   const [chatHistory, setChatHistory] = useState([]);
   const [brdUpload, setBrdUpload] = useState(null);
   const [loadingBrdStatus, setLoadingBrdStatus] = useState(false);
+  const [removingBrd, setRemovingBrd] = useState(false);
 
   const canExtract =
     Boolean(brdUpload?.uploaded) &&
@@ -102,6 +104,24 @@ function IntakePanel({
     }
   };
 
+  const handleRemoveBrd = async () => {
+    try {
+      setRemovingBrd(true);
+      setError("");
+
+      await api.delete(`/change-requests/${changeRequestId}/intake/brd`);
+
+      setBrdUpload({ uploaded: false, upload: null });
+      setExtractionResult(null);
+    } catch (err) {
+      setError(
+        err?.response?.data?.detail || "Failed to remove BRD."
+      );
+    } finally {
+      setRemovingBrd(false);
+    }
+  };
+
   const handleExtract = async () => {
     if (!canExtract) {
       setError(
@@ -133,27 +153,14 @@ function IntakePanel({
     }
   };
 
-  const handleApplyExtraction = async () => {
+  const handleApplyExtraction = () => {
     if (!extractionResult?.merged_preview) {
       return;
     }
 
-    try {
-      setError("");
-
-      await api.post(
-        `/change-requests/${changeRequestId}/intake/apply-extraction`,
-        { extracted: extractionResult.merged_preview }
-      );
-
-      await onExtractionApplied(extractionResult.merged_preview);
-      setExtractionResult(null);
-    } catch (err) {
-      setError(
-        err?.response?.data?.detail ||
-          "Failed to apply extracted values."
-      );
-    }
+    setError("");
+    onExtractionApplied(extractionResult.merged_preview);
+    setExtractionResult(null);
   };
 
   const handleChat = async (event) => {
@@ -358,6 +365,21 @@ function IntakePanel({
                     </p>
                   )}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={handleRemoveBrd}
+                  disabled={readOnly || removingBrd}
+                  title="Remove uploaded BRD"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                >
+                  {removingBrd ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={14} />
+                  )}
+                  Remove
+                </button>
               </div>
             </div>
           )}

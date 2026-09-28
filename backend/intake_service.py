@@ -40,6 +40,21 @@ def save_brd_file(
     return destination
 
 
+def delete_brd_uploads(change_request_id: int) -> bool:
+    folder = UPLOAD_ROOT / str(change_request_id)
+
+    if not folder.exists():
+        return False
+
+    removed = False
+    for path in folder.iterdir():
+        if path.is_file():
+            path.unlink()
+            removed = True
+
+    return removed
+
+
 def build_brd_extraction_prompt(document_text: str) -> str:
     trimmed = document_text[:120000]
 

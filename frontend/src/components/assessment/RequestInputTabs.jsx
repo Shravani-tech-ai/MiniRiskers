@@ -1,3 +1,5 @@
+import { ArrowLeft, ArrowRight } from "lucide-react";
+
 const INPUT_TABS = [
   { id: "product", label: "Product" },
   { id: "customer", label: "Customer" },
@@ -5,9 +7,14 @@ const INPUT_TABS = [
   { id: "transaction", label: "Transaction" },
   { id: "channel", label: "Channel" },
   { id: "vendor", label: "Vendor" },
+  { id: "preview", label: "Preview" },
 ];
 
 function RequestInputTabs({ activeTab, onTabChange, children }) {
+  const activeIndex = INPUT_TABS.findIndex((tab) => tab.id === activeTab);
+  const previousTab = INPUT_TABS[activeIndex - 1];
+  const nextTab = INPUT_TABS[activeIndex + 1];
+
   return (
     <div className="mb-8">
       <div className="mb-4">
@@ -41,6 +48,28 @@ function RequestInputTabs({ activeTab, onTabChange, children }) {
       </div>
 
       {children}
+
+      <div className="mt-4 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => previousTab && onTabChange(previousTab.id)}
+          disabled={!previousTab}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ArrowLeft size={16} />
+          Previous{previousTab ? `: ${previousTab.label}` : ""}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => nextTab && onTabChange(nextTab.id)}
+          disabled={!nextTab}
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Next{nextTab ? `: ${nextTab.label}` : ""}
+          <ArrowRight size={16} />
+        </button>
+      </div>
     </div>
   );
 }

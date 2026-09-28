@@ -64,7 +64,13 @@ function Signup() {
         password: form.password,
         role: form.role,
       });
-      navigate("/dashboard", { replace: true });
+      navigate("/login", {
+        replace: true,
+        state: {
+          username: form.username.trim(),
+          notice: "Account created successfully. Please sign in.",
+        },
+      });
     } catch (err) {
       setError(
         err?.response?.data?.detail ||

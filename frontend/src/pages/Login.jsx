@@ -10,11 +10,12 @@ function Login() {
   const location = useLocation();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
 
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(location.state?.username || "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState(location.state?.notice || "");
 
   const redirectPath = location.state?.from || "/dashboard";
 
@@ -33,6 +34,7 @@ function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setNotice("");
 
     if (!username.trim() || !password) {
       setError("Username and password are required.");
@@ -76,6 +78,12 @@ function Login() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {notice ? (
+          <p className="rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700">
+            {notice}
+          </p>
+        ) : null}
+
         <div>
           <label
             htmlFor="username"

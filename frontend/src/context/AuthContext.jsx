@@ -90,16 +90,7 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(async (payload) => {
     const response = await api.post("/auth/register", payload);
-
-    const accessToken = response.data?.access_token;
-    if (!accessToken) {
-      throw new Error("Registration did not return an access token.");
-    }
-
-    setAuthToken(accessToken);
-    setToken(accessToken);
-    setUser(response.data.user);
-    return response.data.user;
+    return response.data?.user ?? null;
   }, []);
 
   const value = useMemo(
