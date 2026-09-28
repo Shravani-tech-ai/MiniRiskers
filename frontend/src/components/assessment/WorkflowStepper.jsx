@@ -28,6 +28,7 @@ function WorkflowStepper({
   activeView,
   auditEvents,
   onStageSelect,
+  lockedStages = [],
 }) {
   const normalizedStage = normalizeWorkflowStage(currentStage);
   const currentIndex = getWorkflowStageIndex(normalizedStage);
@@ -67,9 +68,11 @@ function WorkflowStepper({
             const timestamp = formatStageTimestamp(
               stageTimestamps[stage.key]
             );
+            const locked = lockedStages.includes(stage.key);
             const navigable =
               typeof onStageSelect === "function" &&
-              index <= currentIndex;
+              index <= currentIndex &&
+              !locked;
 
             return (
               <div
@@ -99,6 +102,8 @@ function WorkflowStepper({
                     title={
                       navigable
                         ? `View ${stage.label}`
+                        : locked
+                        ? "Not available for your role"
                         : "Complete earlier steps first"
                     }
                   >

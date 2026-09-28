@@ -1,3 +1,5 @@
+import { SectionFooter, SectionStatus } from "./SectionControls";
+
 function ChannelInformation({
   channelForm,
   setChannelForm,
@@ -5,7 +7,10 @@ function ChannelInformation({
   savingChannel,
   saveChannel,
   readOnly = false,
+  section = {},
 }) {
+  const locked = readOnly || Boolean(section.locked);
+
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -25,15 +30,12 @@ function ChannelInformation({
             </p>
           </div>
 
-          {channelSaved && (
-            <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-              ✓ Saved
-            </span>
-          )}
+          <SectionStatus saved={channelSaved} section={section} />
 
         </div>
       </div>
 
+      <fieldset disabled={locked} className="min-w-0">
       {/* Form */}
       <div className="p-6">
 
@@ -212,22 +214,17 @@ function ChannelInformation({
 
       </div>
 
+      </fieldset>
+
       {/* Footer */}
-      <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
-
-        <button
-          onClick={saveChannel}
-          disabled={readOnly || savingChannel}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {savingChannel
-            ? "Saving..."
-            : channelSaved
-            ? "Update Channel"
-            : "Save Channel"}
-        </button>
-
-      </div>
+      <SectionFooter
+        section={section}
+        saved={channelSaved}
+        saving={savingChannel}
+        onSave={saveChannel}
+        label="Channel"
+        readOnly={readOnly}
+      />
 
     </div>
   );

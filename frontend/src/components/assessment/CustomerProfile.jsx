@@ -1,3 +1,5 @@
+import { SectionFooter, SectionStatus } from "./SectionControls";
+
 function CustomerProfile({
   customerForm,
   setCustomerForm,
@@ -5,7 +7,10 @@ function CustomerProfile({
   savingCustomer,
   saveCustomerProfile,
   readOnly = false,
+  section = {},
 }) {
+  const locked = readOnly || Boolean(section.locked);
+
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -25,15 +30,12 @@ function CustomerProfile({
             </p>
           </div>
 
-          {customerSaved && (
-            <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-              ✓ Saved
-            </span>
-          )}
+          <SectionStatus saved={customerSaved} section={section} />
 
         </div>
       </div>
 
+      <fieldset disabled={locked} className="min-w-0">
       {/* Form */}
       <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
 
@@ -307,22 +309,17 @@ function CustomerProfile({
 
       </div>
 
+      </fieldset>
+
       {/* Footer */}
-      <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
-
-        <button
-          onClick={saveCustomerProfile}
-          disabled={readOnly || savingCustomer}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {savingCustomer
-            ? "Saving..."
-            : customerSaved
-            ? "Update Customer Profile"
-            : "Save Customer Profile"}
-        </button>
-
-      </div>
+      <SectionFooter
+        section={section}
+        saved={customerSaved}
+        saving={savingCustomer}
+        onSave={saveCustomerProfile}
+        label="Customer Profile"
+        readOnly={readOnly}
+      />
 
     </div>
   );

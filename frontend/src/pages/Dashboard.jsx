@@ -4,11 +4,16 @@ import {
   CheckCircle2,
   Clock3,
   Eye,
+  FilePen,
   FileText,
+  Gavel,
+  Inbox,
   Plus,
   Search,
+  Send,
   ShieldAlert,
   X,
+  XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -17,31 +22,169 @@ import PageContainer from "../components/layout/PageContainer";
 import RequestPreviewModal from "../components/assessment/RequestPreviewModal";
 import { useAuth } from "../context/AuthContext";
 import {
+  ROLES,
   getAssessmentPermissions,
   getDashboardTitle,
+  getDisplayStatus,
+  isDecided,
 } from "../utils/rolePermissions";
 
-const FILTER_OPTIONS = [
-  { id: "ALL", label: "All" },
-  { id: "DRAFT", label: "Draft" },
-  { id: "IN_PROGRESS", label: "In progress" },
-  { id: "APPROVED", label: "Approved" },
-  { id: "REJECTED", label: "Rejected" },
-  { id: "HIGH_PRIORITY", label: "High priority" },
-];
-
-const IN_PROGRESS_STATUSES = new Set([
-  "IN_REVIEW",
+const IN_REVIEW_KEYS = new Set([
+  "RISK_ASSESSMENT",
   "ANALYST_REVIEW",
   "COMMITTEE_REVIEW",
 ]);
+const IN_ASSESSMENT_KEYS = new Set(["RISK_ASSESSMENT", "ANALYST_REVIEW"]);
 
-function formatStatus(status) {
-  if (!status) {
-    return "Draft";
-  }
-  return status.replace(/_/g, " ");
-}
+const statusKey = (request) => getDisplayStatus(request).key;
+const isHighPriority = (request) =>
+  request.priority === "HIGH" || request.priority === "CRITICAL";
+const isApproved = (request) =>
+  statusKey(request) === "APPROVED" ||
+  statusKey(request) === "APPROVED_WITH_CONDITIONS";
+const isAwaitingReview = (request) =>
+  statusKey(request) === "SUBMITTED" || IN_REVIEW_KEYS.has(statusKey(request));
+
+const FILTERS = {
+  ALL: { label: "All", match: () => true },
+  DRAFT: { label: "Draft", match: (r) => statusKey(r) === "DRAFT" },
+  SUBMITTED: { label: "Submitted", match: (r) => statusKey(r) === "SUBMITTED" },
+  IN_REVIEW: {
+    label: "In review",
+    match: (r) => IN_REVIEW_KEYS.has(statusKey(r)),
+  },
+  NEW: {
+    label: "New (not yet assessed)",
+    match: (r) => statusKey(r) === "SUBMITTED",
+  },
+  IN_ASSESSMENT: {
+    label: "In assessment",
+    match: (r) => IN_ASSESSMENT_KEYS.has(statusKey(r)),
+  },
+  SENT_TO_COMMITTEE: {
+    label: "Sent to committee",
+    match: (r) => statusKey(r) === "COMMITTEE_REVIEW",
+  },
+  PENDING_DECISION: {
+    label: "Pending decision",
+    match: (r) => statusKey(r) === "COMMITTEE_REVIEW",
+  },
+  DECIDED: { label: "Decided", match: isDecided },
+  HIGH_PRIORITY: { label: "High priority", match: isHighPriority },
+};
+
+const DEFAULT_DASHBOARD_CONFIG = {
+  subtitle:
+    "Financial crime risk assessment workbench — monitor intake, workflow, and residual risk across change requests.",
+  filters: ["ALL", "DRAFT", "SUBMITTED", "IN_REVIEW", "DECIDED", "HIGH_PRIORITY"],
+  defaultFilter: "ALL",
+  stats: [
+    { label: "Total requests", icon: FileText, tone: "slate", match: () => true },
+    { label: "In progress", icon: Clock3, tone: "blue", match: isAwaitingReview },
+    { label: "Completed", icon: CheckCircle2, tone: "emerald", match: isDecided },
+    { label: "High / critical", icon: ShieldAlert, tone: "red", match: isHighPriority },
+  ],
+  emptyText: "No change requests have been created yet.",
+  actionLabel: () => "Open assessment",
+};
+
+const DASHBOARD_CONFIG = {
+  [ROLES.BUSINESS_OWNER]: {
+    subtitle:
+      "Capture your change requests, then preview and submit them for Risk Analyst review.",
+    filters: ["ALL", "DRAFT", "SUBMITTED", "IN_REVIEW", "DECIDED"],
+    defaultFilter: "ALL",
+    stats: [
+      { label: "Total requests", icon: FileText, tone: "slate", match: () => true },
+      {
+        label: "Drafts",
+        icon: FilePen,
+        tone: "amber",
+        match: (r) => statusKey(r) === "DRAFT",
+      },
+      { label: "Awaiting review", icon: Clock3, tone: "blue", match: isAwaitingReview },
+      { label: "Decided", icon: CheckCircle2, tone: "emerald", match: isDecided },
+    ],
+    emptyText: "Create a new change request to get started.",
+    actionLabel: (r) =>
+      statusKey(r) === "DRAFT" ? "Continue editing" : "View status",
+  },
+  [ROLES.RISK_ANALYST]: {
+    subtitle:
+      "Requests submitted by Business Owners, ready for risk assessment and analyst review.",
+    filters: [
+      "ALL",
+      "NEW",
+      "IN_ASSESSMENT",
+      "SENT_TO_COMMITTEE",
+      "DECIDED",
+      "HIGH_PRIORITY",
+    ],
+    defaultFilter: "ALL",
+    stats: [
+      { label: "Queue total", icon: FileText, tone: "slate", match: () => true },
+      {
+        label: "New",
+        icon: Inbox,
+        tone: "amber",
+        match: (r) => statusKey(r) === "SUBMITTED",
+      },
+      {
+        label: "In assessment",
+        icon: Clock3,
+        tone: "blue",
+        match: (r) => IN_ASSESSMENT_KEYS.has(statusKey(r)),
+      },
+      {
+        label: "Sent to committee",
+        icon: Send,
+        tone: "emerald",
+        match: (r) => statusKey(r) === "COMMITTEE_REVIEW",
+      },
+    ],
+    emptyText: "No requests have been submitted by Business Owners yet.",
+    actionLabel: (r) => {
+      const key = statusKey(r);
+      if (key === "SUBMITTED") return "Start risk assessment";
+      if (IN_ASSESSMENT_KEYS.has(key)) return "Continue assessment";
+      return "View";
+    },
+  },
+  [ROLES.RISK_COMMITTEE]: {
+    subtitle:
+      "Requests reviewed by Risk Analysts and awaiting a committee decision.",
+    filters: ["PENDING_DECISION", "DECIDED", "ALL"],
+    defaultFilter: "PENDING_DECISION",
+    stats: [
+      {
+        label: "Pending decision",
+        icon: Gavel,
+        tone: "blue",
+        match: (r) => statusKey(r) === "COMMITTEE_REVIEW",
+      },
+      { label: "Approved", icon: CheckCircle2, tone: "emerald", match: isApproved },
+      {
+        label: "Rejected / deferred",
+        icon: XCircle,
+        tone: "red",
+        match: (r) =>
+          statusKey(r) === "REJECTED" || statusKey(r) === "DEFERRED",
+      },
+      { label: "Total", icon: FileText, tone: "slate", match: () => true },
+    ],
+    emptyText: "No requests have been sent to the committee yet.",
+    actionLabel: (r) =>
+      statusKey(r) === "COMMITTEE_REVIEW" ? "Review & decide" : "View",
+  },
+};
+
+const STAT_TONES = {
+  slate: "bg-slate-100 text-slate-700",
+  blue: "bg-blue-50 text-blue-600",
+  emerald: "bg-emerald-50 text-emerald-600",
+  red: "bg-red-50 text-red-600",
+  amber: "bg-amber-50 text-amber-600",
+};
 
 function formatChangeType(value) {
   if (!value) {
@@ -50,21 +193,39 @@ function formatChangeType(value) {
   return value.replace(/_/g, " ");
 }
 
-function getStatusStyle(status) {
-  switch (status) {
+function getStatusStyle(key) {
+  switch (key) {
     case "DRAFT":
       return "bg-slate-100 text-slate-700";
-    case "IN_REVIEW":
+    case "SUBMITTED":
+      return "bg-amber-100 text-amber-800";
+    case "RISK_ASSESSMENT":
     case "ANALYST_REVIEW":
     case "COMMITTEE_REVIEW":
       return "bg-blue-100 text-blue-700";
     case "APPROVED":
+    case "APPROVED_WITH_CONDITIONS":
       return "bg-emerald-100 text-emerald-800";
+    case "DEFERRED":
+      return "bg-orange-100 text-orange-800";
     case "REJECTED":
       return "bg-red-100 text-red-700";
     default:
       return "bg-slate-100 text-slate-700";
   }
+}
+
+function StatusBadge({ request, className = "" }) {
+  const { key, label } = getDisplayStatus(request);
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-xs font-medium ${getStatusStyle(
+        key
+      )} ${className}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 function getPriorityStyle(priority) {
@@ -80,32 +241,12 @@ function getPriorityStyle(priority) {
   }
 }
 
-function matchesFilter(request, filterId) {
-  switch (filterId) {
-    case "ALL":
-      return true;
-    case "DRAFT":
-      return request.status === "DRAFT";
-    case "IN_PROGRESS":
-      return IN_PROGRESS_STATUSES.has(request.status);
-    case "APPROVED":
-      return request.status === "APPROVED";
-    case "REJECTED":
-      return request.status === "REJECTED";
-    case "HIGH_PRIORITY":
-      return (
-        request.priority === "HIGH" || request.priority === "CRITICAL"
-      );
-    default:
-      return true;
-  }
-}
-
 function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const permissions = getAssessmentPermissions(user?.role);
   const dashboardTitle = getDashboardTitle(user?.role);
+  const config = DASHBOARD_CONFIG[user?.role] || DEFAULT_DASHBOARD_CONFIG;
 
   const [changeRequests, setChangeRequests] = useState([]);
   const [riskSummary, setRiskSummary] = useState({
@@ -118,25 +259,13 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("ALL");
+  const [activeFilter, setActiveFilter] = useState(config.defaultFilter);
   const [selectedId, setSelectedId] = useState(null);
   const [previewId, setPreviewId] = useState(null);
 
-  const totalRequests = changeRequests.length;
-
-  const inProgressRequests = changeRequests.filter((request) =>
-    IN_PROGRESS_STATUSES.has(request.status)
-  ).length;
-
-  const completedRequests = changeRequests.filter(
-    (request) =>
-      request.status === "APPROVED" || request.status === "REJECTED"
-  ).length;
-
-  const highPriorityRequests = changeRequests.filter(
-    (request) =>
-      request.priority === "HIGH" || request.priority === "CRITICAL"
-  ).length;
+  const statCounts = config.stats.map(
+    (stat) => changeRequests.filter(stat.match).length
+  );
 
   const riskTotal =
     riskSummary.critical +
@@ -186,7 +315,7 @@ function Dashboard() {
     const query = searchQuery.trim().toLowerCase();
 
     return changeRequests.filter((request) => {
-      if (!matchesFilter(request, activeFilter)) {
+      if (!(FILTERS[activeFilter] || FILTERS.ALL).match(request)) {
         return false;
       }
 
@@ -203,7 +332,7 @@ function Dashboard() {
         request.customer_segment,
         request.requested_by,
         request.change_type,
-        request.status,
+        getDisplayStatus(request).label,
       ]
         .filter(Boolean)
         .join(" ")
@@ -284,8 +413,7 @@ function Dashboard() {
               </span>
             </div>
             <p className="mt-2 text-base text-slate-600 lg:text-lg">
-              Financial crime risk assessment workbench — monitor intake,
-              workflow, and residual risk across change requests.
+              {config.subtitle}
             </p>
           </div>
 
@@ -316,69 +444,30 @@ function Dashboard() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-slate-100 p-2">
-                <FileText size={20} className="text-slate-700" />
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal">
-                  Total requests
-                </p>
-                <p className="text-3xl font-bold text-slate-900 lg:text-4xl">
-                  {totalRequests}
-                </p>
-              </div>
-            </div>
-          </div>
+          {config.stats.map((stat, index) => {
+            const Icon = stat.icon;
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <Clock3 size={20} className="text-blue-600" />
+            return (
+              <div
+                key={stat.label}
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`rounded-lg p-2 ${STAT_TONES[stat.tone]}`}>
+                    <Icon size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal">
+                      {stat.label}
+                    </p>
+                    <p className="text-3xl font-bold text-slate-900 lg:text-4xl">
+                      {statCounts[index]}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal">
-                  In progress
-                </p>
-                <p className="text-3xl font-bold text-slate-900 lg:text-4xl">
-                  {inProgressRequests}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-emerald-50 p-2">
-                <CheckCircle2 size={20} className="text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal">
-                  Completed
-                </p>
-                <p className="text-3xl font-bold text-slate-900 lg:text-4xl">
-                  {completedRequests}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-red-50 p-2">
-                <ShieldAlert size={20} className="text-red-600" />
-              </div>
-              <div>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal">
-                  High / critical
-                </p>
-                <p className="text-3xl font-bold text-slate-900 lg:text-4xl">
-                  {highPriorityRequests}
-                </p>
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -429,7 +518,8 @@ function Dashboard() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {FILTER_OPTIONS.map((option) => {
+          {config.filters.map((filterId) => {
+            const option = { id: filterId, ...FILTERS[filterId] };
             const isActive = activeFilter === option.id;
 
             return (
@@ -468,10 +558,14 @@ function Dashboard() {
           <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
             <FileText size={40} className="mx-auto text-slate-300" />
             <h2 className="mt-4 text-lg font-semibold text-slate-900">
-              No matching requests
+              {changeRequests.length === 0
+                ? "No requests yet"
+                : "No matching requests"}
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              Adjust search or filters, or create a new change request.
+              {changeRequests.length === 0
+                ? config.emptyText
+                : "Adjust search or filters to find a request."}
             </p>
           </div>
         )}
@@ -493,13 +587,7 @@ function Dashboard() {
                         {request.title}
                       </h3>
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusStyle(
-                        request.status
-                      )}`}
-                    >
-                      {formatStatus(request.status)}
-                    </span>
+                    <StatusBadge request={request} className="shrink-0" />
                   </div>
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
@@ -539,7 +627,7 @@ function Dashboard() {
                       onClick={() => openAssessment(request.id)}
                       className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                     >
-                      Open assessment
+                      {config.actionLabel(request)}
                       <ArrowRight size={16} />
                     </button>
                   </div>
@@ -589,13 +677,7 @@ function Dashboard() {
                               {request.business_unit || "—"}
                             </td>
                             <td className="px-5 py-4">
-                              <span
-                                className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusStyle(
-                                  request.status
-                                )}`}
-                              >
-                                {formatStatus(request.status)}
-                              </span>
+                              <StatusBadge request={request} className="inline-flex" />
                             </td>
                             <td
                               className={`px-4 py-3 ${getPriorityStyle(
@@ -625,7 +707,7 @@ function Dashboard() {
                                   }}
                                   className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
                                 >
-                                  Open
+                                  {config.actionLabel(request)}
                                   <ArrowRight size={14} />
                                 </button>
                               </div>
@@ -662,13 +744,7 @@ function Dashboard() {
 
                     <div className="space-y-4 p-5">
                       <div className="flex flex-wrap gap-2">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusStyle(
-                            selectedRequest.status
-                          )}`}
-                        >
-                          {formatStatus(selectedRequest.status)}
-                        </span>
+                        <StatusBadge request={selectedRequest} />
                         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
                           {formatChangeType(selectedRequest.change_type)}
                         </span>
@@ -731,7 +807,7 @@ function Dashboard() {
                           onClick={() => openAssessment(selectedRequest.id)}
                           className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800"
                         >
-                          Open assessment
+                          {config.actionLabel(selectedRequest)}
                           <ArrowRight size={16} />
                         </button>
                       </div>

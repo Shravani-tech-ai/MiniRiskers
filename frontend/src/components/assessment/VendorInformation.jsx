@@ -1,3 +1,5 @@
+import { SectionFooter, SectionStatus } from "./SectionControls";
+
 function VendorInformation({
   vendorForm,
   setVendorForm,
@@ -5,7 +7,10 @@ function VendorInformation({
   savingVendor,
   saveVendor,
   readOnly = false,
+  section = {},
 }) {
+  const locked = readOnly || Boolean(section.locked);
+
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -24,16 +29,13 @@ function VendorInformation({
             </p>
           </div>
 
-          {vendorSaved && (
-            <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-              ✓ Saved
-            </span>
-          )}
+          <SectionStatus saved={vendorSaved} section={section} />
 
         </div>
 
       </div>
 
+      <fieldset disabled={locked} className="min-w-0">
       {/* Form */}
       <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
 
@@ -380,22 +382,17 @@ function VendorInformation({
 
       </div>
 
+      </fieldset>
+
       {/* Footer */}
-      <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
-
-        <button
-          onClick={saveVendor}
-          disabled={readOnly || savingVendor}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {savingVendor
-            ? "Saving..."
-            : vendorSaved
-            ? "Update Vendor"
-            : "Save Vendor"}
-        </button>
-
-      </div>
+      <SectionFooter
+        section={section}
+        saved={vendorSaved}
+        saving={savingVendor}
+        onSave={saveVendor}
+        label="Vendor"
+        readOnly={readOnly}
+      />
 
     </div>
   );

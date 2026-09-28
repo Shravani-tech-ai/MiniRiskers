@@ -215,3 +215,33 @@ export function formatMissingFieldLabels(missingFields) {
     .filter(Boolean)
     .join(", ");
 }
+
+// Mirrors backend/intake_schema.py INTAKE_REQUIRED_FIELDS, keyed by input tab.
+export const SECTION_REQUIRED_FIELDS = {
+  product: [
+    { field: "product_name", label: "Product name" },
+    { field: "transaction_type", label: "Transaction type" },
+  ],
+  customer: [
+    { field: "customer_type", label: "Customer type" },
+    { field: "onboarding_method", label: "Onboarding method" },
+  ],
+  geography: [
+    { field: "country", label: "Primary country" },
+    { field: "transaction_country", label: "Transaction country" },
+    { field: "beneficiary_country", label: "Beneficiary country" },
+  ],
+  transaction: [{ field: "transaction_type", label: "Transaction type" }],
+  channel: [{ field: "channel_type", label: "Channel type" }],
+  vendor: [
+    { field: "vendor_name", label: "Vendor name" },
+    { field: "vendor_type", label: "Vendor type" },
+  ],
+};
+
+export function getMissingSectionFields(section, form) {
+  return (SECTION_REQUIRED_FIELDS[section] || []).filter(({ field }) => {
+    const value = form?.[field];
+    return value === null || value === undefined || String(value).trim() === "";
+  });
+}

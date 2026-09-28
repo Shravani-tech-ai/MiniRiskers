@@ -1,3 +1,5 @@
+import { SectionFooter, SectionStatus } from "./SectionControls";
+
 function ProductInformation({
   productForm,
   setProductForm,
@@ -5,7 +7,10 @@ function ProductInformation({
   savingProduct,
   saveProduct,
   readOnly = false,
+  section = {},
 }) {
+  const locked = readOnly || Boolean(section.locked);
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -25,15 +30,12 @@ function ProductInformation({
             </p>
           </div>
 
-          {productSaved && (
-            <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-              ✓ Saved
-            </span>
-          )}
+          <SectionStatus saved={productSaved} section={section} />
 
         </div>
       </div>
 
+      <fieldset disabled={locked} className="min-w-0">
       {/* Form */}
       <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
 
@@ -326,22 +328,17 @@ function ProductInformation({
 
       </div>
 
+      </fieldset>
+
       {/* Footer */}
-      <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
-
-        <button
-          onClick={saveProduct}
-          disabled={readOnly || savingProduct}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {savingProduct
-            ? "Saving..."
-            : productSaved
-            ? "Update Product"
-            : "Save Product"}
-        </button>
-
-      </div>
+      <SectionFooter
+        section={section}
+        saved={productSaved}
+        saving={savingProduct}
+        onSave={saveProduct}
+        label="Product"
+        readOnly={readOnly}
+      />
 
     </div>
   );

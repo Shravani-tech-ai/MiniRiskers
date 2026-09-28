@@ -15,18 +15,22 @@ import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import IntakePanel from "../components/assessment/IntakePanel";
 import WorkflowStepper from "../components/assessment/WorkflowStepper";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
-import RequestInputTabs from "../components/assessment/RequestInputTabs";
+import RequestInputTabs, {
+  INPUT_TABS,
+} from "../components/assessment/RequestInputTabs";
 import AssessmentPreview from "../components/assessment/AssessmentPreview";
 import ConfirmDialog from "../components/assessment/ConfirmDialog";
 import ResultDialog from "../components/assessment/ResultDialog";
 import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
 import CompletedStageSummary from "../components/assessment/CompletedStageSummary";
+import SubmissionBanner from "../components/assessment/SubmissionBanner";
 import {
   EMPTY_ASSESSMENT_FORMS,
   formatMissingFieldLabels,
   getPersistedSectionFlags,
   mapInputsToFormState,
   formsToAssessmentInputs,
+  getMissingSectionFields,
 } from "../utils/assessmentFormMapping";
 import {
   canNavigateToWorkflowStage,
@@ -36,13 +40,17 @@ import PageContainer from "../components/layout/PageContainer";
 
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import { getAssessmentPermissions } from "../utils/rolePermissions";
+import {
+  getDefaultView,
+  getLockedStages,
+  getRequestPermissions,
+} from "../utils/rolePermissions";
 
 function Assessment() {
   const { changeRequestId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const permissions = getAssessmentPermissions(user?.role);
+  const lockedStages = getLockedStages(user?.role);
 
   const [changeRequest, setChangeRequest] = useState(null);
   const [riskAssessment, setRiskAssessment] = useState(null);
@@ -110,11 +118,15 @@ function Assessment() {
   const [missingFields, setMissingFields] = useState([]);
   const [activeView, setActiveView] = useState("REQUEST_CREATED");
   const [inputTab, setInputTab] = useState("product");
+  const [editingSection, setEditingSection] = useState(null);
+  const [sectionError, setSectionError] = useState("");
   const [advancingStage, setAdvancingStage] = useState(false);
 
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [submittingForAnalyst, setSubmittingForAnalyst] = useState(false);
   const [submitResult, setSubmitResult] = useState(null);
+
+  const permissions = getRequestPermissions(user?.role, changeRequest);
 
   const applyFormValues = (mapped) => {
     if (!mapped) {
@@ -218,7 +230,7 @@ function Assessment() {
       const stage = normalizeWorkflowStage(
         changeRequestResponse.data.current_stage
       );
-      setActiveView(stage);
+      setActiveView(getDefaultView(user?.role, stage));
 
       await hydrateAssessmentInputs();
 
@@ -357,20 +369,35 @@ function Assessment() {
     }
   };
 
-  const saveProduct = async () => {
-    if (!productForm.product_name.trim()) {
-      setError("Please enter the product name.");
-      return;
+  const validateSection = (section, form) => {
+    const missing = getMissingSectionFields(section, form);
+
+    if (missing.length > 0) {
+      setSectionError(
+        `Please fill in the required fields: ${missing
+          .map((item) => item.label)
+          .join(", ")}.`
+      );
+      return false;
     }
 
-    if (!productForm.transaction_type.trim()) {
-      setError("Please enter the transaction type.");
+    return true;
+  };
+
+  const handleSectionSaved = async () => {
+    setEditingSection(null);
+    setSectionError("");
+    await refreshCompleteness();
+  };
+
+  const saveProduct = async () => {
+    if (!validateSection("product", productForm)) {
       return;
     }
 
     try {
       setSavingProduct(true);
-      setError("");
+      setSectionError("");
 
       const payload = {
         product_name: productForm.product_name,
@@ -416,11 +443,12 @@ function Assessment() {
       );
 
       setProductSaved(true);
+      await handleSectionSaved();
 
     } catch (error) {
       console.error("Failed to save product:", error);
 
-      setError(
+      setSectionError(
         error.response?.data?.detail ||
         "Unable to save product information."
       );
@@ -430,19 +458,13 @@ function Assessment() {
   };
 
   const saveCustomerProfile = async () => {
-    if (!customerForm.customer_type) {
-      setError("Please select the customer type.");
-      return;
-    }
-
-    if (!customerForm.onboarding_method.trim()) {
-      setError("Please enter the onboarding method.");
+    if (!validateSection("customer", customerForm)) {
       return;
     }
 
     try {
       setSavingCustomer(true);
-      setError("");
+      setSectionError("");
 
       const payload = {
         customer_type: customerForm.customer_type,
@@ -493,6 +515,7 @@ function Assessment() {
       );
 
       setCustomerSaved(true);
+      await handleSectionSaved();
 
     } catch (error) {
       console.error(
@@ -500,7 +523,7 @@ function Assessment() {
         error
       );
 
-      setError(
+      setSectionError(
         error.response?.data?.detail ||
         "Unable to save customer profile."
       );
@@ -510,14 +533,13 @@ function Assessment() {
   };
 
   const saveChannel = async () => {
-    if (!channelForm.channel_type.trim()) {
-      setError("Please enter the channel type.");
+    if (!validateSection("channel", channelForm)) {
       return;
     }
 
     try {
       setSavingChannel(true);
-      setError("");
+      setSectionError("");
 
       await api.post(
         `/change-requests/${changeRequestId}/channel`,
@@ -528,11 +550,12 @@ function Assessment() {
       );
 
       setChannelSaved(true);
+      await handleSectionSaved();
 
     } catch (error) {
       console.error("Failed to save channel:", error);
 
-      setError(
+      setSectionError(
         error.response?.data?.detail ||
         "Unable to save channel information."
       );
@@ -543,19 +566,13 @@ function Assessment() {
 
 
   const saveVendor = async () => {
-    if (!vendorForm.vendor_name.trim()) {
-      setError("Please enter the vendor name.");
-      return;
-    }
-
-    if (!vendorForm.vendor_type.trim()) {
-      setError("Please enter the vendor type.");
+    if (!validateSection("vendor", vendorForm)) {
       return;
     }
 
     try {
       setSavingVendor(true);
-      setError("");
+      setSectionError("");
 
       await api.post(
         `/change-requests/${changeRequestId}/vendor`,
@@ -566,11 +583,12 @@ function Assessment() {
       );
 
       setVendorSaved(true);
+      await handleSectionSaved();
 
     } catch (error) {
       console.error("Failed to save vendor:", error);
 
-      setError(
+      setSectionError(
         error.response?.data?.detail ||
         "Unable to save vendor information."
       );
@@ -580,24 +598,13 @@ function Assessment() {
   };
 
   const saveGeography = async () => {
-    if (!geographyForm.country.trim()) {
-      setError("Please enter the country.");
-      return;
-    }
-
-    if (!geographyForm.transaction_country.trim()) {
-      setError("Please enter the transaction country.");
-      return;
-    }
-
-    if (!geographyForm.beneficiary_country.trim()) {
-      setError("Please enter the beneficiary country.");
+    if (!validateSection("geography", geographyForm)) {
       return;
     }
 
     try {
       setSavingGeography(true);
-      setError("");
+      setSectionError("");
 
       const payload = {
         country: geographyForm.country,
@@ -631,6 +638,7 @@ function Assessment() {
       );
 
       setGeographySaved(true);
+      await handleSectionSaved();
 
     } catch (error) {
       console.error(
@@ -638,7 +646,7 @@ function Assessment() {
         error
       );
 
-      setError(
+      setSectionError(
         error.response?.data?.detail ||
         "Unable to save geography information."
       );
@@ -648,14 +656,13 @@ function Assessment() {
   };
 
     const saveTransactionProfile = async () => {
-    if (!transactionForm.transaction_type.trim()) {
-      setError("Please enter the transaction type.");
+    if (!validateSection("transaction", transactionForm)) {
       return;
     }
 
     try {
       setSavingTransaction(true);
-      setError("");
+      setSectionError("");
 
       const payload = {
         transaction_type:
@@ -728,6 +735,7 @@ function Assessment() {
       );
 
       setTransactionSaved(true);
+      await handleSectionSaved();
 
     } catch (error) {
       console.error(
@@ -735,7 +743,7 @@ function Assessment() {
         error
       );
 
-      setError(
+      setSectionError(
         error.response?.data?.detail ||
         "Unable to save transaction profile."
       );
@@ -962,6 +970,7 @@ function Assessment() {
 
   const handleStageSelect = (stage) => {
     if (
+      !lockedStages.includes(stage) &&
       canNavigateToWorkflowStage(
         stage,
         changeRequest?.current_stage
@@ -1000,6 +1009,94 @@ function Assessment() {
       setAdvancingStage(false);
     }
   };
+
+  const savedByTab = {
+    product: productSaved,
+    customer: customerSaved,
+    geography: geographySaved,
+    transaction: transactionSaved,
+    channel: channelSaved,
+    vendor: vendorSaved,
+  };
+
+  // Business Owners fill the sections in order: a tab unlocks only once every
+  // section before it has been saved. Read-only viewers can browse freely.
+  const isTabEnabled = (tabId) => {
+    if (!permissions.canEditIntake) {
+      return true;
+    }
+
+    if (editingSection && editingSection !== tabId) {
+      return false;
+    }
+
+    const index = INPUT_TABS.findIndex((tab) => tab.id === tabId);
+    return INPUT_TABS.slice(0, index).every(
+      (tab) => tab.id === "preview" || savedByTab[tab.id]
+    );
+  };
+
+  const changeInputTab = (tabId) => {
+    if (tabId === inputTab || !isTabEnabled(tabId)) {
+      return;
+    }
+
+    setInputTab(tabId);
+    setSectionError("");
+  };
+
+  const buildSection = (tabId) => {
+    const index = INPUT_TABS.findIndex((tab) => tab.id === tabId);
+    const previousTab = INPUT_TABS[index - 1];
+    const nextTab = INPUT_TABS[index + 1];
+    const editing = editingSection === tabId;
+
+    return {
+      locked:
+        !permissions.canEditIntake || (savedByTab[tabId] && !editing),
+      editing,
+      canEdit: permissions.canEditIntake,
+      onEdit: () => {
+        setEditingSection(tabId);
+        setSectionError("");
+      },
+      onCancel: async () => {
+        setEditingSection(null);
+        setSectionError("");
+        await hydrateAssessmentInputs();
+      },
+      error: sectionError,
+      previousTab,
+      nextTab,
+      canGoPrevious: !editing,
+      canGoNext: !editing && Boolean(nextTab) && isTabEnabled(nextTab.id),
+      onNavigate: changeInputTab,
+    };
+  };
+
+  const submitDisabledReason =
+    permissions.canSubmit && missingFields.length > 0
+      ? `Complete and save the required fields first: ${formatMissingFieldLabels(
+          missingFields
+        )}.`
+      : "";
+
+  const isIntakeStage =
+    normalizeWorkflowStage(changeRequest?.current_stage) === "REQUEST_CREATED";
+
+  let requestStageHint = null;
+  if (permissions.canRunRiskPipeline) {
+    requestStageHint =
+      "Syncs intake, generates risk factors, calculates scores, and retrieves regulatory evidence.";
+  } else if (permissions.canSubmit) {
+    requestStageHint =
+      missingFields.length > 0
+        ? "Complete all required fields, then preview and submit for Risk Analyst review."
+        : "All required fields are complete. Preview and submit for Risk Analyst review.";
+  } else if (permissions.ownsIntake && permissions.submitted && isIntakeStage) {
+    requestStageHint =
+      "This request is in the Risk Analyst queue and will move forward once they run the risk assessment.";
+  }
 
   if (loading) {
     return (
@@ -1067,6 +1164,7 @@ function Assessment() {
           activeView={activeView}
           auditEvents={auditEvents}
           onStageSelect={handleStageSelect}
+          lockedStages={lockedStages}
         />
 
         {error && (
@@ -1077,7 +1175,23 @@ function Assessment() {
 
         {activeView === "REQUEST_CREATED" && (
           <>
-        <div className="space-y-8 xl:grid xl:grid-cols-12 xl:items-start xl:gap-10 xl:space-y-0">
+        {permissions.submitted && (
+          <SubmissionBanner
+            changeRequest={changeRequest}
+            auditEvents={auditEvents}
+            ownsIntake={permissions.ownsIntake && !permissions.canEditIntake}
+            readOnly={!permissions.canEditIntake}
+          />
+        )}
+
+        <div
+          className={
+            permissions.canEditIntake
+              ? "space-y-8 xl:grid xl:grid-cols-12 xl:items-start xl:gap-10 xl:space-y-0"
+              : ""
+          }
+        >
+          {permissions.canEditIntake && (
           <div className="space-y-6 xl:col-span-5">
         <IntakePanel
           changeRequestId={changeRequestId}
@@ -1098,11 +1212,13 @@ function Assessment() {
           </div>
         )}
           </div>
+          )}
 
-          <div className="xl:col-span-7">
+          <div className={permissions.canEditIntake ? "xl:col-span-7" : ""}>
         <RequestInputTabs
           activeTab={inputTab}
-          onTabChange={setInputTab}
+          onTabChange={changeInputTab}
+          isTabEnabled={isTabEnabled}
         >
           {inputTab === "product" && (
             <ProductInformation
@@ -1112,6 +1228,7 @@ function Assessment() {
               savingProduct={savingProduct}
               saveProduct={saveProduct}
               readOnly={!permissions.canEditIntake}
+              section={buildSection("product")}
             />
           )}
           {inputTab === "customer" && (
@@ -1122,6 +1239,7 @@ function Assessment() {
               savingCustomer={savingCustomer}
               saveCustomerProfile={saveCustomerProfile}
               readOnly={!permissions.canEditIntake}
+              section={buildSection("customer")}
             />
           )}
           {inputTab === "geography" && (
@@ -1132,6 +1250,7 @@ function Assessment() {
               savingGeography={savingGeography}
               saveGeography={saveGeography}
               readOnly={!permissions.canEditIntake}
+              section={buildSection("geography")}
             />
           )}
           {inputTab === "transaction" && (
@@ -1142,6 +1261,7 @@ function Assessment() {
               savingTransaction={savingTransaction}
               saveTransactionProfile={saveTransactionProfile}
               readOnly={!permissions.canEditIntake}
+              section={buildSection("transaction")}
             />
           )}
           {inputTab === "channel" && (
@@ -1152,6 +1272,7 @@ function Assessment() {
               savingChannel={savingChannel}
               saveChannel={saveChannel}
               readOnly={!permissions.canEditIntake}
+              section={buildSection("channel")}
             />
           )}
           {inputTab === "vendor" && (
@@ -1162,6 +1283,7 @@ function Assessment() {
               savingVendor={savingVendor}
               saveVendor={saveVendor}
               readOnly={!permissions.canEditIntake}
+              section={buildSection("vendor")}
             />
           )}
           {inputTab === "preview" && (
@@ -1174,21 +1296,20 @@ function Assessment() {
               vendorForm={vendorForm}
               onSubmit={() => setShowSubmitConfirm(true)}
               submitting={submittingForAnalyst}
-              canSubmit={permissions.canEditIntake}
-              alreadySubmitted={changeRequest?.status === "SUBMITTED"}
+              canSubmit={
+                permissions.canSubmit && missingFields.length === 0
+              }
+              alreadySubmitted={permissions.submitted}
+              hideActions={!permissions.ownsIntake}
+              onPrevious={() => changeInputTab("vendor")}
+              disabledReason={submitDisabledReason}
             />
           )}
         </RequestInputTabs>
           </div>
         </div>
 
-        <AssessmentStageFooter
-          hint={
-            permissions.canRunRiskPipeline
-              ? "Syncs intake, generates risk factors, calculates scores, and retrieves regulatory evidence."
-              : "Intake is complete. Risk calculation is performed by a Risk Analyst — this request is now visible in the Risk Analyst queue and will move forward once they run it."
-          }
-        >
+        <AssessmentStageFooter hint={requestStageHint}>
           <button
             type="button"
             onClick={() => setActiveView("RISK_ASSESSMENT")}
@@ -1211,13 +1332,22 @@ function Assessment() {
             >
               {advancingStage || runningRiskAssessment
                 ? "Calculating risk..."
-                : "Complete inputs & calculate risk →"}
+                : "Run risk assessment →"}
             </button>
-          ) : (
+          ) : permissions.canSubmit ? (
+            <button
+              type="button"
+              onClick={() => changeInputTab("preview")}
+              disabled={!isTabEnabled("preview")}
+              className="rounded-xl bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+            >
+              Preview & submit →
+            </button>
+          ) : permissions.submitted && isIntakeStage ? (
             <span className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-800">
               Awaiting Risk Analyst
             </span>
-          )}
+          ) : null}
         </AssessmentStageFooter>
           </>
         )}
@@ -1232,25 +1362,28 @@ function Assessment() {
               runRiskAssessment={runRiskAssessment}
               canRun={permissions.canRunRiskPipeline}
             />
-            <AIAssessment
-              aiAssessment={aiAssessment}
-              generatingAI={generatingAI}
-              generateAIAssessment={generateAIAssessment}
-              canGenerate={permissions.canRunRiskPipeline}
-            />
+            {permissions.canViewAnalystReview && (
+              <AIAssessment
+                aiAssessment={aiAssessment}
+                generatingAI={generatingAI}
+                generateAIAssessment={generateAIAssessment}
+                canGenerate={permissions.canRunRiskPipeline}
+              />
+            )}
           </div>
           <div className="xl:col-span-5">
             <RegulatoryEvidence regulatoryEvidence={regulatoryEvidence} />
           </div>
         </div>
 
+        {permissions.canRunRiskPipeline ? (
         <AssessmentStageFooter
           hint="Generate AI assessment to unlock analyst review (required by workflow)."
         >
           <button
             type="button"
             onClick={runRiskAssessment}
-            disabled={!permissions.canRunRiskPipeline || runningRiskAssessment}
+            disabled={runningRiskAssessment}
             className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
           >
             Recalculate risk
@@ -1258,12 +1391,7 @@ function Assessment() {
           <button
             type="button"
             onClick={advanceToAnalystStage}
-            disabled={
-              !permissions.canRunRiskPipeline ||
-              advancingStage ||
-              generatingAI ||
-              !riskAssessment
-            }
+            disabled={advancingStage || generatingAI || !riskAssessment}
             className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {advancingStage || generatingAI
@@ -1271,10 +1399,13 @@ function Assessment() {
               : "Continue to analyst review →"}
           </button>
         </AssessmentStageFooter>
+        ) : (
+        <AssessmentStageFooter hint="Risk assessment is performed by the Risk Analyst. This view is read-only." />
+        )}
           </>
         )}
 
-        {activeView === "ANALYST_REVIEW" && (
+        {activeView === "ANALYST_REVIEW" && permissions.canViewAnalystReview && (
           <>
 
 <AnalystReview

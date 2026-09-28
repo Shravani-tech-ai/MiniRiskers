@@ -17,3 +17,15 @@ body {
     font-size: 106.25%;
   }
 }
+/* Saved / read-only intake sections: inputs inside a disabled fieldset. */
+fieldset:disabled input:not([type="checkbox"]):not([type="radio"]),
+fieldset:disabled textarea,
+fieldset:disabled select {
+  background-color: #f8fafc;
+  color: #334155;
+  cursor: default;
+}
+
+fieldset:disabled label {
+  cursor: default;
+}

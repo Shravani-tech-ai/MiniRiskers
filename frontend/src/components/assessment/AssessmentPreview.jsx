@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 function formatValue(value) {
   if (typeof value === "boolean") {
@@ -51,6 +51,9 @@ function AssessmentPreview({
   canSubmit,
   alreadySubmitted,
   hideActions = false,
+  onPrevious,
+  previousLabel = "Vendor",
+  disabledReason = "",
 }) {
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -292,26 +295,44 @@ function AssessmentPreview({
         />
       </div>
 
-      {!hideActions && (
-        <div className="flex flex-col gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-slate-500">
-            {alreadySubmitted
-              ? "This request has already been submitted for Risk Analyst review."
-              : "Submitting hands this request off to the Risk Analyst queue. You won't be able to submit it again."}
-          </p>
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={!canSubmit || submitting || alreadySubmitted}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting && <Loader2 size={16} className="animate-spin" />}
-            {alreadySubmitted
-              ? "Submitted"
-              : submitting
-              ? "Submitting..."
-              : "Submit for Risk Analyst review"}
-          </button>
+      {(!hideActions || onPrevious) && (
+        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            {onPrevious && (
+              <button
+                type="button"
+                onClick={onPrevious}
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                <ArrowLeft size={16} />
+                Previous: {previousLabel}
+              </button>
+            )}
+          </div>
+
+          {!hideActions && (
+            <div className="flex flex-col gap-2 sm:items-end">
+              <button
+                type="button"
+                onClick={onSubmit}
+                disabled={!canSubmit || submitting || alreadySubmitted}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {submitting && <Loader2 size={16} className="animate-spin" />}
+                {alreadySubmitted
+                  ? "Submitted"
+                  : submitting
+                  ? "Submitting..."
+                  : "Submit for Risk Analyst review"}
+              </button>
+              <p className="text-xs text-slate-500 sm:text-right">
+                {alreadySubmitted
+                  ? "This request has already been submitted for Risk Analyst review."
+                  : disabledReason ||
+                    "Submitting hands this request off to the Risk Analyst queue. You won't be able to submit it again."}
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

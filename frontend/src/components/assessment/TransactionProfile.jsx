@@ -1,3 +1,5 @@
+import { SectionFooter, SectionStatus } from "./SectionControls";
+
 function TransactionProfile({
   transactionForm,
   setTransactionForm,
@@ -5,7 +7,10 @@ function TransactionProfile({
   savingTransaction,
   saveTransactionProfile,
   readOnly = false,
+  section = {},
 }) {
+  const locked = readOnly || Boolean(section.locked);
+
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
 
@@ -25,15 +30,12 @@ function TransactionProfile({
             </p>
           </div>
 
-          {transactionSaved && (
-            <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
-              ✓ Saved
-            </span>
-          )}
+          <SectionStatus saved={transactionSaved} section={section} />
 
         </div>
       </div>
 
+      <fieldset disabled={locked} className="min-w-0">
       {/* Form */}
       <div className="grid grid-cols-1 gap-5 p-6 md:grid-cols-2">
 
@@ -287,22 +289,17 @@ function TransactionProfile({
 
       </div>
 
+      </fieldset>
+
       {/* Footer */}
-      <div className="flex justify-end border-t border-slate-200 bg-slate-50 px-6 py-4">
-
-        <button
-          onClick={saveTransactionProfile}
-          disabled={readOnly || savingTransaction}
-          className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {savingTransaction
-            ? "Saving..."
-            : transactionSaved
-            ? "Update Transaction Profile"
-            : "Save Transaction Profile"}
-        </button>
-
-      </div>
+      <SectionFooter
+        section={section}
+        saved={transactionSaved}
+        saving={savingTransaction}
+        onSave={saveTransactionProfile}
+        label="Transaction Profile"
+        readOnly={readOnly}
+      />
 
     </div>
   );

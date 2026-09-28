@@ -1,5 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 
+import { getDisplayStatus } from "../../utils/rolePermissions";
+
 function AssessmentHeader({ changeRequest, navigate }) {
   return (
     <div className="border-b border-slate-200 bg-white">
@@ -20,7 +22,7 @@ function AssessmentHeader({ changeRequest, navigate }) {
               </span>
 
               <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
-                {changeRequest.status || "DRAFT"}
+                {getDisplayStatus(changeRequest).label}
               </span>
             </div>
 

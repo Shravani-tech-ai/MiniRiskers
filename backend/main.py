@@ -31,11 +31,14 @@ from backend.permissions import (
     ROLE_BUSINESS_OWNER,
     ROLE_RISK_ANALYST,
     ROLE_RISK_COMMITTEE,
+    assert_intake_editable,
     assert_not_auditor_write,
     assert_role,
+    assert_submitted,
     assert_workflow_stage,
     filter_change_requests_for_user,
     get_change_request_or_404,
+    is_submitted,
 )
 from backend.seed_users import seed_development_users
 from risk_engine.risk_calculator import generate_risk_assessment
@@ -229,6 +232,7 @@ def authorize_intake_write(
     )
     assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
     assert_not_auditor_write(current_user)
+    assert_intake_editable(current_user, change_request)
     return change_request
 
 
@@ -244,6 +248,7 @@ def authorize_analyst_action(
     )
     assert_role(current_user, ROLE_RISK_ANALYST, ROLE_ADMIN)
     assert_not_auditor_write(current_user)
+    assert_submitted(change_request)
     return change_request
 
 
@@ -267,6 +272,10 @@ def authorize_assessment_inputs_sync(
         ROLE_ADMIN,
     )
     assert_not_auditor_write(current_user)
+    if current_user.role == ROLE_BUSINESS_OWNER:
+        assert_intake_editable(current_user, change_request)
+    elif current_user.role == ROLE_RISK_ANALYST:
+        assert_submitted(change_request)
     return change_request
 
 
@@ -1489,9 +1498,15 @@ def submit_for_analyst(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    change_request = authorize_intake_write(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db,
+        change_request_id,
+        current_user,
+    )
+    assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
+    assert_not_auditor_write(current_user)
 
-    if change_request.status == "SUBMITTED":
+    if is_submitted(change_request):
         raise HTTPException(
             status_code=400,
             detail="This change request has already been submitted.",

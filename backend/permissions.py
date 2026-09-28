@@ -29,6 +29,20 @@ COMMITTEE_STATUSES = {
     "REJECTED",
 }
 
+DRAFT_STATUSES = {"", "DRAFT"}
+INTAKE_STAGE = "REQUEST_CREATED"
+
+
+def is_submitted(change_request: ChangeRequest) -> bool:
+    # A request counts as submitted once the Business Owner hands it off
+    # (status leaves DRAFT). Requests that already progressed past intake
+    # are treated as submitted so legacy data stays visible to analysts.
+    status_value = (change_request.status or "").strip().upper()
+    if status_value not in DRAFT_STATUSES:
+        return True
+    stage = change_request.current_stage or INTAKE_STAGE
+    return stage != INTAKE_STAGE
+
 
 def _identity_matches(stored: str | None, user: User) -> bool:
     if not stored:
@@ -51,6 +65,8 @@ def can_read_change_request(user: User, change_request: ChangeRequest) -> bool:
         return _identity_matches(change_request.requested_by, user)
 
     if user.role == ROLE_RISK_ANALYST:
+        if not is_submitted(change_request):
+            return False
         assigned = (change_request.assigned_analyst or "").strip()
         if not assigned:
             return True
@@ -62,8 +78,6 @@ def can_read_change_request(user: User, change_request: ChangeRequest) -> bool:
         if stage in COMMITTEE_STAGES:
             return True
         if status_value in COMMITTEE_STATUSES:
-            return True
-        if stage == "ANALYST_REVIEW":
             return True
         return False
 
@@ -99,12 +113,18 @@ def filter_change_requests_for_user(
                 func.lower(ChangeRequest.assigned_analyst)
                 == user.full_name.strip().lower()
             )
-        return query.filter(or_(*clauses))
+        submitted_clause = or_(
+            func.upper(func.coalesce(ChangeRequest.status, "")).notin_(
+                [value for value in DRAFT_STATUSES]
+            ),
+            func.coalesce(ChangeRequest.current_stage, INTAKE_STAGE)
+            != INTAKE_STAGE,
+        )
+        return query.filter(or_(*clauses)).filter(submitted_clause)
 
     if user.role == ROLE_RISK_COMMITTEE:
         return query.filter(
             (ChangeRequest.current_stage.in_(list(COMMITTEE_STAGES)))
-            | (ChangeRequest.current_stage == "ANALYST_REVIEW")
             | (ChangeRequest.status.in_(list(COMMITTEE_STATUSES)))
         )
 
@@ -132,6 +152,30 @@ def assert_not_auditor_write(user: User) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Auditors have read-only access.",
+        )
+
+
+def assert_submitted(change_request: ChangeRequest) -> None:
+    if not is_submitted(change_request):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "The Business Owner has not submitted this request for "
+                "Risk Analyst review yet."
+            ),
+        )
+
+
+def assert_intake_editable(user: User, change_request: ChangeRequest) -> None:
+    if user.role == ROLE_ADMIN:
+        return
+    if is_submitted(change_request):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "This request has been submitted for Risk Analyst review "
+                "and its inputs are now locked."
+            ),
         )
 
 
