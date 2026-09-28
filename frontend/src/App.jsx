@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
+import Assessments from "./pages/Assessments";
+import Analytics from "./pages/Analytics";
 import Assessment from "./pages/Assessment";
 import MainLayout from "./layouts/MainLayout";
 import NewRequest from "./pages/NewRequest";
@@ -24,6 +26,28 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <Dashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/assessments"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Assessments />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Analytics />
               </MainLayout>
             </ProtectedRoute>
           }

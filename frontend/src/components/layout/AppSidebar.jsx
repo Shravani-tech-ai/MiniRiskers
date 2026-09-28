@@ -1,18 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
-import {
-  BarChart3,
-  ClipboardList,
-  LayoutGrid,
-  Settings,
-  Shield,
-} from "lucide-react";
+import { Shield } from "lucide-react";
 
-const navItems = [
-  { to: "/dashboard", label: "Requests", icon: LayoutGrid },
-  { to: "/", label: "Assessments", icon: ClipboardList, disabled: true },
-  { to: "/", label: "Analytics", icon: BarChart3, disabled: true },
-  { to: "/", label: "Settings", icon: Settings, disabled: true },
-];
+import { NAV_ITEMS } from "./navItems";
 
 function AppSidebar() {
   const location = useLocation();
@@ -35,13 +24,9 @@ function AppSidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 p-4">
-        {navItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
-          const active =
-            item.label === "Requests" &&
-            (location.pathname === "/dashboard" ||
-              location.pathname.startsWith("/assessment") ||
-              location.pathname === "/new-request");
+          const active = !item.disabled && item.matches(location.pathname);
 
           if (item.disabled) {
             return (

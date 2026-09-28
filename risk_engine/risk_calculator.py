@@ -152,15 +152,7 @@ def calculate_residual_risk(
         1 - control_effectiveness / 100
     )
 
-    # Base floor based on inherent risk
-    if inherent_score >= 76:
-        minimum_residual_risk = 51
-
-    elif inherent_score >= 51:
-        minimum_residual_risk = 26
-
-    else:
-        minimum_residual_risk = 5
+    minimum_residual_risk = get_base_residual_floor(inherent_score)
 
     # Apply risk concentration floor
     concentration_floor = calculate_risk_concentration_floor(
@@ -179,6 +171,61 @@ def calculate_residual_risk(
     )
 
     return round(residual, 2)
+
+# Residual risk can never drop below these floors, regardless of controls.
+# Each rule fires when every listed risk factor is present on the request.
+CONCENTRATION_RULES = [
+    {
+        "name": "Cross-border velocity concentration",
+        "factors": [
+            "Cross Border Transactions",
+            "High Transaction Velocity",
+            "Rapid Movement",
+        ],
+        "floor": 60,
+    },
+    {
+        "name": "PEP and high-risk customer concentration",
+        "factors": [
+            "PEP Exposure",
+            "High Risk Customer Exposure",
+        ],
+        "floor": 55,
+    },
+    {
+        "name": "Third-party cross-border processing",
+        "factors": [
+            "Third Party Transaction Processing",
+            "Cross Border Processing",
+        ],
+        "floor": 55,
+    },
+    {
+        "name": "Sanctions exposure",
+        "factors": ["Sanctions Exposure"],
+        "floor": 65,
+    },
+]
+
+
+def get_base_residual_floor(inherent_score: float) -> float:
+    # Base floor based on inherent risk
+    if inherent_score >= 76:
+        return 51
+
+    if inherent_score >= 51:
+        return 26
+
+    return 5
+
+
+def get_triggered_concentration_rules(factor_names: set[str]) -> list[dict]:
+    return [
+        rule
+        for rule in CONCENTRATION_RULES
+        if all(factor in factor_names for factor in rule["factors"])
+    ]
+
 
 def calculate_risk_concentration_floor(
     db: Session,
@@ -200,59 +247,10 @@ def calculate_risk_concentration_floor(
 
     minimum_residual_risk = 5
 
-    # --------------------------------------------------------
-    # Rule 1:
-    # Cross-border + high velocity + rapid movement
-    # --------------------------------------------------------
-
-    if (
-        "Cross Border Transactions" in factor_names
-        and "High Transaction Velocity" in factor_names
-        and "Rapid Movement" in factor_names
-    ):
+    for rule in get_triggered_concentration_rules(factor_names):
         minimum_residual_risk = max(
             minimum_residual_risk,
-            60
-        )
-
-    # --------------------------------------------------------
-    # Rule 2:
-    # PEP + high-risk customer exposure
-    # --------------------------------------------------------
-
-    if (
-        "PEP Exposure" in factor_names
-        and "High Risk Customer Exposure" in factor_names
-    ):
-        minimum_residual_risk = max(
-            minimum_residual_risk,
-            55
-        )
-
-    # --------------------------------------------------------
-    # Rule 3:
-    # Third-party transaction processing +
-    # cross-border processing
-    # --------------------------------------------------------
-
-    if (
-        "Third Party Transaction Processing" in factor_names
-        and "Cross Border Processing" in factor_names
-    ):
-        minimum_residual_risk = max(
-            minimum_residual_risk,
-            55
-        )
-
-    # --------------------------------------------------------
-    # Rule 4:
-    # Sanctions exposure
-    # --------------------------------------------------------
-
-    if "Sanctions Exposure" in factor_names:
-        minimum_residual_risk = max(
-            minimum_residual_risk,
-            65
+            rule["floor"]
         )
 
     return minimum_residual_risk

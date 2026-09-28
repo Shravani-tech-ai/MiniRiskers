@@ -93,7 +93,26 @@ function AnalystReview({
 
         <div>
           <label className="text-sm font-semibold text-slate-700">Analyst Rating</label>
-          <p className="mt-1 text-xs text-slate-500">Select the rating determined by the FCRM analyst.</p>
+          <p className="mt-1 text-xs text-slate-500">Accept the system rating, or select a different rating and explain why.</p>
+          <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
+          {!analystReviewed && canSubmit && riskAssessment?.residual_rating && (
+            <button
+              type="button"
+              onClick={() => {
+                setAnalystRating(riskAssessment.residual_rating);
+                setOverrideReason("");
+              }}
+              className={[
+                "rounded-lg border px-4 py-3 text-sm font-semibold transition",
+                analystRating === riskAssessment.residual_rating
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                  : "border-slate-300 text-slate-700 hover:bg-slate-50",
+              ].join(" ")}
+            >
+              {analystRating === riskAssessment.residual_rating ? "✓ " : ""}
+              Accept system rating ({riskAssessment.residual_rating})
+            </button>
+          )}
           <select
             value={analystRating}
             onChange={(e) => {
@@ -102,7 +121,8 @@ function AnalystReview({
                 setOverrideReason("");
               }
             }}
-            className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 md:w-72"
+            disabled={analystReviewed || !canSubmit}
+            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50 md:w-72"
           >
             <option value="">Select rating</option>
             <option value="LOW">LOW</option>
@@ -110,6 +130,7 @@ function AnalystReview({
             <option value="HIGH">HIGH</option>
             <option value="CRITICAL">CRITICAL</option>
           </select>
+          </div>
         </div>
 
         {analystRating && analystRating !== riskAssessment?.residual_rating && (
@@ -127,8 +148,8 @@ function AnalystReview({
         )}
 
         <div>
-          <label className="text-sm font-semibold text-slate-700">Consequences / Conditions</label>
-          <p className="mt-1 text-xs text-slate-500">Record any additional conditions, mitigations, or consequences associated with the analyst decision.</p>
+          <label className="text-sm font-semibold text-slate-700">Suggestions / Conditions</label>
+          <p className="mt-1 text-xs text-slate-500">Record suggested controls, mitigations, or conditions. These are shared with the Business Owner together with the final rating once you submit.</p>
           <textarea
             value={consequences}
             onChange={(e) => setConsequences(e.target.value)}

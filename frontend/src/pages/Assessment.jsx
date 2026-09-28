@@ -15,6 +15,10 @@ import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import IntakePanel from "../components/assessment/IntakePanel";
 import WorkflowStepper from "../components/assessment/WorkflowStepper";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
+import RiskMethodologyModal from "../components/assessment/RiskMethodologyModal";
+import AnalystOutcome, {
+  AwaitingAnalystReview,
+} from "../components/assessment/AnalystOutcome";
 import RequestInputTabs, {
   INPUT_TABS,
 } from "../components/assessment/RequestInputTabs";
@@ -41,6 +45,7 @@ import PageContainer from "../components/layout/PageContainer";
 import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import {
+  ROLES,
   getDefaultView,
   getLockedStages,
   getRequestPermissions,
@@ -55,6 +60,9 @@ function Assessment() {
   const [changeRequest, setChangeRequest] = useState(null);
   const [riskAssessment, setRiskAssessment] = useState(null);
   const [regulatoryEvidence, setRegulatoryEvidence] = useState([]);
+  const [riskFactors, setRiskFactors] = useState([]);
+  const [showMethodology, setShowMethodology] = useState(false);
+  const [analystReviewRecord, setAnalystReviewRecord] = useState(null);
   const [aiAssessment, setAiAssessment] = useState(null);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [runningRiskAssessment, setRunningRiskAssessment] = useState(false);
@@ -127,6 +135,7 @@ function Assessment() {
   const [submitResult, setSubmitResult] = useState(null);
 
   const permissions = getRequestPermissions(user?.role, changeRequest);
+  const isBusinessOwner = user?.role === ROLES.BUSINESS_OWNER;
 
   const applyFormValues = (mapped) => {
     if (!mapped) {
@@ -261,6 +270,15 @@ function Assessment() {
       }
 
       try {
+        const factorsResponse = await api.get(
+          `/change-requests/${changeRequestId}/risk-factors`
+        );
+        setRiskFactors(factorsResponse.data.risk_factors || []);
+      } catch {
+        setRiskFactors([]);
+      }
+
+      try {
         const aiResponse = await api.get(
           `/change-requests/${changeRequestId}/ai-assessment`
         );
@@ -279,12 +297,14 @@ function Assessment() {
           const review = analystReviewResponse.data.review;
 
           setAnalystReviewed(true);
+          setAnalystReviewRecord(review);
 
           setAnalystRating(review.analyst_rating || "");
           setOverrideReason(review.override_reason || "");
           setConsequences(review.consequences || "");
         } else {
           setAnalystReviewed(false);
+          setAnalystReviewRecord(null);
         }
       } catch (error) {
         console.error(
@@ -1354,13 +1374,26 @@ function Assessment() {
 
         {activeView === "RISK_ASSESSMENT" && (
           <>
+        {isBusinessOwner && !analystReviewRecord ? (
+          <AwaitingAnalystReview
+            riskCalculated={!isIntakeStage}
+          />
+        ) : (
         <div className="space-y-8 xl:grid xl:grid-cols-12 xl:items-start xl:gap-10 xl:space-y-0">
           <div className="space-y-8 xl:col-span-7">
+            {isBusinessOwner && (
+              <div className="mt-8">
+                <AnalystOutcome review={analystReviewRecord} />
+              </div>
+            )}
             <RiskOverview
               riskAssessment={riskAssessment}
               runningRiskAssessment={runningRiskAssessment}
               runRiskAssessment={runRiskAssessment}
               canRun={permissions.canRunRiskPipeline}
+              onViewMethodology={
+                isBusinessOwner ? undefined : () => setShowMethodology(true)
+              }
             />
             {permissions.canViewAnalystReview && (
               <AIAssessment
@@ -1372,9 +1405,13 @@ function Assessment() {
             )}
           </div>
           <div className="xl:col-span-5">
-            <RegulatoryEvidence regulatoryEvidence={regulatoryEvidence} />
+            <RegulatoryEvidence
+              regulatoryEvidence={regulatoryEvidence}
+              riskFactors={riskFactors}
+            />
           </div>
         </div>
+        )}
 
         {permissions.canRunRiskPipeline ? (
         <AssessmentStageFooter
@@ -1576,6 +1613,13 @@ function Assessment() {
         )}
 
       </PageContainer>
+
+      {showMethodology && (
+        <RiskMethodologyModal
+          changeRequestId={changeRequestId}
+          onClose={() => setShowMethodology(false)}
+        />
+      )}
 
       {showSubmitConfirm && (
         <ConfirmDialog

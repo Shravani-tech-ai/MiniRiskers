@@ -77,6 +77,10 @@ from backend.export_service import (
     build_assessment_export,
     export_to_pdf_bytes,
 )
+from backend.risk_methodology import (
+    build_risk_methodology,
+    methodology_to_pdf_bytes,
+)
 from backend.request_numbers import (
     allocate_request_number,
     peek_next_request_number,
@@ -279,6 +283,39 @@ def authorize_assessment_inputs_sync(
     return change_request
 
 
+RISK_RELEASED_STAGES = {"COMMITTEE_REVIEW", "COMPLETED"}
+
+
+def risk_results_released(db: Session, change_request: ChangeRequest) -> bool:
+    # Risk results are shared with the Business Owner only once the Risk
+    # Analyst has reviewed (accepted or adjusted) the calculated risk.
+    if (change_request.current_stage or "") in RISK_RELEASED_STAGES:
+        return True
+    return (
+        db.query(AnalystOverride.id)
+        .filter(AnalystOverride.change_request_id == change_request.id)
+        .first()
+        is not None
+    )
+
+
+def assert_risk_results_visible(
+    db: Session,
+    current_user: User,
+    change_request: ChangeRequest,
+) -> None:
+    if current_user.role != ROLE_BUSINESS_OWNER:
+        return
+    if not risk_results_released(db, change_request):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Risk results will be shared once the Risk Analyst "
+                "completes their review."
+            ),
+        )
+
+
 @app.on_event("startup")
 def on_startup():
     apply_sqlite_schema_patches()
@@ -357,7 +394,10 @@ def get_risk_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
 
     risk_assessment = (
         db.query(RiskAssessment)
@@ -1013,7 +1053,10 @@ def get_regulatory_evidence(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
 
     evidence = (
         db.query(RegulatoryEvidence)
@@ -1856,7 +1899,10 @@ def get_controls(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
 
     controls = (
         db.query(Control)
@@ -1891,7 +1937,10 @@ def get_risk_factors(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
 
     factors = (
         db.query(RiskFactor)
@@ -1922,7 +1971,10 @@ def get_ai_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
 
     recommendation = (
         db.query(AIRecommendation)
@@ -1973,7 +2025,10 @@ def export_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
 
     try:
         export_data = build_assessment_export(db, change_request_id)
@@ -2251,6 +2306,20 @@ def get_dashboard_risk_summary(
         "LOW": 0
     }
 
+    if current_user.role == ROLE_BUSINESS_OWNER:
+        released_ids = {
+            row.id
+            for row in db.query(ChangeRequest)
+            .filter(ChangeRequest.id.in_(list(latest_assessments)))
+            .all()
+            if risk_results_released(db, row)
+        }
+        latest_assessments = {
+            key: value
+            for key, value in latest_assessments.items()
+            if key in released_ids
+        }
+
     for assessment in latest_assessments.values():
         rating = assessment.final_rating or assessment.residual_rating
 
@@ -2264,3 +2333,155 @@ def get_dashboard_risk_summary(
         "medium": risk_counts["MEDIUM"],
         "low": risk_counts["LOW"]
     }
+
+def _methodology_report_or_404(
+    db: Session,
+    change_request_id: int,
+    current_user: User,
+) -> dict:
+    get_change_request_or_404(db, change_request_id, current_user)
+    assert_role(
+        current_user,
+        ROLE_RISK_ANALYST,
+        ROLE_RISK_COMMITTEE,
+        ROLE_AUDITOR,
+        ROLE_ADMIN,
+    )
+    try:
+        return build_risk_methodology(db, change_request_id)
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error))
+
+
+@app.get("/change-requests/{change_request_id}/risk-methodology")
+def get_risk_methodology(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return _methodology_report_or_404(db, change_request_id, current_user)
+
+
+@app.get("/change-requests/{change_request_id}/risk-methodology/pdf")
+def download_risk_methodology_pdf(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    report = _methodology_report_or_404(db, change_request_id, current_user)
+    request_number = report["change_request"]["request_number"]
+    return Response(
+        content=methodology_to_pdf_bytes(report),
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{request_number}-risk-methodology.pdf"'
+            )
+        },
+    )
+
+
+@app.get("/assessments/overview")
+def get_assessments_overview(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    change_requests = (
+        filter_change_requests_for_user(current_user, db.query(ChangeRequest))
+        .order_by(ChangeRequest.id.desc())
+        .all()
+    )
+    ids = [change_request.id for change_request in change_requests]
+
+    def latest_by_request(model):
+        if not ids:
+            return {}
+        latest = {}
+        rows = (
+            db.query(model)
+            .filter(model.change_request_id.in_(ids))
+            .order_by(model.id.desc())
+            .all()
+        )
+        for row in rows:
+            latest.setdefault(row.change_request_id, row)
+        return latest
+
+    assessments = latest_by_request(RiskAssessment)
+    reviews = latest_by_request(AnalystOverride)
+    decisions = latest_by_request(CommitteeDecision)
+
+    items = []
+    for change_request in change_requests:
+        assessment = assessments.get(change_request.id)
+        review = reviews.get(change_request.id)
+        decision = decisions.get(change_request.id)
+        released = (
+            review is not None
+            or (change_request.current_stage or "") in RISK_RELEASED_STAGES
+        )
+        show_risk = assessment is not None and (
+            current_user.role != ROLE_BUSINESS_OWNER or released
+        )
+
+        items.append({
+            "id": change_request.id,
+            "request_number": change_request.request_number,
+            "title": change_request.title,
+            "business_unit": change_request.business_unit,
+            "change_type": change_request.change_type,
+            "priority": change_request.priority,
+            "requested_by": change_request.requested_by,
+            "status": change_request.status,
+            "current_stage": change_request.current_stage,
+            "created_at": change_request.created_at,
+            "risk_released": released,
+            # Hidden from Business Owners until the analyst has reviewed it.
+            "risk_calculated": assessment is not None,
+            "risk": (
+                {
+                    "inherent_score": assessment.inherent_score,
+                    "inherent_rating": assessment.inherent_rating,
+                    "residual_score": assessment.residual_score,
+                    "residual_rating": assessment.residual_rating,
+                    "final_rating": assessment.final_rating,
+                    "control_adjustment": assessment.control_adjustment,
+                    "category_scores": {
+                        "CUSTOMER": assessment.customer_risk_score,
+                        "PRODUCT": assessment.product_risk_score,
+                        "GEOGRAPHY": assessment.geography_risk_score,
+                        "TRANSACTION": assessment.transaction_risk_score,
+                        "CHANNEL": assessment.channel_risk_score,
+                        "THIRD_PARTY": assessment.third_party_risk_score,
+                        "FRAUD": assessment.fraud_risk_score,
+                    },
+                    "calculated_at": assessment.created_at,
+                }
+                if show_risk
+                else None
+            ),
+            "analyst_review": (
+                {
+                    "system_rating": review.system_rating,
+                    "analyst_rating": review.analyst_rating,
+                    "accepted": review.analyst_rating == review.system_rating,
+                    "reviewed_by": review.reviewed_by,
+                    "reviewed_at": review.created_at,
+                    "consequences": review.consequences,
+                }
+                if review
+                else None
+            ),
+            "committee_decision": (
+                {
+                    "decision": decision.decision,
+                    "decided_by": decision.decided_by,
+                    "decided_at": decision.created_at,
+                    "conditions": decision.conditions,
+                }
+                if decision
+                else None
+            ),
+        })
+
+    return {"items": items}

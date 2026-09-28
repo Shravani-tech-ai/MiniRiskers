@@ -1,173 +1,143 @@
-import { FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, Eye, FileText } from "lucide-react";
 
-function RegulatoryEvidence({ regulatoryEvidence }) {
+import EvidencePreviewModal from "./EvidencePreviewModal";
+
+const PAGE_SIZE = 5;
+
+function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
+  const [page, setPage] = useState(0);
+  const [openIndex, setOpenIndex] = useState(null);
+
+  const total = regulatoryEvidence.length;
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const start = page * PAGE_SIZE;
+  const pageItems = regulatoryEvidence.slice(start, start + PAGE_SIZE);
+
+  const factorNames = Object.fromEntries(
+    riskFactors.map((factor) => [factor.id, factor.risk_factor])
+  );
+
+  // A re-run can shrink the list; keep the page in range.
+  useEffect(() => {
+    if (page > pageCount - 1) {
+      setPage(pageCount - 1);
+    }
+  }, [page, pageCount]);
+
+  const openEvidence = openIndex !== null ? regulatoryEvidence[openIndex] : null;
+
+  const showEvidence = (index) => {
+    setOpenIndex(index);
+    setPage(Math.floor(index / PAGE_SIZE));
+  };
+
   return (
     <div className="mt-8 xl:mt-0">
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-
-        {/* Evidence Header */}
         <div className="border-b border-slate-200 p-6">
-
-          <div className="flex items-center justify-between">
-
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-
               <div className="rounded-lg bg-blue-50 p-2">
-                <FileText
-                  size={20}
-                  className="text-blue-600"
-                />
+                <FileText size={20} className="text-blue-600" />
               </div>
-
               <div>
-
                 <h3 className="font-semibold text-slate-900">
                   Regulatory Evidence
                 </h3>
-
                 <p className="mt-1 text-sm text-slate-500">
                   Regulatory sources retrieved to support the risk assessment
                 </p>
-
               </div>
-
             </div>
 
-            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
-              {regulatoryEvidence.length} Evidence Records
+            <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+              {total} records
             </span>
-
           </div>
-
         </div>
 
-        {/* Evidence Records */}
-        <div className="divide-y divide-slate-100">
+        {total === 0 ? (
+          <div className="p-6">
+            <p className="text-sm text-slate-500">
+              No regulatory evidence available.
+            </p>
+          </div>
+        ) : (
+          <>
+            <ol className="divide-y divide-slate-100">
+              {pageItems.map((evidence, offset) => {
+                const index = start + offset;
 
-          {regulatoryEvidence.length === 0 ? (
-
-            <div className="p-6">
-
-              <p className="text-sm text-slate-500">
-                No regulatory evidence available.
-              </p>
-
-            </div>
-
-          ) : (
-
-            regulatoryEvidence.map((evidence, index) => (
-
-              <div
-                key={evidence.id || index}
-                className="p-6"
-              >
-
-                {/* Top Row */}
-                <div className="flex items-start justify-between gap-4">
-
-                  <div className="flex-1">
-
-                    <div className="flex flex-wrap items-center gap-2">
-
-                      <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                        {evidence.authority || "Unknown Authority"}
-                      </span>
-
-                      {evidence.page_number && (
-
-                        <span className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                          Page {evidence.page_number}
-                        </span>
-
-                      )}
-
-                    </div>
-
-                    <h4 className="mt-3 font-semibold text-slate-900">
-                      {evidence.document_name || "Regulatory Document"}
-                    </h4>
-
-                  </div>
-
-                  {/* Relevance */}
-                  {evidence.relevance_score !== null &&
-                    evidence.relevance_score !== undefined && (
-
-                    <div className="text-right">
-
-                      <p className="text-xs text-slate-400">
-                        Retrieval Score
-                      </p>
-
-                      <p className="mt-1 text-sm font-semibold text-slate-700">
-                        {Number(evidence.relevance_score).toFixed(4)}
-                      </p>
-
-                    </div>
-
-                  )}
-
-                </div>
-
-                {/* Query */}
-                {evidence.query && (
-
-                  <div className="mt-4 rounded-lg bg-slate-50 p-4">
-
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Regulatory Query
-                    </p>
-
-                    <p className="mt-1 text-sm leading-6 text-slate-700">
-                      {evidence.query}
-                    </p>
-
-                  </div>
-
-                )}
-
-                {/* Evidence Text */}
-                {evidence.evidence_text && (
-
-                  <div className="mt-4">
-
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Evidence
-                    </p>
-
-                    <p className="mt-2 text-sm leading-7 text-slate-600">
-                      {evidence.evidence_text}
-                    </p>
-
-                  </div>
-
-                )}
-
-                {/* Source Reference */}
-                {evidence.source_reference && (
-
-                  <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
-
-                    <FileText size={14} />
-
-                    <span>
-                      {evidence.source_reference}
+                return (
+                  <li
+                    key={evidence.id || index}
+                    className="flex items-start gap-4 px-6 py-4"
+                  >
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold tabular-nums text-slate-600">
+                      {index + 1}
                     </span>
+                    <p className="min-w-0 flex-1 text-sm font-medium leading-6 text-slate-800">
+                      {evidence.query || evidence.document_name || "Regulatory evidence"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => showEvidence(index)}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <Eye size={14} />
+                      View evidence
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
 
-                  </div>
-
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-6 py-4">
+              <span className="text-sm font-semibold tabular-nums text-slate-500">
+                {page + 1}/{pageCount}
+              </span>
+              <div className="flex gap-2">
+                {page > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPage(page - 1)}
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    <ChevronLeft size={15} />
+                    Previous
+                  </button>
                 )}
-
+                {page < pageCount - 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setPage(page + 1)}
+                    className="rounded-lg bg-slate-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-slate-800"
+                  >
+                    View more
+                  </button>
+                )}
               </div>
-
-            ))
-
-          )}
-
-        </div>
-
+            </div>
+          </>
+        )}
       </div>
+
+      {openEvidence && (
+        <EvidencePreviewModal
+          evidence={openEvidence}
+          number={openIndex + 1}
+          total={total}
+          riskFactorName={factorNames[openEvidence.risk_factor_id]}
+          onClose={() => setOpenIndex(null)}
+          onPrevious={
+            openIndex > 0 ? () => showEvidence(openIndex - 1) : null
+          }
+          onNext={
+            openIndex < total - 1 ? () => showEvidence(openIndex + 1) : null
+          }
+        />
+      )}
     </div>
   );
 }

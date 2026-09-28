@@ -1,4 +1,5 @@
 import {
+  Calculator,
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
@@ -87,6 +88,7 @@ function RiskOverview({
   runningRiskAssessment,
   runRiskAssessment,
   canRun = true,
+  onViewMethodology,
 }) {
   return (
     <div className="mt-8">
@@ -95,6 +97,7 @@ function RiskOverview({
       {/* RUN RISK ASSESSMENT */}
       {/* ======================================================= */}
 
+      {canRun && (
       <div className="mb-8 rounded-xl border border-indigo-200 bg-indigo-50/40 p-6">
 
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
@@ -139,13 +142,14 @@ function RiskOverview({
         </div>
 
       </div>
+      )}
 
 
       {/* ======================================================= */}
       {/* RISK OVERVIEW HEADER */}
       {/* ======================================================= */}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
 
         <div>
 
@@ -160,9 +164,21 @@ function RiskOverview({
         </div>
 
         {riskAssessment && (
-          <span className="text-xs text-slate-400">
-            Risk Model v{riskAssessment.risk_model_version}
-          </span>
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {onViewMethodology && (
+              <button
+                type="button"
+                onClick={onViewMethodology}
+                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50"
+              >
+                <Calculator size={16} />
+                How was this calculated?
+              </button>
+            )}
+            <span className="text-xs text-slate-400">
+              Risk Model v{riskAssessment.risk_model_version}
+            </span>
+          </div>
         )}
 
       </div>
