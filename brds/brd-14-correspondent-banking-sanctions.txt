@@ -1,0 +1,137 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: USD Correspondent Banking Relationship Onboarding (OFAC-Compliant)
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Correspondent Banking and Financial Institutions
+Summary: Onboard a new USD correspondent banking relationship with a
+mid-sized US regional bank to expand the bank's USD clearing capacity
+for trade finance, oil import LC settlement, and FCNR deposit
+servicing. The new correspondent brings an additional nostro account
+in New York, supplementing the bank's existing JPMorgan Chase and
+Standard Chartered London relationships. This BRD is being raised
+in the context of OFAC's heightened scrutiny of USD clearing for
+Indian banks (OFAC's enforcement actions against multiple
+international banks in 2023-2024 over Russia and Iran-related
+sanctions screening failures) and the bank's own obligation under
+the USA PATRIOT Act Section 311 to maintain a robust Correspondent
+Account Due Diligence programme. Also covers the FATF Recommendation
+13 (Correspondent Banking) and FATF Recommendation 16 (Wire Transfer
+Information) compliance obligations.
+
+2. Product Description
+Product Name: USD Nostro Correspondent Banking (New NY Relationship)
+Product Category: Correspondent Banking / Financial Institutions
+Description: USD nostro account with a US regional bank for clearing
+of USD payments and trade finance transactions. The relationship
+includes standard SWIFT MT103 outbound payment clearing, MT202 cover
+payments, and trade-related MT700/MT707 LC advising. The bank does
+NOT request pass-through correspondent relationships (also known as
+'nested' or 'payable-through' accounts) from the new correspondent,
+keeping the relationship simple and OFAC-compliant.
+Transaction Type: Cross-border USD correspondent clearing
+Currency: USD
+Countries Supported: India plus all countries reachable via USD
+clearing (subject to bank's sanctions policy)
+Per-Transaction Limit: 200000000 (per single USD clearing limit,
+subject to correspondent's own limits)
+Expected Monthly Volume: 4500
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Business
+Customer Segment: Other Banks (correspondent banks are the bank's
+own customer for this product)
+Onboarding Method: Relationship Manager assisted with multi-month DD
+process
+KYC Method: Enhanced Due Diligence under FATF Recommendation 13
+including bank licence verification, regulator standing review,
+annual report analysis, AML/CFT framework review, sanctions screening
+(OFAC SDN, EU Consolidated, UN Security Council, UK HMT), and
+anti-money-laundering questionnaire (Wolfsberg Group Correspondent
+Banking Due Diligence Questionnaire)
+Expected Customer Count: 1
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: United States
+Country Code: US
+Customer Country: United States
+Transaction Country: United States and India
+Beneficiary Country: Multiple international (subject to sanctions
+policy)
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: Yes (USD clearing is inherently exposed to OFAC
+jurisdictions - Iran, DPRK, Syria, Cuba, Crimea regions)
+
+5. Transaction Profile
+Transaction Type: Cross-border USD correspondent clearing (MT103,
+MT202, MT700/MT707)
+Average Transaction Amount: 5000000
+Maximum Transaction Amount: 200000000
+Expected Daily Volume: 200
+Expected Monthly Volume (Transaction): 4500
+Expected Frequency: 4
+Number of Countries: 50
+Transaction Velocity: 3
+Round Amount Risk: No
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Back-office Correspondent Banking
+Delivery Channel: SWIFT messaging, back-office correspondent
+operations, in-house correspondent banking platform
+Mobile Banking: No
+Internet Banking: No
+Branch: No
+Agent: No
+API: Yes (SWIFT MT103/MT202/MT700 APIs)
+Third Party Channel: No
+Remote Onboarding: No
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable (the correspondent bank is the
+counterparty, not a service vendor)
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: No service vendor in this arrangement. SWIFT
+messaging is a utility. Sanctions screening is performed by the
+bank's own transaction monitoring platform against OFAC SDN, EU
+Consolidated, and UN Security Council lists.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: Yes
+
+8. Additional Notes
+This BRD represents the topmost risk area in international banking
+in 2025: USD correspondent banking under OFAC scrutiny. India's RBI
+Master Direction on KYC, the Wolfsberg Group Correspondent Banking
+DDQ, and the USA PATRIOT Act Section 311 collectively require that
+Indian banks perform rigorous DD on their USD correspondents. The
+risk dimension is dominated by:
+- USD clearing reach (subject to OFAC jurisdiction exposure for any
+  USD payment worldwide)
+- FATF Recommendation 13 obligations
+- USA PATRIOT Act Section 311 obligations on the correspondent's own
+  AML programme
+- High transaction velocity and value (4500 transactions per month,
+  average USD 5M per transaction)
+
+Expected band: HIGH, driven primarily by transaction velocity and
+cross-border reach. The risk engine should NOT trigger any
+risk-floor rule because the customer (the new correspondent) is a
+regulated US bank with full DD, but Sanctions Exposure should be
+flagged at the Geography level because USD clearing inherently
+carries OFAC exposure. Regulatory evidence should surface the USA
+PATRIOT Act Section 311, the Wolfsberg Group Correspondent Banking
+DDQ, FATF Recommendations 13 and 16, RBI's Master Direction on KYC
+Section on Correspondent Banking, and OFAC's Sanctions Compliance
+Guidance for the Financial Services Sector (2014, updated 2023).

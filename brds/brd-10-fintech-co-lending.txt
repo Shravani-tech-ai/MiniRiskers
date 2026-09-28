@@ -1,0 +1,118 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Co-Lending Arrangement with FinTech NBFC for MSME Digital Loans
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: MSME Lending and FinTech Partnerships
+Summary: Enter into a co-lending arrangement with CashCredit FinTech
+NBFC Ltd (a RBI-registered NBFC) to originate and service unsecured
+small-ticket working-capital loans to MSME borrowers via the FinTech's
+mobile app and loan management system. Disbursement is split 80/20
+between the bank (80%) and the FinTech NBFC (20%), per the revised
+RBI Co-Lending Guidelines (DBR.No.BP.BC.45/21.04.048/2018-19 dated 4
+December 2018, revised 25 November 2020, with the latest 80/20
+modification communicated via circular
+DBR.No.BP.BC.86/21.04.048/2020-21 dated 5 November 2021). The bank's
+role under RBI's Digital Lending Guidelines (10 August 2022) is to
+ensure that the FinTech NBFC's digital lending stack, recovery
+practices, and disclosure standards are at par with the bank's own.
+
+2. Product Description
+Product Name: MSME Digi-Loan Co-Lending Product
+Product Category: MSME Lending / Co-Lending
+Description: Unsecured working-capital loan for MSME borrowers, ticket
+size INR 50,000 to INR 25 lakh, tenures 6 to 36 months. Origination
+happens entirely on the FinTech NBFC's app (sanctioned by the bank
+under the Digital Lending Guidelines); underwriting combines the
+FinTech's cash-flow underwriting model with the bank's bureau and
+Credit Guarantee Fund Trust for Micro and Small Enterprises (CGTMSE)
+data. Disbursement is into the MSME's current account; EMI is debited
+from the same. Default handling follows the bank's standard MSME
+recovery playbook.
+Transaction Type: Domestic MSME loan disbursement and EMI collection
+Currency: INR
+Countries Supported: India
+Per-Transaction Limit: 2500000
+Expected Monthly Volume: 4000
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Business
+Customer Segment: Micro, Small and Medium Enterprises (MSMEs)
+Onboarding Method: Digital via FinTech app + Bank's MSME relationship
+manager for ticket size above INR 10 lakh
+KYC Method: Aadhaar e-KYC + PAN + GSTIN + Udyam Registration + Video
+KYC for ticket size above INR 5 lakh
+Expected Customer Count: 25000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: India
+Domestic or Cross-Border: Domestic
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Loan disbursement (outbound) and EMI debit (inbound)
+Average Transaction Amount: 500000
+Maximum Transaction Amount: 2500000
+Expected Daily Volume: 180
+Expected Monthly Volume (Transaction): 4000
+Expected Frequency: 2
+Number of Countries: 1
+Transaction Velocity: 2
+Round Amount Risk: Yes
+Rapid Movement Possible: No
+
+6. Channel Information
+Channel Type: Digital via FinTech NBFC's app
+Delivery Channel: Mobile Banking (FinTech NBFC's app) plus Bank's
+Corporate Internet Banking for relationship-managed tickets
+Mobile Banking: Yes (FinTech's app)
+Internet Banking: Yes
+Branch: No
+Agent: No
+API: Yes (FinTech origination and servicing API)
+Third Party Channel: Yes
+Remote Onboarding: Yes
+
+7. Vendor / Third-Party Information
+Vendor Name: CashCredit FinTech NBFC Ltd
+Vendor Type: FinTech NBFC (RBI-registered, CRIF High-Mark rated)
+Vendor Country: India
+India Based: Yes
+Service Description: Operates the digital lending app, cash-flow
+underwriting model, loan origination system, and customer service for
+the MSME Digi-Loan product. The bank provides the credit decision
+oversight, funds 80% of the disbursement, and holds the master
+servicing arrangement.
+Criticality: High
+Outsourcing Type: Material Outsourcing (under RBI Digital Lending
+Guidelines and Outsourcing of IT Services direction)
+Due Diligence Completed: Yes (DD pack was finalised in March 2025)
+Contract Completed: Yes
+Audit Rights: Yes
+Business Continuity Plan: Yes
+Cross Border Processing: No
+
+8. Additional Notes
+This BRD represents one of the topmost real-time risk areas for
+Indian banks in 2025-2026. RBI has been actively flagging concerns
+about digital lending apps and co-lending arrangements, and ED / FIU
+have taken action against multiple FinTech NBFCs for PMLA and
+disclosure breaches. Use this BRD to confirm the risk engine
+correctly classifies the third-party relationship as Material
+Outsourcing and pulls in the relevant RBI Digital Lending Guidelines,
+the 2021 co-lending 80/20 modification, and the CGTMSE framework as
+regulatory evidence. Expected band: MEDIUM to HIGH — driven by New
+Product, Third-Party Channel, and Digital Lending App exposure.
+Residual rating should improve meaningfully because the vendor has
+full DD, the contract is complete, and audit rights plus BCP are in
+place. This BRD is the contrast to brd-06 (where DD is pending) —
+same product shape, but the controls are properly executed.

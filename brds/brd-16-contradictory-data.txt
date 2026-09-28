@@ -1,0 +1,148 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Internally Contradictory Product Definition for Negative Testing
+Change Type: New Product
+Requested By: Test QA Team
+Business Unit: Retail Banking
+Summary: This BRD contains intentionally contradictory fields to verify
+that the system surfaces cross-field inconsistencies rather than
+silently accepting them. Product is described as Domestic (Domestic
+or Cross-Border = Domestic) but flags Sanctions Exposure = Yes and
+Beneficiary Country = Iran, which is a sanctioned jurisdiction.
+
+2. Product Description
+Product Name: Paradoxical Domestic Sanctioned Product
+Product Category: Deposit Products
+Description: A domestic recurring deposit product that has Sanctions
+Exposure = Yes and Beneficiary Country = Iran. By definition, a
+sanctioned jurisdiction cannot be a domestic beneficiary. The
+contradiction is deliberate.
+Transaction Type: Domestic deposit (claimed) with sanctioned
+beneficiary (Iran) - CONTRADICTION
+Currency: INR, IRR
+Countries Supported: India, Iran - CONTRADICTION (Iran cannot appear
+under "Countries Supported" of a domestic product)
+Per-Transaction Limit: 50000
+Expected Monthly Volume: 100
+New Product Flag: No - CONTRADICTION (no new product should have
+sanctioned exposure)
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Retail Customers - CONTRADICTION (retail customers
+should not transact with sanctioned jurisdictions without PEP flag)
+Onboarding Method: Branch-assisted KYC
+KYC Method: Aadhaar e-KYC
+Expected Customer Count: 10000
+PEP Exposure: No - CONTRADICTION (high-value customers transacting
+with Iran should be PEP-flagged)
+High Risk Customer Exposure: No - CONTRADICTION (Iran exposure
+automatically triggers High Risk Customer Exposure)
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: Iran - CONTRADICTION (Iran is OFAC-sanctioned,
+cannot be a beneficiary in a domestic-only product)
+Domestic or Cross-Border: Domestic - CONTRADICTION (Iran = cross-border
++ sanctioned, NOT domestic)
+High Risk Jurisdiction Flag: No - CONTRADICTION (Iran is on FATF
+high-risk list)
+Sanctions Exposure: Yes
+
+5. Transaction Profile
+Transaction Type: Domestic deposit
+Average Transaction Amount: 5000
+Maximum Transaction Amount: 50000
+Expected Daily Volume: 5
+Expected Monthly Volume (Transaction): 100
+Expected Frequency: 1
+Number of Countries: 2 - CONTRADICTION (cannot be 2 if "Domestic")
+Transaction Velocity: 0 - CONTRADICTION (zero velocity with cross-
+border flow?)
+Round Amount Risk: No
+Rapid Movement Possible: No - CONTRADICTION (Iran + sanctioned funds
+movement is by definition rapid and structured)
+
+6. Channel Information
+Channel Type: Branch-assisted
+Delivery Channel: Branch
+Mobile Banking: No
+Internet Banking: Yes
+Branch: Yes
+Agent: No
+API: No
+Third Party Channel: No - CONTRADICTION (sanctions processing almost
+always requires a screening vendor)
+Remote Onboarding: No
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable - CONTRADICTION (sanctions screening
+requires a Dow Jones / Refinitiv / equivalent vendor)
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: No third-party involved.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: No - CONTRADICTION (Iran = cross-border)
+
+8. Additional Notes
+This BRD is the NEGATIVE TEST - CONTRADICTORY DATA scenario. It
+deliberately sets inconsistent values across geography, customer,
+and transaction dimensions to verify the system's behaviour:
+
+CONTRADICTIONS INTENTIONALLY PLANTED:
+
+ 1. Domestic or Cross-Border = Domestic
+    AND Beneficiary Country = Iran
+    (Iran is by definition cross-border AND sanctioned)
+
+ 2. High Risk Jurisdiction Flag = No
+    AND Beneficiary Country = Iran
+    (Iran is on FATF high-risk list)
+
+ 3. PEP Exposure = No
+    AND Sanctions Exposure = Yes
+    (Sanctions-relevant customers must trigger PEP/HRCE review)
+
+ 4. Vendor section = Not Applicable
+    AND Sanctions Exposure = Yes
+    (Sanctions screening requires a screening vendor)
+
+ 5. Cross Border Processing = No
+    AND Beneficiary Country = Iran
+    (Iran = cross-border)
+
+EXPECTED SYSTEM BEHAVIOUR:
+ (a) BRD extraction should populate fields with low confidence and
+     emit a provenance_notes.low_confidence_fields warning covering
+     the contradicting fields.
+
+ (b) Intake completeness should NOT silently fill the contradicting
+     booleans with defaults. The user must resolve each contradiction.
+
+ (c) Risk calculation should be allowed to run if the user explicitly
+     confirms the data. In that case:
+     - Sanctions Exposure = Yes fires Risk-Floor Rule #4
+     - Geography contradiction forces inherent geography score >= 95
+     - Residual rating is forced to CRITICAL (floor = 65)
+     - The AI assessment MUST explicitly call out the contradictions
+
+ (d) The system should NOT silently treat Iran as "domestic." It
+     should either reject the contradictory record or override the
+     Domestic flag to Cross-Border automatically.
+
+ (e) Analyst review and Committee decision should both refuse to
+     close the request below CRITICAL until contradictions are
+     resolved.
+
+This BRD tests defensive coding, cross-field validation, and the
+sanity-check layer above the risk engine.

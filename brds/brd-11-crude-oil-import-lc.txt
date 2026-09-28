@@ -1,0 +1,128 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Establishment of Crude Oil Import Letter of Credit Facility
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Trade Finance and Wholesale Banking
+Summary: Open a revolving Import Letter of Credit (LC) facility for the
+bank's flagship Indian PSU oil marketing client for the import of
+crude oil from a basket of suppliers across the Middle East, Africa,
+Latin America, and Russia. Settlement happens in USD via the bank's
+existing USD nostro accounts with JPMorgan Chase, New York and
+Standard Chartered Bank, London. This BRD is being raised in the
+context of post-2022 sanctions on Russian crude (OFAC, EU, and UK
+sanctions regimes; G7 price cap on Russian crude at USD 60/barrel
+since December 2022) and India's continued discounted purchases of
+Russian crude via the Banking and Finance Brief on Russia-related
+sanctions issued by the Ministry of External Affairs and the Reserve
+Bank's advisory dated 14 March 2022 and subsequent updates.
+
+2. Product Description
+Product Name: Crude Oil Import LC Revolving Facility
+Product Category: Trade Finance / Import LC
+Description: Revolving USD-denominated Import Letter of Credit in
+favour of multiple crude oil suppliers (mostly National Oil Companies
+and IOC trading desks) for the import of crude oil cargoes into
+Indian refineries (Sikka, Mundra, Paradip, and Chennai Petroleum
+Corporation). Each LC covers a single cargo valued between USD 30
+million and USD 120 million. Settlement is on a sight basis against
+Bill of Lading, Commercial Invoice, Certificate of Origin, SGS
+quality certificate, and Q88 ship details. Insurance is arranged
+separately through the buyer's open policy.
+Transaction Type: Cross-border trade finance (Import LC and USD
+settlement)
+Currency: USD (primary), with INR accounting leg
+Countries Supported: India plus UAE, Saudi Arabia, Iraq, Kuwait,
+Nigeria, Angola, Brazil, Russia, USA (for certain term contracts)
+Per-Transaction Limit: 120000000 USD (single cargo ceiling)
+Expected Monthly Volume: 25
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Business
+Customer Segment: Indian PSU Oil Marketing Company (Large Corporate,
+listed, RBI-defined 'Specified Borrower')
+Onboarding Method: Relationship Manager assisted
+KYC Method: Enhanced Due Diligence (CEDL) including UBO mapping,
+directors' KYC, RBI 'large exposure' framework compliance, and
+annual credit review
+Expected Customer Count: 1
+PEP Exposure: Yes (PSU board typically includes government-nominated
+directors)
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: Multiple (UAE, Saudi Arabia, Iraq, Kuwait, Nigeria,
+Angola, Brazil, Russia, USA)
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: Yes (Russia is on FATF high-risk list;
+Iraq, Nigeria, Angola are tier-2 concerns)
+Sanctions Exposure: Yes (Russia-specific OFAC/EU/UK sanctions; G7 price
+cap compliance for Russian crude cargoes)
+
+5. Transaction Profile
+Transaction Type: Cross-border Import LC settlement (sight basis)
+Average Transaction Amount: 75000000 USD
+Maximum Transaction Amount: 120000000 USD
+Expected Daily Volume: 1
+Expected Monthly Volume (Transaction): 25
+Expected Frequency: 1
+Number of Countries: 10
+Transaction Velocity: 2
+Round Amount Risk: No
+Rapid Movement Possible: No
+
+6. Channel Information
+Channel Type: Trade Finance Operations
+Delivery Channel: Trade Finance Middle Office, Corporate Internet
+Banking for client visibility, SWIFT MT700/MT707 messaging
+Mobile Banking: No
+Internet Banking: Yes (read-only client portal)
+Branch: Yes (corporate branch relationship team)
+Agent: No
+API: Yes (SWIFT MT700/MT707 API integration, trade finance system)
+Third Party Channel: No
+Remote Onboarding: No
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable (the beneficiary is the oil supplier, not a
+service vendor)
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: No service vendor in this arrangement. The bank's
+correspondent banks (JPMorgan Chase NY, Standard Chartered London)
+are nostro partners, not service vendors under RBI outsourcing rules.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: Yes
+
+8. Additional Notes
+This BRD represents one of the most consequential international
+transaction categories for any major Indian bank. Crude oil imports
+are the single largest line item in India's import bill and account
+for the lion's share of USD nostro flows. The risk dimension is
+dominated by:
+- High transaction value (USD 30M to 120M per cargo)
+- Russia exposure (sanctions and price cap compliance)
+- Middle East and African supplier jurisdictions (some tier-2 concerns)
+- USD correspondent settlement (OFAC obligations on the bank's NY
+  correspondent)
+- PSU customer with PEP exposure on the board
+
+Expected band: HIGH for the standard facility with non-sanctioned
+suppliers; CRITICAL when individual cargoes are sourced from Russia
+(forces compliance overlay on top of standard risk score). Use this
+BRD to confirm that the risk engine correctly surfaces the FATF high-
+risk flag (Russia) and the Sanctions Exposure flag independently, and
+that regulatory evidence pulls in the RBI Russia advisory of March
+2022, OFAC Russia-related FAQs, and the G7 price cap guidance.

@@ -1,0 +1,115 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Launch of CBDC (Digital Rupee / e₹-R) Merchant Acquiring and P2P Service
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Digital Payments and CBDC
+Summary: Launch of customer and merchant acceptance for the RBI's
+Central Bank Digital Currency (CBDC) — the Digital Rupee (e₹-R) — in
+the bank's mobile banking app. This is being raised in response to RBI's
+expansion of the e₹-R retail pilot since 1 December 2022 and the
+programmability pilots launched with the Indian Banks' Association in
+2024. The pilot is currently being expanded to include merchant
+acquiring, P2P transfers, and integration with the Unified Payments
+Interface (UPI) as an interoperable token-based instrument. The bank is
+one of the 15 scheduled commercial banks actively participating in
+the e₹-R retail pilot.
+
+2. Product Description
+Product Name: Digital Rupee (e₹-R) Wallet and Merchant Acquiring
+Product Category: CBDC / Digital Payments
+Description: Tokenised Digital Rupee wallet for retail customers and a
+merchant acquiring solution for QR-based e₹-R acceptance. Backed by
+RBI-issued digital tokens settled on the bank's reserve balance with
+RBI. Programmability use cases include time-bound tokens (e₹-R-T) for
+subsidy disbursement and location-bound tokens (e₹-R-L) for
+geo-restricted tourism spending. Tokens are issued, redeemed, and
+destroyed only through the RBI-licensed Digital Rupee platform.
+Transaction Type: Tokenised CBDC transfer (P2P and P2M)
+Currency: INR (tokenised)
+Countries Supported: India only (RBI has not yet enabled cross-border
+CBDC interoperability at retail level)
+Per-Transaction Limit: 100000 (per RBI pilot cap; subject to revision)
+Expected Monthly Volume: 50000
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Existing Mobile Banking Active Customers (retail and
+small merchants)
+Onboarding Method: Digital / Mobile app
+KYC Method: Existing CKYC record (e₹-R is only available to
+already-onboarded bank customers in the pilot phase)
+Expected Customer Count: 100000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: India
+Domestic or Cross-Border: Domestic
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Tokenised CBDC transfer (P2P and P2M)
+Average Transaction Amount: 1500
+Maximum Transaction Amount: 100000
+Expected Daily Volume: 2000
+Expected Monthly Volume (Transaction): 50000
+Expected Frequency: 4
+Number of Countries: 1
+Transaction Velocity: 3
+Round Amount Risk: No
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Digital only
+Delivery Channel: Mobile Banking (with optional UPI interoperability)
+Mobile Banking: Yes
+Internet Banking: No
+Branch: No
+Agent: No
+API: Yes (RBI Digital Rupee platform API)
+Third Party Channel: No
+Remote Onboarding: No (existing customers only)
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable (RBI is the central issuance and redemption
+counterparty; settlement happens directly on the RBI Digital Rupee
+platform)
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: All token issuance, redemption, and settlement
+happen on the RBI Digital Rupee platform operated directly by RBI.
+There is no commercial vendor in the chain. The bank's role is
+distribution (wallet) and merchant acquiring.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: No
+
+8. Additional Notes
+This BRD represents the topmost real-time scenario for Indian banks
+in 2025-2026. CBDC is RBI's flagship technology initiative and every
+scheduled commercial bank is being asked to participate. The risk
+profile is novel: tokenised, not stored as a deposit, no third party
+in the chain, and the issuer is RBI itself. Use this BRD to confirm
+that the risk engine correctly identifies a low inherent risk for the
+product (RBI issuer, domestic, existing customers only) while still
+flagging the velocity and rapid-movement dimensions. Expected band:
+MEDIUM, driven primarily by Product = NEW and Velocity = 3.
+Regulatory evidence should reference RBI's CBDC pilot concept note
+(October 2022), RBI's pilot expansion announcements, and the RBI
+Master Direction on Prepaid Payment Instruments (where applicable).
+This BRD is also useful to confirm the system handles programmability
+(e₹-R-T, e₹-R-L) gracefully even though the form only asks for the
+base e₹-R attributes.

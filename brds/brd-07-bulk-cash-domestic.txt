@@ -1,0 +1,119 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Cash-Intensive Bullion and Jeweller Trade Settlement Account
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Wholesale Banking - Trade and Settlement
+Summary: New product offering specialised current accounts plus a
+structured cash deposit and aggregation service to jewellers, bullion
+dealers, and precious-metals retailers. Account holders deposit bulk
+cash at designated branches (typically in bullion market clusters such
+as Mumbai's Zaveri Bazaar, Chennai's Mannady, Jaipur's Johari Bazaar,
+and Delhi's Chandni Chowk). Cash is counted by the bank's back-office
+cash processing unit, aggregated, and either credited to the
+customer's current account on a T+0 basis or used to settle bullion
+purchases from empanelled suppliers. Daily cash handling per
+designated branch is expected to be INR 25 to 75 crore.
+
+2. Product Description
+Product Name: Bullion and Jeweller Trade Settlement Account
+Product Category: Wholesale Banking / Trade Settlement
+Description: Current account for licensed jewellers, bullion dealers,
+and precious-metals retailers. Bundles high-volume cash deposits at
+designated branches, denomination-level aggregation, same-day
+settlement against bullion invoices from empanelled suppliers, and
+Cash Transaction Reporting (CTR) automation per Rule 3 of the PMLA
+Maintenance of Records Rules 2005 (reporting threshold INR 10 lakh).
+Also covers Cash Balance Sheet Reporting (CBSR) under the FIU-IND
+master guidance of 2023.
+Transaction Type: Bulk domestic cash deposit and bullion invoice
+settlement
+Currency: INR
+Countries Supported: India
+Per-Transaction Limit: 5000000
+Expected Monthly Volume: 6500
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Business
+Customer Segment: Jewellers, Bullion Dealers, Precious Metals Retailers
+(both organised chains and traditional single-shop operators)
+Onboarding Method: Relationship Manager assisted with mandatory site
+visit and trade licence verification
+KYC Method: Enhanced Due Diligence (CEDL) including UBO mapping, GST
+registration, Shops and Establishment licence, PAN of proprietor and
+all UBOs, and field-level inspection report
+Expected Customer Count: 850
+PEP Exposure: No
+High Risk Customer Exposure: Yes (jewellery and bullion is a
+designated high-risk industry under the RBI KYC Master Direction)
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: India
+Domestic or Cross-Border: Domestic
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Bulk domestic cash deposit against bullion invoice
+Average Transaction Amount: 1500000
+Maximum Transaction Amount: 5000000
+Expected Daily Volume: 260
+Expected Monthly Volume (Transaction): 6500
+Expected Frequency: 3
+Number of Countries: 1
+Transaction Velocity: 4
+Round Amount Risk: Yes
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Branch only (designated high-value branches in bullion
+clusters)
+Delivery Channel: Designated branches with cash-counting back office
+Mobile Banking: No
+Internet Banking: Yes (read-only, statement and reconciliation)
+Branch: Yes
+Agent: No
+API: No
+Third Party Channel: No
+Remote Onboarding: No
+
+7. Vendor / Third-Party Information
+Vendor Name: SecuredCash Logistics India Pvt Ltd
+Vendor Type: Cash-in-Transit (CIT) Vendor
+Vendor Country: India
+India Based: Yes
+Service Description: Provides end-to-end cash-in-transit, vault
+management, and doorstep cash pickup for designated branches. RBI-
+empanelled CIT, certified by the Indian Banks Association.
+Criticality: High
+Outsourcing Type: Non-Material Outsourcing (CIT support, not core
+processing)
+Due Diligence Completed: Yes
+Contract Completed: Yes
+Audit Rights: Yes
+Business Continuity Plan: Yes
+Cross Border Processing: No
+
+8. Additional Notes
+This BRD is a HIGH-risk scenario driven by the cash-intensive
+transaction profile and the high-risk customer segment (jewellery and
+bullion industry). It is fully domestic: no cross-border, no high-risk
+jurisdiction, no sanctions exposure, and the CIT vendor has full DD so
+risk-floor rule #2 must NOT fire. Use this BRD to confirm that the
+risk engine correctly elevates the Transaction risk category on the
+basis of cash_involved = true, Transaction Velocity = 4, and Round
+Amount Risk = Yes, even when geography is fully domestic. Expected
+band: HIGH, landing just below the CRITICAL thresholds. Regulatory
+evidence should surface PMLA 2002 record-keeping obligations, the
+PML Maintenance of Records Rules 2005 (Rule 3 - CTR at INR 10 lakh),
+the FIU-IND master guidance on Cash Balance Sheet Reporting (CBSR)
+2023, and the RBI Master Direction on KYC section on high-risk
+customer categories. Verify that the residual risk does NOT cross into
+CRITICAL despite the cash intensity, because no risk-floor rule
+applies.

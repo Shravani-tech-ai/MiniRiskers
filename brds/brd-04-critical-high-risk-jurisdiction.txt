@@ -1,0 +1,109 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Extension of Outbound Remittance Corridors to Iran and Myanmar
+Change Type: Change to Existing Product
+Requested By: Business Owner
+Business Unit: Payments and Remittances
+Summary: Proposal to extend the bank's existing outbound LRS remittance
+product to two new corridors: Iran (Tehran) and Myanmar (Yangon). Both
+jurisdictions are currently on the FATF list of high-risk jurisdictions
+subject to a call for action (Iran, DPRK, Myanmar) or grey list (as of
+the FATF plenary most recent to this BRD). Treasury expects the
+combined Iran plus Myanmar corridor to drive the largest share of
+monthly outbound volume within six months of launch, primarily from
+the bank's existing business correspondent partnerships.
+
+2. Product Description
+Product Name: Digital International Remittance (Extended Corridors)
+Product Category: Cross-Border Payments
+Description: Outbound LRS remittance extended to Iran and Myanmar.
+Reuses the existing ConduitPay settlement partner with amended corridor
+schedule. Same LRS ceiling of USD 250,000 per FY per remitter applies.
+Transaction Type: Cross-border remittance under LRS (FATF high-risk
+corridor)
+Currency: INR, USD, IRR (Iran), MMK (Myanmar), with USD as the primary
+settlement currency
+Countries Supported: India plus UAE, USA, UK, EU, Singapore, Philippines,
+Iran, Myanmar
+Per-Transaction Limit: 750000 (INR equivalent)
+Expected Monthly Volume: 32000
+New Product Flag: No
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Resident Indian Retail Customers with trade, family,
+or educational ties to Iran and Myanmar
+Onboarding Method: Digital / Mobile app
+KYC Method: Aadhaar e-KYC + PAN + Video KYC + Form A2 declaration
+Expected Customer Count: 22000
+PEP Exposure: Yes
+High Risk Customer Exposure: Yes
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: Iran and Myanmar (FATF high-risk jurisdictions)
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: Yes
+Sanctions Exposure: Yes (Iran is also subject to OFAC and EU
+sanctions; the bank must apply enhanced screening and seek OFAC
+licences where applicable for USD clearing)
+
+5. Transaction Profile
+Transaction Type: Outbound cross-border LRS remittance to high-risk
+corridors
+Average Transaction Amount: 70000
+Maximum Transaction Amount: 750000
+Expected Daily Volume: 1300
+Expected Monthly Volume (Transaction): 32000
+Expected Frequency: 3
+Number of Countries: 8
+Transaction Velocity: 4
+Round Amount Risk: No
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Digital
+Delivery Channel: Mobile Banking and Internet Banking
+Mobile Banking: Yes
+Internet Banking: Yes
+Branch: No
+Agent: No
+API: Yes
+Third Party Channel: Yes
+Remote Onboarding: Yes
+
+7. Vendor / Third-Party Information
+Vendor Name: ConduitPay Pte Ltd
+Vendor Type: Cross-Border Payment Processor / Settlement Partner
+Vendor Country: Singapore
+India Based: No
+Service Description: Existing settlement partner with a new corridor
+schedule covering Iran (via non-sanctioned correspondent path) and
+Myanmar (via Yangon payout partners). Vendor has updated its own
+sanctions screening to handle Iran and Myanmar per FATF guidance.
+Criticality: High
+Outsourcing Type: Material Outsourcing
+Due Diligence Completed: Yes
+Contract Completed: Yes
+Audit Rights: Yes
+Business Continuity Plan: Yes
+Cross Border Processing: Yes
+
+8. Additional Notes
+This BRD is designed to trip RISK-FLOOR RULE #1 in the risk engine:
+"cross-border activity involving high-risk jurisdiction AND high
+transaction velocity." Iran and Myanmar are both on the FATF high-risk
+list as of 2025-2026. Velocity is 4 and daily volume is 1300. Sanctions
+exposure is also flagged because Iran is under OFAC sanctions. Verify
+that the residual rating is forced to CRITICAL even if the calculated
+inherent score (without the floor rule) might otherwise land in HIGH.
+Regulatory evidence should surface the RBI Master Direction on KYC
+(section on high-risk jurisdictions), the FATF high-risk jurisdiction
+list, OFAC sanctions guidance for Iran, and the PMLA obligations on
+enhanced due diligence for high-risk corridors. Note: in production,
+this BRD should NOT be approved until legal and compliance have signed
+off on the specific Iran and Myanmar payout paths.

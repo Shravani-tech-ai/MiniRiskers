@@ -1,0 +1,116 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: UPI Cross-Border Expansion to UAE, Singapore, France, and Sri Lanka
+Change Type: Change to Existing Product
+Requested By: Business Owner
+Business Unit: Digital Payments and International Banking
+Summary: Enable UPI acceptance and outbound payments in four
+international corridors that have gone live with bilateral UPI
+arrangements in 2024-2025: UAE (live February 2024), Sri Lanka (live
+November 2024), Singapore (live September 2024), and France (live
+February 2025). NPCI has signed bilateral MoUs with each country's
+national payment switch (Maldives, Mauritius, and Bahrain are also in
+the pipeline). The bank's role is to enable its issued debit cards and
+UPI apps to interoperate with these international switches, and to
+enable inbound acceptance for foreign tourists transiting through
+Indian merchants. This BRD is being raised at a moment when the RBI
+and NPCI are actively marketing UPI as India's official cross-border
+payments diplomacy instrument.
+
+2. Product Description
+Product Name: UPI Cross-Border (UAE / Singapore / France / Sri Lanka)
+Product Category: Cross-Border Payments / Digital Payments
+Description: Extension of the bank's existing UPI offering to four
+bilateral cross-border corridors. Outbound: Indian UPI customers can
+pay at QR merchants in the partner country via NPCI's bilateral
+interoperability. Inbound: Foreign tourists with partner-country UPI
+apps can pay at Indian merchants. Settlement happens in INR via the
+partner country's national switch (Network International for UAE,
+PayNow for Singapore, etc.) and is converted to local currency on the
+other side. No FX is taken by the bank; the partner country handles
+FX at its end.
+Transaction Type: UPI cross-border P2M (inbound and outbound)
+Currency: INR, AED, SGD, EUR, LKR
+Countries Supported: India plus UAE, Singapore, France, Sri Lanka
+Per-Transaction Limit: 100000 (NPCI cap for cross-border UPI)
+Expected Monthly Volume: 75000
+New Product Flag: No
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Existing Mobile Banking Customers (retail) plus
+inbound foreign tourists
+Onboarding Method: Digital / Mobile app (existing customers only);
+inbound is handled by partner-country UPI onboarding
+KYC Method: Existing CKYC record for outbound; partner-country KYC for
+inbound
+Expected Customer Count: 150000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India and partner countries
+Beneficiary Country: UAE, Singapore, France, Sri Lanka (and India for
+inbound)
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: UPI cross-border payment
+Average Transaction Amount: 2500
+Maximum Transaction Amount: 100000
+Expected Daily Volume: 2500
+Expected Monthly Volume (Transaction): 75000
+Expected Frequency: 4
+Number of Countries: 5
+Transaction Velocity: 3
+Round Amount Risk: No
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Digital only
+Delivery Channel: Mobile Banking (UPI app)
+Mobile Banking: Yes
+Internet Banking: No
+Branch: No
+Agent: No
+API: Yes (NPCI UPI switch API and bilateral partner APIs)
+Third Party Channel: No
+Remote Onboarding: No
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: NPCI is the domestic switch; bilateral partner
+switches (Network International, PayNow, etc.) are the foreign
+counterparties under NPCI-issued MoUs. There is no commercial vendor
+in the chain. Settlement happens via RBI's correspondent banking
+arrangements.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: Yes
+
+8. Additional Notes
+This is one of the topmost real-time scenarios Indian banks are
+dealing with in 2025. UPI cross-border is RBI's flagship soft-power
+and digital-public-infrastructure initiative. Expected risk band: MEDIUM
+to HIGH depending on velocity treatment. The risk engine should
+recognise the cross-border nature and elevated velocity (3) but should
+NOT trigger any risk-floor rule because no jurisdiction is high-risk
+and no third-party DD issue exists. Regulatory evidence should
+reference RBI's UPI circulars, NPCI's bilateral MoU announcements, the
+FEMA framework for cross-border INR settlement, and RBI's Payment and
+Settlement Systems Act 2007. Use this BRD to verify the system
+correctly classifies a "change to existing product" (not new product)
+while still flagging the velocity and cross-border dimensions.

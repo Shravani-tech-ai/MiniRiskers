@@ -1,0 +1,154 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Extreme Boundary Value Product for Negative Testing
+Change Type: New Product
+Requested By: Test QA Team
+Business Unit: Test Engineering
+Summary: This BRD pushes every numeric field to its extreme boundary to
+verify that the risk engine, the BRD extraction parser, and the API
+endpoints all handle out-of-range values gracefully without crashing,
+producing NaN/Infinity values, or overflowing database columns.
+
+2. Product Description
+Product Name: Boundary Stress Test Product
+Product Category: Consumer Lending
+Description: Product designed to exercise every numeric boundary:
+maximum integer amounts, zero values, negative numbers, very long
+strings, special characters in country names, unicode currency
+symbols, and SQL-injection-like strings.
+Transaction Type: Outbound lending
+Currency: INR, USD, AED, €, £, ¥, ₹, ₩, 美元, ریال, د.إ
+Countries Supported: India, United States, UAE, United Kingdom,
+Germany, Japan, Singapore, South Korea, 中国, Россия, Brasil,
+ایران, מדינה ללא שם, '; DROP TABLE change_requests; --
+Per-Transaction Limit: 999999999999999 (15-digit maximum - past
+INT32 range, into INT64)
+Expected Monthly Volume: 0
+New Product Flag: True
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: ' OR '1'='1
+Onboarding Method: <script>alert('xss')</script>
+KYC Method: '; DROP TABLE customer_profiles; --
+Expected Customer Count: 999999999999
+PEP Exposure: True
+High Risk Customer Exposure: True
+
+4. Geography
+Primary Country: India; DROP TABLE geographies; --
+Country Code: IN'; DROP TABLE countries; --
+Customer Country: 🇮🇳
+Transaction Country: ' OR 1=1 --
+Beneficiary Country: �️
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: True
+Sanctions Exposure: True
+
+5. Transaction Profile
+Transaction Type: '; DROP TABLE transaction_profiles; --
+Average Transaction Amount: -50000 (negative)
+Maximum Transaction Amount: 999999999999999 (15-digit)
+Expected Daily Volume: -100 (negative)
+Expected Monthly Volume (Transaction): 0
+Expected Frequency: 999999 (very high)
+Number of Countries: 999999999
+Transaction Velocity: 99999999999 (way above any sane threshold)
+Round Amount Risk: True
+Rapid Movement Possible: True
+
+6. Channel Information
+Channel Type: <img src=x onerror=alert(1)>
+Delivery Channel: Mobile Banking, Internet Banking, Branch, Agent, ATM,
+POS, Phone Banking, WhatsApp Banking, Telegram Banking, Wearable
+Mobile Banking: True
+Internet Banking: True
+Branch: True
+Agent: True
+API: True
+Third Party Channel: True
+Remote Onboarding: True
+
+7. Vendor / Third-Party Information
+Vendor Name: '; DROP TABLE vendors; --
+Vendor Type: <script>alert('vendor')</script>
+Vendor Country: NULL/None/空/فارغ/пусто
+India Based: False
+Service Description: ')))))))))))))))))))))))))))))))))))))))))))))'
+Criticality: ULTRA
+Outsourcing Type: '; DELETE FROM outsourcing_types; --
+Due Diligence Completed: False
+Contract Completed: False
+Audit Rights: False
+Business Continuity Plan: False
+Cross Border Processing: True
+
+8. Additional Notes
+This BRD is the NEGATIVE TEST - EXTREME BOUNDARY VALUES scenario.
+It deliberately exercises every numeric and string boundary to verify
+robustness. Use this BRD to confirm:
+
+NUMERIC BOUNDARIES:
+ 1. Per-Transaction Limit = 999999999999999 (15-digit, past INT32,
+    into INT64) - DB column should accept this or reject with
+    clear error.
+ 2. Negative numbers (-50000, -100) for transaction amounts and
+    daily volume - should be rejected or treated as 0 by the
+    parser.
+ 3. Zero values (Expected Monthly Volume = 0, Transaction Velocity
+    can be 0) - should be handled gracefully (no division-by-zero
+    in averages).
+ 4. Very large velocity (99999999999) - should still produce
+    finite scores, not overflow.
+ 5. Expected Customer Count = 999999999999 - should trigger
+    Large Customer Population factor without overflow.
+
+STRING BOUNDARIES:
+ 6. SQL-injection-like strings in name/description fields
+    (e.g., '; DROP TABLE change_requests; --) - parser must
+    treat as plain text, NOT execute.
+ 7. XSS-like strings (e.g., <script>alert('xss')</script>,
+    <img src=x onerror=alert(1)>) - must be sanitised before any
+    HTML rendering.
+ 8. Emoji and unicode in country names (🇮🇳, 中国, ایران) -
+    should be stored as-is, not crash on encoding.
+ 9. RTL Hebrew/Arabic text mixed with LTR English (ایران, מדינה
+    ללא שם) - rendering should not break.
+ 10. Currency symbols from many regions in one field (€, £, ¥,
+     ₹, ₩, 美元, ریال, د.إ) - should be accepted as multi-
+     currency label, not parsed as numeric.
+
+LOGIC BOUNDARIES:
+ 11. Velocity 0 - no "High Transaction Velocity" factor triggers
+     (correct, since threshold is 5+).
+ 12. Velocity 5 - exactly at threshold, factor triggers.
+ 13. Velocity 99999999999 - factor triggers with score 80,
+     weighted at 0.25 (Transaction) and 0.40 (Fraud). Should
+     not overflow.
+ 14. Customer Segment contains SQL-injection-like text - BRD
+     extraction should flag as low-confidence and not commit
+     to a category.
+
+ENUM BOUNDARIES:
+ 15. Criticality = 'ULTRA' (not in allowed enum) - should fall
+     back gracefully or error.
+ 16. All booleans = True (every flag turned on) - should still
+     produce a finite score, not saturate.
+ 17. All booleans = False - opposite, produces LOW/MINIMUM.
+
+EXPECTED SYSTEM BEHAVIOUR:
+ (a) No endpoint returns a 500 Internal Server Error.
+ (b) No SQL injection succeeds (parser uses parameterised queries).
+ (c) No XSS executes (frontend sanitises display).
+ (d) No NaN or Infinity appears in the risk scores.
+ (e) Numeric overflows either clip to INT64 max or are rejected
+     with HTTP 422.
+ (f) Unicode strings are stored verbatim (assuming UTF-8 DB).
+ (g) The risk engine produces a finite, deterministic score even
+     with garbage input.
+ (h) The audit log records the upload with the original (pre-
+     sanitisation) content for traceability.
+
+This is the most comprehensive negative test - it is expected to
+fail in some places and reveal edge cases that need fixing.

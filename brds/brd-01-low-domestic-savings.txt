@@ -1,0 +1,97 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Revision of Interest Rate Slabs on Domestic Recurring Deposit Scheme
+Change Type: Change to Existing Product
+Requested By: Business Owner
+Business Unit: Retail Banking
+Summary: Treasury has proposed a 10 to 25 basis-point revision across the
+interest rate slabs of the bank's existing domestic Recurring Deposit
+product (tenures 12 to 60 months). The change is a pure pricing
+parameter update. No customer onboarding change, no channel change, no
+geography change, no third-party change. Aligns with RBI's deregulated
+interest rate regime for resident bank deposits (Master Circular
+DBR.No.FSD.BC.18/05.05.010/2024-25 dated 1 July 2024).
+
+2. Product Description
+Product Name: Domestic Recurring Deposit Scheme (RD)
+Product Category: Deposit Products
+Description: Existing monthly-installment Recurring Deposit for resident
+Indian salaried and self-employed customers. Proposal is to revise the
+slab-wise interest rates for tenures 12, 24, 36, 48 and 60 months.
+Senior citizen rates are recalibrated in line with the revised base
+slab. No change to premature withdrawal rules, no change to loan
+against RD, no change to nomination rules.
+Transaction Type: Domestic deposit (monthly standing instruction debit)
+Currency: INR
+Countries Supported: India
+Per-Transaction Limit: 200000 (per installment)
+Expected Monthly Volume: 8500
+New Product Flag: No
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Salaried and Self-Employed Retail Customers
+Onboarding Method: Branch-assisted KYC with CKYC seeding
+KYC Method: Aadhaar e-KYC and PAN verification, CKYC-seeded
+Expected Customer Count: 28000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: India
+Domestic or Cross-Border: Domestic
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Standing instruction debit (monthly RD installment)
+Average Transaction Amount: 5500
+Maximum Transaction Amount: 50000
+Expected Daily Volume: 320
+Expected Monthly Volume (Transaction): 8500
+Expected Frequency: 1
+Number of Countries: 1
+Transaction Velocity: 1
+Round Amount Risk: No
+Rapid Movement Possible: No
+
+6. Channel Information
+Channel Type: Branch-assisted
+Delivery Channel: Branch and Internet Banking
+Mobile Banking: No
+Internet Banking: Yes
+Branch: Yes
+Agent: No
+API: No
+Third Party Channel: No
+Remote Onboarding: No
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: No third-party involved in this change. RD accounts
+are serviced fully in-house.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: No
+
+8. Additional Notes
+Routine pricing change to an existing domestic retail deposit product.
+This BRD is the LOW baseline scenario. Expected to produce LOW inherent
+and residual risk. Use this BRD to confirm that the risk engine returns
+near-zero scores across all seven categories (Customer, Product,
+Geography, Transaction, Channel, Third-Party, Fraud) when none of the
+risk triggers are present. Regulatory evidence should be light or empty
+since the change is a pure parameter update with no FCRM implications.
+This is the regression anchor for the rest of the test suite.

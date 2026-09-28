@@ -1,0 +1,114 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Cross-Border Donation Collection Account for FCRA-Registered NGOs
+Change Type: New Product
+Requested By: Business Byer
+Business Unit: Institutional and NGO Banking
+Summary: Launch of a specialised current account product for FCRA-
+registered non-profits (Section 8 companies, charitable trusts, and
+societies) to receive cross-border donations from foreign donors
+primarily in the US, UK, EU, and UAE. The account is designed to
+operate within the Foreign Contribution (Regulation) Act, 2010 as
+amended in 2020 (FCRA Amendment Act 2020), which mandated that all
+foreign contributions be received only in the FCRA-designated bank
+account at a notified branch (State Bank of India until 1 July 2024;
+the bank is now eligible under the FCRA Amendment Rules 2024 to be
+notified). Donations are pooled in INR after FX conversion. No outward
+remittance is enabled from this account.
+
+2. Product Description
+Product Name: NGO Cross-Border Donation Account (FCRA)
+Product Category: Institutional Banking / Non-Profit
+Description: Designated FCRA current account under FCRA 2010 read with
+the Foreign Contribution (Regulation) Amendment Rules 2024. Receives
+foreign donations via SWIFT and through partner correspondent banks.
+Includes quarterly Statement of Receipts and Source (SRS) and
+intimation to MHA via the FCRA online portal. The bank's responsibility
+is limited to receipt, FX conversion, and statutory record keeping;
+utilisation is monitored separately by MHA.
+Transaction Type: Inbound cross-border donation / FCRA receipt
+Currency: INR, USD, GBP, EUR, AED, CAD, AUD
+Countries Supported: India plus USA, UK, EU member states, UAE, Canada,
+Australia
+Per-Transaction Limit: 10000000 (per donation receipt; cumulative
+subject to FCRA limits)
+Expected Monthly Volume: 1500
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Business
+Customer Segment: FCRA-registered NGOs / Section 8 Companies / Charitable
+Trusts and Societies
+Onboarding Method: Relationship Manager assisted with site visit
+KYC Method: Enhanced Due Diligence (CEDL) including UBO mapping, FCRA
+registration certificate verification, registration with the Ministry
+of Home Affairs (MHA) online portal, trustee KYC, and Charity
+Commission cross-checks for foreign donors above INR 10 lakh
+Expected Customer Count: 280
+PEP Exposure: Yes
+High Risk Customer Exposure: Yes
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: Multiple international donor countries
+Beneficiary Country: India
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Inbound SWIFT and correspondent bank donation credit
+Average Transaction Amount: 250000
+Maximum Transaction Amount: 10000000
+Expected Daily Volume: 60
+Expected Monthly Volume (Transaction): 1500
+Expected Frequency: 1
+Number of Countries: 7
+Transaction Velocity: 2
+Round Amount Risk: Yes
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Branch and Correspondent Banking
+Delivery Channel: Branch, SWIFT, and Partner Correspondent Bank Network
+Mobile Banking: No
+Internet Banking: Yes (read-only for statement and reconciliation)
+Branch: Yes
+Agent: No
+API: Yes (SWIFT gateway and correspondent bank API)
+Third Party Channel: No
+Remote Onboarding: No
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: No external vendor processes customer data or
+transactions. SWIFT messaging is a utility; correspondent banks are
+regulatory partners, not vendors. KYC verification of NGOs is done
+in-house by the bank's institutional banking team.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: Yes
+
+8. Additional Notes
+This BRD is a HIGH-risk scenario driven primarily by the customer-
+segment risk dimension. NGO / non-profit customers are classified as
+high-risk by RBI KYC Master Direction (Section on Enhanced Due
+Diligence for non-profit organisations). PEP exposure is set because
+several trustees of large Indian NGOs are politically exposed. The
+account is heavily regulated under FCRA 2010 (as amended in 2020) and
+the FCRA Amendment Rules 2024. Use this BRD to confirm that the
+customer risk score dominates the calculation even when there is no
+high-risk jurisdiction and no third-party issue. Regulatory evidence
+should surface PMLA 2002 obligations on reporting entities, FIU-IND
+reporting material, the RBI KYC Master Direction section on NGOs, and
+the FCRA 2010 with its 2020 and 2024 amendments. Expected band: HIGH.

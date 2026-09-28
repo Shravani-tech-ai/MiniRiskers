@@ -1,0 +1,113 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Onboarding of New Cross-Border Card Processor (DD Pending)
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Cards and Merchant Services
+Summary: The Cards business has finalised a new vendor, CardStream
+Processing Ireland Ltd, to power the upcoming co-branded travel card
+product. The commercial contract is currently in legal review and the
+risk and information-security due diligence is incomplete. The Cards
+business is requesting a one-time exception to begin a controlled
+pilot (2,000 cards, INR 50 lakh aggregate monthly spend limit) while
+DD finishes in the next 60 to 90 days. This BRD is being raised in
+the context of RBI Master Direction on Outsourcing of IT Services
+(DBR.No.FSD.BC.83/31.01.002/2023-24 dated 10 April 2024, successor
+to the 2017 direction) which requires that material outsourcing
+arrangements complete risk and security due diligence BEFORE
+processing begins.
+
+2. Product Description
+Product Name: Co-Branded Travel Multi-Currency Card (CardStream Pilot)
+Product Category: Cards
+Description: Multi-currency travel card on the bank's BIN with
+cross-border usage at ATMs and POS terminals worldwide. CardStream
+provides the authorisation switch, fraud screening, clearing, and
+cross-border settlement. Pilot limited to 2,000 cards issued to the
+bank's existing affluent customers.
+Transaction Type: Cross-border card transactions (ATM and POS)
+Currency: INR, USD, EUR, GBP, SGD, JPY, AUD
+Countries Supported: India plus 30+ international jurisdictions
+Per-Transaction Limit: 200000
+Expected Monthly Volume: 4000 (pilot only)
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Affluent Retail and Business Travellers (existing
+premium account holders)
+Onboarding Method: Digital + Branch-assisted for cards above INR 1 lakh
+credit limit
+KYC Method: Aadhaar e-KYC + PAN + Video KYC + in-person verification
+for top tier credit limits
+Expected Customer Count: 2000
+PEP Exposure: Yes
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: Multiple international
+Beneficiary Country: Multiple international
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Cross-border card authorisation and settlement
+Average Transaction Amount: 12000
+Maximum Transaction Amount: 200000
+Expected Daily Volume: 150
+Expected Monthly Volume (Transaction): 4000
+Expected Frequency: 3
+Number of Countries: 31
+Transaction Velocity: 3
+Round Amount Risk: No
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Digital plus Physical
+Delivery Channel: Mobile Banking, Internet Banking, and Physical POS/ATM
+Mobile Banking: Yes
+Internet Banking: Yes
+Branch: Yes
+Agent: No
+API: Yes (CardStream processing API)
+Third Party Channel: Yes
+Remote Onboarding: Yes
+
+7. Vendor / Third-Party Information
+Vendor Name: CardStream Processing Ireland Ltd
+Vendor Type: Card Processor / Network Switch
+Vendor Country: Ireland
+India Based: No
+Service Description: Provides authorisation switch, fraud screening,
+clearing, and cross-border settlement for the co-branded travel card.
+PCI-DSS Level 1 certified, EU regulated by Central Bank of Ireland.
+Criticality: High
+Outsourcing Type: Material Outsourcing (per RBI 2024 IT Outsourcing
+direction)
+Due Diligence Completed: No
+Contract Completed: No (currently in legal review)
+Audit Rights: No (not yet negotiated)
+Business Continuity Plan: No (vendor BCP under review)
+Cross Border Processing: Yes
+
+8. Additional Notes
+This BRD is designed to trip RISK-FLOOR RULE #2 in the risk engine:
+"third-party processing without completed vendor due diligence."
+Due Diligence Completed = No, Contract Completed = No, Audit Rights =
+No, BCP = No. All four key RBI outsourcing controls are missing. The
+Cards business's argument is that this is a limited pilot, but RBI's
+April 2024 Master Direction is explicit that material outsourcing
+arrangements must complete DD BEFORE going live. Verify that the
+residual rating is forced to CRITICAL regardless of how strong the
+bank's own controls are, and that the AI recommendation explicitly
+flags the regulatory breach under RBI's IT Outsourcing direction.
+Regulatory evidence should surface RBI Master Direction on Outsourcing
+of IT Services 2023-24, the RBI Master Direction on IT Governance Risk
+and Controls Assurance Practices 2023, and PCI-DSS 4.0 obligations.
+This BRD is a candidate for committee rejection on grounds of
+unmitigated regulatory exposure.

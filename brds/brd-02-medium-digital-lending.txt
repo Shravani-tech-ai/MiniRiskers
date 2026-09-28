@@ -1,0 +1,111 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Launch of Mobile-First Personal Loan on the Account Aggregator Framework
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Digital Lending
+Summary: Launch of a fully digital, mobile-first personal loan product
+for salaried and self-employed professionals who hold an active savings
+or salary account with the bank. Loan origination, underwriting, and
+disbursement run entirely on the mobile banking app. Underwriting uses
+the bank's own bureau aggregator plus the RBI Account Aggregator (AA)
+framework (Master Direction on NBFC AA, 2016, updated 2024) for consent-
+based financial data fetch. Disbursement and EMI collection stay in-
+house; no external Loan Service Provider (LSP) is engaged. This BRD is
+being raised in response to RBI's Digital Lending Guidelines
+(DBR.No.FSD.BC.45/05.10.001/2022-23 dated 10 August 2022, updated via
+circular DBR.No.FSD.BC.102/05.10.001/2023-24 dated 14 December 2023)
+which require every digital lending partnership to be assessed.
+
+2. Product Description
+Product Name: SalariedPro Instant Personal Loan
+Product Category: Consumer Lending (Unsecured)
+Description: Unsecured personal loan for resident Indian salaried and
+self-employed professionals, range INR 50,000 to INR 1,000,000,
+tenures 12 to 36 months. End-to-end digital journey on the mobile app
+with e-sign, e-mandate, and disbursement to the customer's own savings
+or salary account with the bank.
+Transaction Type: Domestic loan disbursement (outbound) and EMI debit
+via e-mandate (inbound)
+Currency: INR
+Countries Supported: India
+Per-Transaction Limit: 1000000
+Expected Monthly Volume: 6000
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Salaried and Self-Employed Professionals (existing
+savings or salary account holders)
+Onboarding Method: Digital / Mobile app
+KYC Method: Aadhaar e-KYC + PAN + Video KYC for ticket size above
+INR 5 lakh (RBI V-CIP norms)
+Expected Customer Count: 35000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: India
+Domestic or Cross-Border: Domestic
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Loan disbursement and EMI collection via e-mandate
+Average Transaction Amount: 300000
+Maximum Transaction Amount: 1000000
+Expected Daily Volume: 250
+Expected Monthly Volume (Transaction): 6000
+Expected Frequency: 2
+Number of Countries: 1
+Transaction Velocity: 2
+Round Amount Risk: Yes
+Rapid Movement Possible: No
+
+6. Channel Information
+Channel Type: Digital only
+Delivery Channel: Mobile Banking
+Mobile Banking: Yes
+Internet Banking: No
+Branch: No
+Agent: No
+API: Yes (in-house bureau aggregator and RBI Account Aggregator
+gateway)
+Third Party Channel: No
+Remote Onboarding: Yes
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable (bureau aggregator is in-house; AA access is
+through RBI-regulated Account Aggregators under the Sahamati framework)
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: Bureau fetch and financial data pull are performed
+through the bank's own aggregator and the RBI-licensed AA network
+(Sahamati). No external LSP, no external loan servicing partner, no
+external recovery agent.
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: No
+
+8. Additional Notes
+New domestic digital lending product launched in compliance with RBI's
+Digital Lending Guidelines. No cross-border exposure, no external
+third-party processing, customer base is the bank's own existing
+salary account holders. Round-amount flag is set because most
+disbursements are in clean round INR figures (1L, 2L, 5L). Use this
+BRD to verify that the risk engine elevates the Product risk dimension
+on the basis of "New Product = Yes" and the Channel risk dimension on
+the basis of "Mobile-only + remote onboarding," without crossing into
+HIGH. Expected band: MEDIUM. Regulatory evidence should reference the
+RBI Digital Lending Guidelines and the Fair Practices Code for
+lending.

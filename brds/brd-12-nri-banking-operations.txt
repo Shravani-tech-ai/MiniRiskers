@@ -1,0 +1,130 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: NRI Banking Suite (NRO / NRE / FCNR) Operational Enhancement
+Change Type: Change to Existing Product
+Requested By: Business Owner
+Business Unit: NRI Banking and Remittances
+Summary: Refresh of the bank's NRI Banking suite to consolidate and
+modernise operations across NRO (Non-Resident Ordinary), NRE (Non-
+Resident External), and FCNR (Foreign Currency Non-Resident) account
+categories. Proposal is to add a unified mobile-app view across the
+three account types, enable SWIFT-based inward remittance tracking
+from major Gulf and US corridors, and roll out a Tier-1 KYC refresh
+programme for the top 10% of NRI customers by balance. The suite
+serves the bank's 32 lakh NRI customer base, primarily resident in
+the UAE, Saudi Arabia, Kuwait, Qatar, Bahrain, Oman, the United
+States, the United Kingdom, Canada, and Singapore. This BRD is being
+raised in the context of RBI's liberalised NRI deposit framework
+(Master Direction on Interest Rates on NRI Deposits and other
+directions updated 5 December 2023) and the increasing compliance
+expectations on inward remittance source-of-funds documentation.
+
+2. Product Description
+Product Name: NRI Banking Suite (NRO / NRE / FCNR)
+Product Category: NRI Banking / Cross-Border Accounts
+Description: The NRI Banking suite bundles three account categories
+into a single mobile experience for the bank's NRI customers:
+NRO (rupee account for income earned in India, fully repatriable
+for current income), NRE (rupee account for foreign currency
+inflows, principal and interest fully repatriable), and FCNR
+(foreign currency term deposit in USD, GBP, EUR, JPY, AUD, CAD,
+SGD, HKD, CHF). The suite adds a unified SWIFT-based inward
+remittance tracker and a Tier-1 KYC refresh for high-balance NRI
+customers.
+Transaction Type: Inbound cross-border remittance, FCNR deposit
+renewals, NRO/NRE repatriation
+Currency: INR, USD, AED, GBP, EUR, SAR, KWD, CAD, SGD, AUD, JPY,
+CHF, HKD
+Countries Supported: India plus UAE, Saudi Arabia, Kuwait, Qatar,
+Bahrain, Oman, USA, UK, Canada, Singapore
+Per-Transaction Limit: 50000000 (FCNR maximum per customer per bank
+under FEMA)
+Expected Monthly Volume: 350000
+New Product Flag: No
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Non-Resident Indians (NRIs) and Persons of Indian
+Origin (PIOs) residing in Gulf, Western, and South-East Asia regions
+Onboarding Method: Branch-assisted (in India, before departure) plus
+video KYC for re-KYC of existing customers
+KYC Method: Full KYC under RBI Master Direction on KYC plus FEMA
+declarations, NRI status proof (passport with valid visa / work
+permit / residence permit), and Tier-1 Enhanced Due Diligence for
+customers above INR 50 lakh balance
+Expected Customer Count: 3200000
+PEP Exposure: Yes (NRI PEPs include overseas business owners,
+politicians in Gulf states, professionals in public roles)
+High Risk Customer Exposure: Yes (high-balance NRIs from Gulf and
+certain African corridors)
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: Multiple international NRI residence countries
+Transaction Country: India and NRI residence countries
+Beneficiary Country: India (for NRO/NRE repatriation to NRI) and
+NRI residence countries (for FCNR interest repatriation)
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No (NRIs from Gulf and West are not
+on FATF list, but customer-segment risk is high)
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: SWIFT inward remittance, FCNR deposit and renewal,
+NRO/NRE repatriation
+Average Transaction Amount: 350000
+Maximum Transaction Amount: 50000000
+Expected Daily Volume: 15000
+Expected Monthly Volume (Transaction): 350000
+Expected Frequency: 3
+Number of Countries: 11
+Transaction Velocity: 3
+Round Amount Risk: Yes
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Branch and Digital
+Delivery Channel: Branch, Mobile Banking, Internet Banking, SWIFT
+Mobile Banking: Yes
+Internet Banking: Yes
+Branch: Yes (NRI-dedicated branches in major Indian metros)
+Agent: No
+API: Yes (SWIFT MT103, correspondent bank APIs, internal NRI
+platform APIs)
+Third Party Channel: No
+Remote Onboarding: Yes (for re-KYC of existing customers only)
+
+7. Vendor / Third-Party Information
+Vendor Name: Not Applicable
+Vendor Type: None
+Vendor Country: Not Applicable
+India Based: Not Applicable
+Service Description: No service vendor in the NRI banking value chain.
+SWIFT messaging and correspondent banking are utilities. Compliance
+screening (sanctions, PEP, adverse media) is performed by the bank's
+in-house transaction monitoring platform and licensed data providers
+(Dow Jones Risk & Compliance, Refinitiv World-Check).
+Criticality: Not Applicable
+Outsourcing Type: Not Applicable
+Due Diligence Completed: Not Applicable
+Contract Completed: Not Applicable
+Audit Rights: Not Applicable
+Business Continuity Plan: Not Applicable
+Cross Border Processing: Yes
+
+8. Additional Notes
+This BRD represents the largest cross-border customer-facing flow
+the bank handles: 32 lakh NRI customers driving 3.5 lakh transactions
+per month. The risk profile is dominated by customer-segment risk
+(NRI with PEP exposure and high-balance concentration) rather than
+by jurisdiction risk. Expected band: HIGH. The risk engine should
+elevate the Customer and Transaction risk dimensions significantly
+because of the high transaction velocity (3), large per-transaction
+limits (up to INR 5 crore), and PEP exposure. The risk engine should
+NOT trigger any risk-floor rule because no jurisdiction is high-risk
+and there is no third-party issue. Regulatory evidence should surface
+RBI's NRI Master Direction, FEMA 1999 deposit framework, PMLA 2002
+obligations on inward remittances (source-of-funds documentation), and
+FATF guidance on remittance corridors.

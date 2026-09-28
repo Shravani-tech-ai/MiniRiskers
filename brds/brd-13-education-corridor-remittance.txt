@@ -1,0 +1,122 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Education Corridor Remittance Service (LRS - Education Purpose)
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: NRI Remittances and Education Lending
+Summary: Launch of a dedicated cross-border remittance product for the
+Education Purpose code under the Liberalised Remittance Scheme (LRS).
+The product is being raised in the context of the 1.5 million+
+Indian students studying abroad (primarily in the USA, UK, Canada,
+Australia, Ireland, Germany, and New Zealand) and the Education
+Ministry's Project Abroad 2024 announcement which expects this number
+to grow 15-20% YoY through 2027. Education remittances are projected
+to grow from approximately USD 5 billion in FY24 to over USD 8
+billion by FY27. The product bundles tuition fee transfers, living
+expense remittances, and a co-lent education loan to cover the gap
+between available funds and total cost of attendance.
+
+2. Product Description
+Product Name: EduPay Education Corridor Remittance
+Product Category: Cross-Border Remittances / Education Lending
+Description: Multi-purpose LRS remittance product for Indian residents
+sending funds abroad for a dependent's education. Three flows are
+bundled: (a) tuition fee transfer directly to the foreign university
+under Form A2 with purpose code 'Education' (P0001) and TCS at 0.5%
+above INR 7 lakh per financial year per LRS (lower than the general
+20% TCS for non-education LRS); (b) living expense remittance to the
+student's own foreign bank account; (c) co-lent education loan to
+cover the funding gap, in tie-up with the bank's NBFC arm, capped at
+INR 1.5 crore per student per program.
+Transaction Type: Outbound LRS remittance (Education purpose) plus
+domestic education loan disbursement
+Currency: INR, USD, GBP, AUD, CAD, EUR, NZD
+Countries Supported: India plus USA, UK, Canada, Australia, Ireland,
+Germany, New Zealand, Singapore
+Per-Transaction Limit: 5000000 (per transaction; cumulative subject to
+LRS USD 250,000 per FY per remitter)
+Expected Monthly Volume: 12000
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Indian Resident Parents and Guardians of students
+studying abroad
+Onboarding Method: Digital / Mobile app for remittance, Branch-assisted
+for education loan
+KYC Method: Aadhaar e-KYC + PAN + Video KYC + Form A2 + relationship
+proof with the student (birth certificate / passport / admission
+letter)
+Expected Customer Count: 250000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: USA, UK, Canada, Australia, Ireland, Germany,
+New Zealand, Singapore (no FATF-listed jurisdiction)
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Outbound LRS remittance (Education purpose code)
+Average Transaction Amount: 600000
+Maximum Transaction Amount: 5000000
+Expected Daily Volume: 450
+Expected Monthly Volume (Transaction): 12000
+Expected Frequency: 3
+Number of Countries: 8
+Transaction Velocity: 2
+Round Amount Risk: No
+Rapid Movement Possible: No
+
+6. Channel Information
+Channel Type: Digital and Branch
+Delivery Channel: Mobile Banking (for remittance), Branch (for
+education loan)
+Mobile Banking: Yes
+Internet Banking: Yes
+Branch: Yes (relationship manager for education loan)
+Agent: No
+API: Yes (forex API for live FX, university payment gateway APIs)
+Third Party Channel: Yes (foreign university payment gateways,
+flywire/payMyTuition-style aggregators)
+Remote Onboarding: Yes
+
+7. Vendor / Third-Party Information
+Vendor Name: EduGlobalPay Remit Partners Pte Ltd
+Vendor Type: Cross-Border Payment Aggregator for Education
+Vendor Country: Singapore
+India Based: No
+Service Description: Provides direct tuition payment rails to over
+600 foreign universities in the supported corridors. Handles FX
+conversion and beneficiary payout at the university end.
+Criticality: Medium
+Outsourcing Type: Non-Material Outsourcing (tactical payment utility)
+Due Diligence Completed: Yes
+Contract Completed: Yes
+Audit Rights: Yes
+Business Continuity Plan: Yes
+Cross Border Processing: Yes
+
+8. Additional Notes
+This BRD represents one of the fastest-growing cross-border retail
+flows in India. Education remittance is a strategically important
+LRS purpose code because it carries a lower TCS rate (0.5% above
+INR 7L vs 20% general LRS above INR 10L), making it attractive to
+customers. The risk profile is dominated by the cross-border nature
+of the flow and the third-party payment aggregator. The vendor is
+rated Medium criticality because it is a tactical payment utility,
+not a core service vendor. Expected band: MEDIUM to HIGH. Use this
+BRD to confirm that the risk engine correctly classifies a
+purpose-coded LRS flow (Education) at MEDIUM, not HIGH, when the
+underlying vendor and jurisdictions are clean. Regulatory evidence
+should surface RBI's LRS Master Direction, Form A2 instructions,
+Section 206C of the Income Tax Act on Education TCS exemption up to
+INR 7L, FEMA 1999, and the Education Ministry's Project Abroad 2024
+guidance.

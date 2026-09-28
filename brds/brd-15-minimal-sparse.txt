@@ -1,0 +1,102 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: [BLANK - INTENTIONALLY MINIMAL]
+Change Type: [BLANK]
+Requested By: [BLANK]
+Business Unit: [BLANK]
+Summary: [BLANK - testing missing field handling]
+
+2. Product Description
+Product Name: [BLANK]
+Product Category: [BLANK]
+Description: [BLANK - no description provided]
+Transaction Type: [BLANK]
+Currency: [BLANK]
+Countries Supported: [BLANK]
+Per-Transaction Limit: [BLANK]
+Expected Monthly Volume: [BLANK]
+New Product Flag: [BLANK]
+
+3. Customer Profile
+Customer Type: [BLANK]
+Customer Segment: [BLANK]
+Onboarding Method: [BLANK]
+KYC Method: [BLANK]
+Expected Customer Count: [BLANK]
+PEP Exposure: [BLANK]
+High Risk Customer Exposure: [BLANK]
+
+4. Geography
+Primary Country: [BLANK]
+Country Code: [BLANK]
+Customer Country: [BLANK]
+Transaction Country: [BLANK]
+Beneficiary Country: [BLANK]
+Domestic or Cross-Border: [BLANK]
+High Risk Jurisdiction Flag: [BLANK]
+Sanctions Exposure: [BLANK]
+
+5. Transaction Profile
+Transaction Type: [BLANK]
+Average Transaction Amount: [BLANK]
+Maximum Transaction Amount: [BLANK]
+Expected Daily Volume: [BLANK]
+Expected Monthly Volume (Transaction): [BLANK]
+Expected Frequency: [BLANK]
+Number of Countries: [BLANK]
+Transaction Velocity: [BLANK]
+Round Amount Risk: [BLANK]
+Rapid Movement Possible: [BLANK]
+
+6. Channel Information
+Channel Type: [BLANK]
+Delivery Channel: [BLANK]
+Mobile Banking: [BLANK]
+Internet Banking: [BLANK]
+Branch: [BLANK]
+Agent: [BLANK]
+API: [BLANK]
+Third Party Channel: [BLANK]
+Remote Onboarding: [BLANK]
+
+7. Vendor / Third-Party Information
+Vendor Name: [BLANK]
+Vendor Type: [BLANK]
+Vendor Country: [BLANK]
+India Based: [BLANK]
+Service Description: [BLANK]
+Criticality: [BLANK]
+Outsourcing Type: [BLANK]
+Due Diligence Completed: [BLANK]
+Contract Completed: [BLANK]
+Audit Rights: [BLANK]
+Business Continuity Plan: [BLANK]
+Cross Border Processing: [BLANK]
+
+8. Additional Notes
+This BRD is the NEGATIVE TEST - MINIMAL DATA scenario. Every field is
+left blank or marked [BLANK]. Use this BRD to verify:
+
+(a) The BRD upload endpoint returns a successful 200 with character
+    count of 0 instead of crashing.
+
+(b) The BRD extraction endpoint returns a graceful error (HTTP 400 or
+    502) explaining that no fields could be extracted, rather than a
+    500 server error.
+
+(c) The intake-completeness endpoint returns missing_fields covering
+    every field, with completeness_percent = 0, and
+    ready_for_risk_calculation = false.
+
+(d) The risk-factor generation endpoint either refuses to run with an
+    error message, or runs and produces a RiskAssessment with all
+    seven category scores = 0, inherent_score = 0, inherent_rating =
+    LOW, residual_score = 5 (base floor), residual_rating = LOW.
+
+(e) The system does NOT crash, does NOT leak stack traces, and does
+    NOT silently default missing booleans to True (which would falsely
+    trigger risk-floor rules).
+
+This is the most important negative test for robustness - it validates
+the empty-input boundary of every endpoint in the workflow.

@@ -1,0 +1,106 @@
+BUSINESS REQUIREMENTS DOCUMENT (BRD)
+
+1. Change Overview
+Title: Launch of Digital Outbound International Remittance Service under LRS
+Change Type: New Product
+Requested By: Business Owner
+Business Unit: Payments and Remittances
+Summary: Launch of a new digital outbound international remittance
+product allowing resident Indian retail customers to send money
+abroad under the Liberalised Remittance Scheme (LRS) limit of USD
+250,000 per financial year per individual (per FEMA Notification
+FEMA.275/2013-RB and subsequent amendments). Settlement happens via a
+third-party cross-border payment processor. Customer journey is
+mobile-first with KYC under the RBI Master Direction on KYC
+(DBR.AML.BC.81/14.01.001/2014-15 dated 25 February 2015, last updated
+4 January 2024).
+
+2. Product Description
+Product Name: Digital International Remittance (LRS)
+Product Category: Cross-Border Payments
+Description: Outbound retail remittance under LRS. Customers fund the
+remittance from their savings or current account with the bank.
+Beneficiaries can receive cash pickup or bank account credit. Mobile
+app shows live FX rates and TCS (Tax Collected at Source) computation
+under Section 206C of the Income Tax Act (10% above INR 7 lakh per
+financial year, 20% above INR 10 lakh, with educational and health
+exemptions).
+Transaction Type: Cross-border remittance under LRS
+Currency: INR, USD, AED, GBP, EUR, SGD, PHP
+Countries Supported: India plus UAE, USA, UK, EU, Singapore, Philippines
+Per-Transaction Limit: 500000 (INR equivalent; well within LRS cap)
+Expected Monthly Volume: 22000
+New Product Flag: Yes
+
+3. Customer Profile
+Customer Type: Individual
+Customer Segment: Resident Indian Retail Customers (LRS-eligible,
+PAN-verified)
+Onboarding Method: Digital / Mobile app (existing customers only)
+KYC Method: Aadhaar e-KYC + PAN + Video KYC + Form A2 declaration
+capture as required under LRS
+Expected Customer Count: 18000
+PEP Exposure: No
+High Risk Customer Exposure: No
+
+4. Geography
+Primary Country: India
+Country Code: IN
+Customer Country: India
+Transaction Country: India
+Beneficiary Country: Multiple (UAE, USA, UK, EU, Singapore, Philippines)
+Domestic or Cross-Border: Cross-Border
+High Risk Jurisdiction Flag: No
+Sanctions Exposure: No
+
+5. Transaction Profile
+Transaction Type: Outbound cross-border LRS remittance
+Average Transaction Amount: 45000
+Maximum Transaction Amount: 500000
+Expected Daily Volume: 750
+Expected Monthly Volume (Transaction): 22000
+Expected Frequency: 2
+Number of Countries: 7
+Transaction Velocity: 3
+Round Amount Risk: No
+Rapid Movement Possible: Yes
+
+6. Channel Information
+Channel Type: Digital
+Delivery Channel: Mobile Banking and Internet Banking
+Mobile Banking: Yes
+Internet Banking: Yes
+Branch: No
+Agent: No
+API: Yes
+Third Party Channel: Yes
+Remote Onboarding: Yes
+
+7. Vendor / Third-Party Information
+Vendor Name: ConduitPay Pte Ltd
+Vendor Type: Cross-Border Payment Processor / Settlement Partner
+Vendor Country: Singapore
+India Based: No
+Service Description: Provides SWIFT and correspondent bank settlement
+rails, FX conversion, beneficiary payout network (cash pickup and
+bank credit) in the supported corridors. Handles AML screening on
+beneficiary side.
+Criticality: High
+Outsourcing Type: Material Outsourcing (under RBI Master Direction on
+Outsourcing of IT Services 2023)
+Due Diligence Completed: Yes
+Contract Completed: Yes
+Audit Rights: Yes
+Business Continuity Plan: Yes
+Cross Border Processing: Yes
+
+8. Additional Notes
+Cross-border retail remittance under LRS with a regulated Singapore-
+based settlement partner. No high-risk jurisdiction, no sanctions
+exposure, vendor DD is fully complete. This BRD should land in HIGH on
+the strength of cross-border + new product + third-party channel +
+velocity 3 + rapid movement, but should NOT trip any of the three
+risk-floor rules. Use this BRD as the regression baseline for
+"cross-border without risk-floor." Regulatory evidence should surface
+RBI LRS rules, FEMA 1999, the KYC Master Direction, and the FATF
+guidance on remittance corridors.
