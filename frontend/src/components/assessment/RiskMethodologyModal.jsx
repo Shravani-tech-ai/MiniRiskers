@@ -135,6 +135,30 @@ function CategoryRow({ category }) {
                 </tr>
               </tbody>
             </table>
+            {category.framework_basis?.length > 0 && (
+              <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">
+                <p className="font-semibold text-slate-700">Supervisory framework basis</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                  {category.framework_basis.map((ref) => (
+                    <li key={`${ref.source}-${ref.clause}`}>
+                      {ref.source_title} — {ref.clause}
+                    </li>
+                  ))}
+                </ul>
+                {category.factors.some((f) => f.framework_basis?.length) && (
+                  <ul className="mt-2 space-y-0.5">
+                    {category.factors.map((factor) => (
+                      <li key={factor.name}>
+                        <span className="font-medium">{factor.name}:</span>{" "}
+                        {(factor.framework_basis || [])
+                          .map((ref) => `${ref.source_title.split(" — ")[0]} ${ref.clause}`)
+                          .join("; ")}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </td>
         </tr>
       )}

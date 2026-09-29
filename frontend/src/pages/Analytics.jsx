@@ -6,6 +6,7 @@ import {
   FileText,
   Gauge,
   ShieldAlert,
+  Timer,
 } from "lucide-react";
 
 import api from "../services/api";
@@ -13,6 +14,10 @@ import PageContainer from "../components/layout/PageContainer";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, isSubmitted } from "../utils/rolePermissions";
 import { DECISION_LABELS, RATING_ORDER, parseApiDate } from "../utils/riskDisplay";
+import {
+  SLA_STATUS_META,
+  formatHours,
+} from "../components/assessment/CycleTimePanel";
 
 // Chart colour roles (validated with the dataviz palette checker).
 const SERIES = {
@@ -530,16 +535,145 @@ function buildAnalytics(items) {
   };
 }
 
+function SlaSection({ cycle }) {
+  if (!cycle) {
+    return null;
+  }
+  const { summary, items, overrides } = cycle;
+  const target = summary.sla_target_hours;
+  const open = items
+    .filter((item) => item.submitted_at && !item.decided_at)
+    .sort((a, b) => (b.sla_used_pct || 0) - (a.sla_used_pct || 0));
+  const stageData = summary.stage_averages
+    .filter((stage) => stage.avg_hours !== null)
+    .map((stage) => ({
+      label: stage.label,
+      value: stage.avg_hours,
+      color:
+        stage.target_hours && stage.avg_hours > stage.target_hours
+          ? STATUS.critical
+          : SERIES.primary,
+    }));
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Intake-to-decision SLA</h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Target {formatHours(target)} from Business Owner submission to committee decision (brief: ~2 days vs a
+          15–20 business-day baseline). Time a request spends back with the Business Owner after a deferral is excluded.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <StatTile
+          icon={Timer}
+          label="Median time to decision"
+          value={formatHours(summary.median_hours)}
+          hint={`target ${formatHours(target)} · p90 ${formatHours(summary.p90_hours)}`}
+        />
+        <StatTile
+          icon={CheckCircle2}
+          label="Decided within SLA"
+          value={summary.within_sla_pct === null ? "—" : `${formatNumber(summary.within_sla_pct)}%`}
+          hint={`of ${summary.decided_count} decided`}
+        />
+        <StatTile
+          icon={Clock3}
+          label="Open, at risk"
+          value={formatNumber(summary.open_by_status.AT_RISK)}
+          hint={`${summary.open_by_status.ON_TRACK} on track · ${summary.open_by_status.PAUSED} paused`}
+        />
+        <StatTile
+          icon={ShieldAlert}
+          label="Open, breached"
+          value={formatNumber(summary.open_by_status.BREACHED)}
+          hint={`${summary.requests_with_deferrals} request(s) deferred at least once`}
+        />
+        <StatTile
+          icon={Gauge}
+          label="Escalated overrides"
+          value={formatNumber(overrides.escalated)}
+          hint={`${overrides.downgrades} downgrade(s), ${overrides.upgrades} upgrade(s) of ${overrides.reviews} reviews`}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <ChartCard
+          title="Average time per stage"
+          subtitle="Decided requests; red bars exceed the stage target"
+        >
+          {stageData.length ? (
+            <>
+              <HBarChart data={stageData} format={(v) => formatHours(v)} />
+              <DataTable
+                columns={["Stage", "Average", "Target"]}
+                rows={summary.stage_averages.map((stage) => [
+                  stage.label,
+                  formatHours(stage.avg_hours),
+                  formatHours(stage.target_hours),
+                ])}
+              />
+            </>
+          ) : (
+            <EmptyChart text="No decided requests yet." />
+          )}
+        </ChartCard>
+
+        <ChartCard title="Open requests against SLA" subtitle="Most SLA time used first">
+          {open.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-xs uppercase text-slate-400">
+                  <tr>
+                    <th className="py-2 text-left">Request</th>
+                    <th className="py-2 text-left">Stage</th>
+                    <th className="py-2 text-right">Elapsed</th>
+                    <th className="py-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {open.slice(0, 10).map((item) => {
+                    const meta = SLA_STATUS_META[item.sla_status] || SLA_STATUS_META.NOT_STARTED;
+                    return (
+                      <tr key={item.change_request_id} className="border-t border-slate-100">
+                        <td className="py-2 font-medium">{item.request_number}</td>
+                        <td className="py-2 text-slate-600">{item.current_stage_label || "—"}</td>
+                        <td className="py-2 text-right tabular-nums">{formatHours(item.sla_hours)}</td>
+                        <td className="py-2 text-right">
+                          <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${meta.className}`}>{meta.label}</span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyChart text="No open requests." />
+          )}
+        </ChartCard>
+      </div>
+    </section>
+  );
+}
+
 function Analytics() {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
+  const [cycle, setCycle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api
-      .get("/assessments/overview")
-      .then((response) => setItems(response.data.items || []))
+    Promise.all([
+      api.get("/assessments/overview"),
+      api.get("/analytics/cycle-time").catch(() => null),
+    ])
+      .then(([overview, cycleTime]) => {
+        setItems(overview.data.items || []);
+        setCycle(cycleTime?.data || null);
+      })
       .catch(() => setError("Unable to load analytics."))
       .finally(() => setLoading(false));
   }, []);
@@ -735,6 +869,8 @@ function Analytics() {
               )}
             </ChartCard>
           </div>
+
+          <SlaSection cycle={cycle} />
 
           <p className="flex items-center gap-2 text-xs text-slate-400">
             <Clock3 size={14} />

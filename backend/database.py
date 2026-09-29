@@ -1,7 +1,10 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-DATABASE_URL = "sqlite:///./miniriskers.db"
+# Overridable so tests (and other environments) can use their own database.
+DATABASE_URL = os.getenv("MINIRISKERS_DATABASE_URL", "sqlite:///./miniriskers.db")
 
 engine = create_engine(
     DATABASE_URL,

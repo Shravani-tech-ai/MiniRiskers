@@ -62,7 +62,9 @@ export function roleLabel(role) {
   }
 }
 
-const DRAFT_STATUSES = new Set(["", "DRAFT"]);
+// RETURNED: the committee deferred the request back to the Business Owner,
+// so intake is editable again until they resubmit.
+const DRAFT_STATUSES = new Set(["", "DRAFT", "RETURNED"]);
 const RISK_STAGES = new Set([
   "RISK_ASSESSMENT",
   "REGULATORY_EVIDENCE",
@@ -135,8 +137,17 @@ export function getDisplayStatus(changeRequest) {
     case "APPROVE_WITH_CONDITIONS":
       return {
         key: "APPROVED_WITH_CONDITIONS",
-        label: "Approved with conditions",
+        label: "Approved — conditions open",
       };
+    case "CONDITIONS_MET":
+      return {
+        key: "APPROVED_WITH_CONDITIONS",
+        label: "Approved — conditions met",
+      };
+    case "RETURNED":
+      return { key: "DEFERRED", label: "Returned for rework" };
+    case "REASSESSMENT":
+      return { key: "DEFERRED", label: "Deferred for reassessment" };
     case "DEFER":
     case "DEFERRED":
       return { key: "DEFERRED", label: "Deferred" };
@@ -167,7 +178,20 @@ export function isDecided(changeRequest) {
   return (
     key === "APPROVED" ||
     key === "APPROVED_WITH_CONDITIONS" ||
-    key === "DEFERRED" ||
     key === "REJECTED"
   );
+}
+
+// Who may tune the risk methodology: analysts propose, the committee
+// approves (maker-checker). Auditors can read everything.
+export function getMethodologyPermissions(role) {
+  return {
+    canView: role !== ROLES.BUSINESS_OWNER,
+    canPropose: role === ROLES.RISK_ANALYST || role === ROLES.ADMIN,
+    canApprove: role === ROLES.RISK_COMMITTEE || role === ROLES.ADMIN,
+  };
+}
+
+export function canExportAuditPack(role) {
+  return role !== ROLES.BUSINESS_OWNER;
 }

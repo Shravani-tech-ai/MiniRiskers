@@ -1,4 +1,7 @@
-import { ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertTriangle, CornerUpLeft, ShieldAlert } from "lucide-react";
+
+import api from "../../services/api";
 
 function getRiskClass(rating) {
   switch (rating) {
@@ -15,7 +18,75 @@ function getRiskClass(rating) {
   }
 }
 
+const ESCALATION_STYLES = {
+  ESCALATED: "border-red-200 bg-red-50 text-red-800",
+  ACKNOWLEDGE: "border-amber-200 bg-amber-50 text-amber-900",
+  NONE: "border-emerald-200 bg-emerald-50 text-emerald-900",
+};
+
+function OverrideConsequences({ preview }) {
+  if (!preview || preview.direction === "NONE") {
+    return null;
+  }
+  const level = preview.escalation_level;
+  const title =
+    level === "ESCALATED"
+      ? "This override will be escalated to the committee"
+      : level === "ACKNOWLEDGE"
+        ? "The committee must acknowledge this override"
+        : "Conservative override";
+  return (
+    <div className={`rounded-lg border p-4 ${ESCALATION_STYLES[level] || ESCALATION_STYLES.NONE}`}>
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <AlertTriangle size={16} />
+        {title}
+      </div>
+      {preview.reasons.length > 0 && (
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+          {preview.reasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+      )}
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
+        {preview.consequences.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function DeferralNotice({ deferral, audience }) {
+  if (!deferral) {
+    return null;
+  }
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-xl border border-orange-200 bg-orange-50 px-5 py-4 text-orange-900">
+      <CornerUpLeft size={20} className="mt-0.5 shrink-0 text-orange-600" />
+      <div className="text-sm leading-6">
+        <p className="font-semibold">
+          {audience === "BUSINESS_OWNER"
+            ? "The Risk Committee returned this request to you for rework"
+            : "The Risk Committee deferred this request for reassessment"}
+          {deferral.decided_by ? ` (${deferral.decided_by})` : ""}.
+        </p>
+        <p className="mt-1">
+          <span className="font-medium">Committee's reasons:</span> {deferral.rationale}
+        </p>
+        <p className="mt-1 text-orange-800">
+          {audience === "BUSINESS_OWNER"
+            ? "Update the inputs or controls and resubmit. The SLA clock is paused while the request is with you."
+            : `This is revision ${(deferral.revision || 1) + 1}. Record a fresh analyst review for the committee.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function AnalystReview({
+  changeRequestId,
+  deferral,
   riskAssessment,
   aiAssessment,
   analystRating,
@@ -28,8 +99,31 @@ function AnalystReview({
   submitAnalystReview,
   canSubmit = true,
 }) {
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (!analystRating || !changeRequestId || analystReviewed) {
+      setPreview(null);
+      return;
+    }
+    let cancelled = false;
+    api
+      .get(`/change-requests/${changeRequestId}/override-preview`, {
+        params: { analyst_rating: analystRating },
+      })
+      .then((response) => !cancelled && setPreview(response.data))
+      .catch(() => !cancelled && setPreview(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [analystRating, changeRequestId, analystReviewed]);
+
+  const minChars = preview?.min_reason_chars || 0;
+
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="mt-6">
+    <DeferralNotice deferral={deferral} audience="RISK_ANALYST" />
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="border-b border-slate-200 bg-slate-50 p-6">
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-slate-200 p-2.5">
@@ -142,10 +236,24 @@ function AnalystReview({
               onChange={(e) => setOverrideReason(e.target.value)}
               rows={4}
               placeholder="Explain why the analyst disagrees with the system rating..."
-              className="mt-3 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              disabled={analystReviewed || !canSubmit}
+              className="mt-3 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:bg-slate-50"
             />
+            {minChars > 0 && !analystReviewed && (
+              <p
+                className={`mt-1 text-xs ${
+                  overrideReason.trim().length >= minChars
+                    ? "text-emerald-700"
+                    : "text-slate-500"
+                }`}
+              >
+                {overrideReason.trim().length} / {minChars} characters minimum for a downgrade
+              </p>
+            )}
           </div>
         )}
+
+        {!analystReviewed && <OverrideConsequences preview={preview} />}
 
         <div>
           <label className="text-sm font-semibold text-slate-700">Suggestions / Conditions</label>
@@ -175,6 +283,7 @@ function AnalystReview({
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 }

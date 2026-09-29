@@ -1,13 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import { NAV_ITEMS } from "./navItems";
+import { useAuth } from "../../context/AuthContext";
 
 function MobileNav() {
   const location = useLocation();
+  const { user } = useAuth();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white px-2 py-2 lg:hidden">
       <div className="mx-auto flex max-w-lg items-center justify-around">
-        {NAV_ITEMS.filter((item) => !item.disabled).map((item) => {
+        {NAV_ITEMS.filter(
+          (item) => !item.disabled && !item.hiddenFor?.includes(user?.role)
+        ).map((item) => {
           const Icon = item.icon;
           const active = item.matches(location.pathname);
 

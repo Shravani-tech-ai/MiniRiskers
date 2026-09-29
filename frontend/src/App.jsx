@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Assessments from "./pages/Assessments";
 import Analytics from "./pages/Analytics";
+import Methodology from "./pages/Methodology";
 import Assessment from "./pages/Assessment";
 import MainLayout from "./layouts/MainLayout";
 import NewRequest from "./pages/NewRequest";
@@ -48,6 +49,24 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <Analytics />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/methodology"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                ROLES.RISK_ANALYST,
+                ROLES.RISK_COMMITTEE,
+                ROLES.AUDITOR,
+                ROLES.ADMIN,
+              ]}
+            >
+              <MainLayout>
+                <Methodology />
               </MainLayout>
             </ProtectedRoute>
           }

@@ -1,8 +1,10 @@
 """Explains how a change request's risk assessment was calculated.
 
 The report is rebuilt from the stored assessment, the risk factors and
-controls it was computed from, and the model constants in
-risk_engine.risk_calculator, so the explanation always matches the engine.
+controls it was computed from, and the methodology version the assessment
+was scored under, so the explanation always matches the engine. Each
+category, factor and floor rule is tied to its supervisory framework basis
+(config/risk_framework.json).
 """
 
 import io
@@ -21,11 +23,17 @@ from backend.models import (
     RiskAssessment,
     RiskFactor,
 )
-from risk_engine.risk_calculator import (
-    RISK_WEIGHTS,
+from backend.methodology_store import get_config_for_version
+from risk_engine.methodology import (
+    CATEGORIES,
+    framework_refs_for_category,
+    framework_refs_for_factor,
+    framework_refs_for_rule,
     get_base_residual_floor,
     get_rating,
     get_triggered_concentration_rules,
+    load_framework,
+    rating_band_ranges,
 )
 
 CATEGORY_LABELS = {
@@ -56,14 +64,6 @@ INPUT_SECTION_LABELS = {
     "channel": "Channel",
     "vendor": "Vendor / third party",
 }
-
-RATING_BANDS = [
-    {"rating": "LOW", "min": 0, "max": 25},
-    {"rating": "MEDIUM", "min": 26, "max": 50},
-    {"rating": "HIGH", "min": 51, "max": 75},
-    {"rating": "CRITICAL", "min": 76, "max": 100},
-]
-
 
 def _round(value, digits: int = 2):
     return round(float(value or 0), digits)
@@ -124,10 +124,13 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
         .first()
     )
 
+    config = get_config_for_version(db, assessment.risk_model_version)
+
     # ---- Category scores -------------------------------------------------
     evidence_by_factor = Counter(item.risk_factor_id for item in evidence)
     categories = []
-    for category, model_weight in RISK_WEIGHTS.items():
+    for category in CATEGORIES:
+        model_weight = config["category_weights"][category]
         category_factors = [
             factor for factor in factors if factor.risk_category == category
         ]
@@ -140,7 +143,8 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
             "label": CATEGORY_LABELS[category],
             "model_weight": model_weight,
             "score": category_score,
-            "rating": get_rating(category_score),
+            "rating": get_rating(category_score, config),
+            "framework_basis": framework_refs_for_category(category),
             "weighted_contribution": _round(category_score * model_weight),
             "total_factor_weight": _round(total_weight),
             "factors": [
@@ -163,6 +167,9 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
                     "source_type": factor.source_type,
                     "source_reference": factor.source_reference,
                     "evidence_count": evidence_by_factor.get(factor.id, 0),
+                    "framework_basis": framework_refs_for_factor(
+                        category, factor.risk_factor
+                    ),
                 }
                 for factor in category_factors
             ],
@@ -179,10 +186,14 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
     # ---- Controls & residual --------------------------------------------
     control_effectiveness = _round(assessment.control_adjustment)
     raw_residual = _round(inherent_score * (1 - control_effectiveness / 100))
-    base_floor = get_base_residual_floor(inherent_score)
-    triggered_rules = get_triggered_concentration_rules(
-        {factor.risk_factor for factor in factors}
-    )
+    base_floor = get_base_residual_floor(inherent_score, config)
+    triggered_rules = [
+        {**rule, "framework_basis": framework_refs_for_rule(rule.get("id"))}
+        for rule in get_triggered_concentration_rules(
+            {factor.risk_factor for factor in factors},
+            config,
+        )
+    ]
     concentration_floor = max(
         [5] + [rule["floor"] for rule in triggered_rules]
     )
@@ -242,8 +253,14 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
 
     notes = [
         "Risk factors are derived deterministically from the intake data "
-        "the Business Owner submitted; each factor carries a fixed score "
-        "(0-100) and a weight within its category.",
+        "the Business Owner submitted; each factor's score (0-100) and "
+        "weight within its category come from methodology "
+        f"v{config['version']}.",
+        "The seven categories follow the risk dimensions required by RBI "
+        "KYC Master Direction para 5A and FATF Recommendation 1 (customer, "
+        "geography, product/service/transaction, delivery channel), with "
+        "third-party and fraud risk grounded in the RBI outsourcing and "
+        "fraud risk management directions.",
         "A category with no triggered risk factors scores 0 and adds "
         "nothing to inherent risk.",
         "Regulatory evidence is retrieved to support review of each risk "
@@ -280,7 +297,12 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
             "residual_rating": assessment.residual_rating,
             "final_rating": assessment.final_rating,
         },
-        "rating_bands": RATING_BANDS,
+        "rating_bands": rating_band_ranges(config),
+        "methodology": {
+            "version": config["version"],
+            "framework_version": load_framework()["framework_version"],
+            "methodology_basis": load_framework()["methodology_basis"],
+        },
         "factor_count": len(factors),
         "categories": categories,
         "inherent": {
@@ -478,6 +500,16 @@ def _methodology_html(report: dict) -> str:
             rows,
             numeric=(2, 3, 4, 5),
         ))
+        basis = category.get("framework_basis") or []
+        if basis:
+            parts.append(
+                '<p class="muted">Framework basis: '
+                + "; ".join(
+                    f"{_cell(ref['source_title'])} — {_cell(ref['clause'])}"
+                    for ref in basis
+                )
+                + "</p>"
+            )
 
     parts.append("<h2>4. Inherent risk</h2>")
     parts.append(

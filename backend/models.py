@@ -83,6 +83,10 @@ class ChangeRequest(Base):
 
     proposed_go_live_date = Column(String)
 
+    # Incremented each time the committee defers the request back for
+    # rework; reviews and decisions are recorded against a revision.
+    revision = Column(Integer, default=1, nullable=False)
+
     created_at = Column(
         DateTime,
         default=datetime.utcnow
@@ -447,6 +451,10 @@ class RiskAssessment(Base):
 
     risk_model_version = Column(String)
 
+    methodology_version_id = Column(Integer, nullable=True, index=True)
+
+    revision = Column(Integer, default=1)
+
     customer_risk_score = Column(Float)
     product_risk_score = Column(Float)
     geography_risk_score = Column(Float)
@@ -634,6 +642,24 @@ class AnalystOverride(Base):
 
     consequences = Column(Text)
 
+    revision = Column(Integer, default=1)
+
+    # NONE (accepted), UPGRADE or DOWNGRADE, and by how many bands.
+    override_direction = Column(String, default="NONE")
+
+    band_delta = Column(Integer, default=0)
+
+    # NONE, ACKNOWLEDGE (committee must acknowledge) or ESCALATED.
+    escalation_level = Column(String, default="NONE")
+
+    escalation_reasons = Column(Text)
+
+    acknowledged_by = Column(String)
+
+    acknowledged_at = Column(DateTime)
+
+    acknowledgement_note = Column(Text)
+
     reviewed_by = Column(
         String,
         default="FCRM Analyst"
@@ -677,6 +703,11 @@ class CommitteeDecision(Base):
     rationale = Column(Text)
 
     conditions = Column(Text)
+
+    revision = Column(Integer, default=1)
+
+    # For DEFER: BUSINESS_OWNER or RISK_ANALYST.
+    deferred_to = Column(String)
 
     decided_by = Column(
         String,
@@ -763,3 +794,109 @@ class AuditEvent(Base):
         DateTime,
         default=datetime.utcnow
     )
+
+    # Tamper evidence: each event hashes its own content together with the
+    # previous event's hash for the same change request.
+    prev_hash = Column(String, nullable=True)
+
+    event_hash = Column(String, nullable=True, index=True)
+
+class MethodologyVersion(Base):
+    """An immutable version of the tunable risk methodology.
+
+    Lifecycle: DRAFT -> PENDING_APPROVAL -> ACTIVE -> RETIRED
+    (or PENDING_APPROVAL -> REJECTED / DRAFT). The approver must be a
+    different person from the proposer (maker-checker).
+    """
+
+    __tablename__ = "methodology_versions"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    version = Column(String, nullable=False, unique=True, index=True)
+
+    status = Column(String, nullable=False, default="DRAFT", index=True)
+
+    config_json = Column(Text, nullable=False)
+
+    change_summary = Column(Text)
+
+    based_on_version = Column(String)
+
+    created_by = Column(String)
+
+    created_by_user_id = Column(Integer)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    submitted_at = Column(DateTime)
+
+    approved_by = Column(String)
+
+    approved_by_user_id = Column(Integer)
+
+    approved_at = Column(DateTime)
+
+    review_note = Column(Text)
+
+    effective_from = Column(DateTime)
+
+    effective_to = Column(DateTime)
+
+
+class MethodologyEvent(Base):
+    """Append-only history of methodology lifecycle actions."""
+
+    __tablename__ = "methodology_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    methodology_version_id = Column(Integer, nullable=False, index=True)
+
+    version = Column(String)
+
+    action = Column(String, nullable=False)
+
+    actor = Column(String)
+
+    user_id = Column(Integer)
+
+    note = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ApprovalCondition(Base):
+    """A condition attached to an APPROVE_WITH_CONDITIONS decision.
+
+    Lifecycle: OPEN -> EVIDENCE_SUBMITTED (Business Owner) -> VERIFIED
+    (Risk Analyst), or back to OPEN when the evidence is not accepted.
+    """
+
+    __tablename__ = "approval_conditions"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(Integer, nullable=False, index=True)
+
+    committee_decision_id = Column(Integer, nullable=False, index=True)
+
+    description = Column(Text, nullable=False)
+
+    due_date = Column(DateTime)
+
+    status = Column(String, nullable=False, default="OPEN")
+
+    evidence_note = Column(Text)
+
+    evidence_submitted_by = Column(String)
+
+    evidence_submitted_at = Column(DateTime)
+
+    verified_by = Column(String)
+
+    verified_at = Column(DateTime)
+
+    verification_note = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)

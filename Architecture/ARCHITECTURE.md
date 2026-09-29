@@ -160,8 +160,8 @@ be tested and tuned on its own.
    "cash involved", "high-risk jurisdiction") and produces a list of risk
    factors across 7 categories: Customer, Product, Geography, Transaction,
    Channel, Third-Party, Fraud.
-2. **Score each category** and combine them, using configurable weights
-   (`RiskModelConfig` / `RiskModelWeight` tables), into an **inherent risk**
+2. **Score each category** and combine them, using the weights of the
+   **active methodology version** (see section 10), into an **inherent risk**
    score and rating (LOW / MEDIUM / HIGH / CRITICAL).
 3. **Adjust for controls** — the effectiveness of the bank's existing
    controls (design, operation, coverage, automation, evidence quality) is
@@ -213,7 +213,121 @@ judgment — the AI drafts, the human decides.
 
 ---
 
-## 8. Key files, if you need to dig deeper
+## 8. Governance features
+
+### 8.1 Versioned, tunable methodology (maker-checker)
+
+Every tunable parameter lives in a methodology config
+(`risk_engine/methodology.py`), stored as immutable versions in the
+`MethodologyVersion` table. The config holds:
+- category weights, rating bands and residual floors
+- concentration rules
+- the score and weight of each factor
+- generator thresholds
+- the override policy
+- workflow SLAs
+
+Version 1.0 is seeded from the engine's original constants.
+
+- **Lifecycle:** DRAFT → PENDING_APPROVAL → ACTIVE → RETIRED, or REJECTED.
+  - A Risk Analyst (or Admin) proposes a change.
+  - A Risk Committee member (or Admin) approves it.
+  - The proposer can never approve their own change.
+  - Every lifecycle action is written to the `MethodologyEvent` table.
+- **Validation:** weights must sum to 1, and bands must be LOW → CRITICAL,
+  ending at 100. A draft can retune factors but cannot add or remove them,
+  because which factors exist is fixed in the generator code.
+- **What-if impact:** `GET /methodology/versions/{id}/impact` re-scores
+  every assessed request under a draft. Stored assessments are never
+  re-rated retrospectively.
+- **Traceability:** each `RiskAssessment` records the version it was scored
+  under, and the methodology report and exports explain it under that
+  version.
+- **Screen:** `/methodology` (not shown to Business Owners).
+
+### 8.2 Consequences of analyst overrides
+
+`backend/override_policy.py` classifies each analyst review:
+
+| Override | Consequence |
+|---|---|
+| Accepted, or upgraded (more conservative) | None. The rating goes straight through. |
+| Downgraded by 1 band | Needs a reason of at least 40 characters, and the committee must acknowledge the override with a note before deciding. |
+| Downgraded by 2+ bands, downgraded from CRITICAL, or rated below a concentration floor | **Escalated.** The committee must acknowledge it, and **cannot approve unconditionally**. |
+
+All thresholds come from the methodology's `override_policy`. The analyst
+screen previews the consequence live (`/override-preview`).
+
+### 8.3 Committee outcomes
+
+| Decision | Outcome |
+|---|---|
+| APPROVE | Status APPROVED. Workflow closed. |
+| APPROVE_WITH_CONDITIONS | Each condition becomes an `ApprovalCondition` with a due date. The Business Owner submits evidence, and a Risk Analyst verifies it (not the person who submitted it) or sends it back. When every condition is verified, status becomes CONDITIONS_MET. |
+| DEFER → Business Owner | Status RETURNED, stage REQUEST_CREATED. Intake reopens for editing, and the SLA clock pauses. |
+| DEFER → Risk Analyst | Status REASSESSMENT, stage ANALYST_REVIEW. |
+| REJECT | Status REJECTED. Workflow closed. |
+
+A deferral increments `ChangeRequest.revision`. Analyst reviews and
+committee decisions are recorded per revision, and the full history is kept.
+
+### 8.4 Tamper-evident audit trail and examiner export
+
+`backend/audit.py` makes the audit trail tamper-evident:
+- Each `AuditEvent` stores a SHA-256 hash of its own content plus the
+  previous event's hash. This gives one chain per request.
+- SQLite triggers and ORM guards reject UPDATE and DELETE on sealed rows.
+- Events recorded before the hash chain existed are sealed on first
+  startup.
+
+Endpoints:
+- `GET /change-requests/{id}/audit-events/verify` verifies a request's chain.
+- `GET /change-requests/{id}/audit-export?format=pdf|json|csv` produces the
+  **examiner pack** (`backend/audit_export.py`). It contains:
+  - the decision trail: system, AI, analyst and committee outputs, kept
+    separate
+  - the methodology version and who approved it
+  - the framework basis
+  - regulatory evidence
+  - cycle time against the SLA
+  - every event with its hash
+  - the chain verification result
+  - a SHA-256 digest of the pack itself
+- `GET /audit/export` and `GET /audit/verify` cover the whole portfolio
+  (Auditor or Admin only).
+
+### 8.5 Intake-to-decision SLA
+
+`backend/cycle_time.py` derives stage timings from the audit trail:
+- The clock runs from Business Owner submission to a final committee
+  decision. The default target is 48h, tunable in the methodology.
+- It pauses while a request is returned to the Business Owner.
+- Status is ON_TRACK, AT_RISK (at 75% of the SLA), BREACHED, PAUSED, MET or
+  MISSED.
+
+Endpoints: `GET /change-requests/{id}/cycle-time` and
+`GET /analytics/cycle-time`. The results are shown on the assessment page
+and in an "Intake-to-decision SLA" section on the Analytics page.
+
+### 8.6 Supervisory framework basis
+
+`config/risk_framework.json` maps every category, factor and concentration
+rule to published frameworks:
+- **Indian:** RBI KYC Master Direction (para 5A and others), PMLA, PML
+  Rules, UAPA 51A, and the RBI directions on outsourcing, fraud and digital
+  payment security. Paragraph numbers were checked against the copies in
+  `Documents/`.
+- **International:** FATF Recommendations and the FATF risk-based-approach
+  guidance for banking, the Wolfsberg risk assessment FAQs, and Basel
+  Committee AML guidance.
+
+A test fails if any catalog factor is left unmapped. The mapping is shown
+in the methodology report, the examiner pack, and the "Framework basis" tab
+of `/methodology`.
+
+---
+
+## 9. Key files, if you need to dig deeper
 
 | Area | File |
 |---|---|
@@ -225,6 +339,13 @@ judgment — the AI drafts, the human decides.
 | Regulatory search | `rag/query_engine.py`, `rag/vector_store.py`, `rag/evidence_service.py` |
 | AI assessment | `backend/gemini_service.py`, `backend/assessment_service.py` |
 | PDF/JSON export | `backend/export_service.py` |
+| Methodology versions & scoring maths | `risk_engine/methodology.py`, `backend/methodology_store.py` |
+| Governance endpoints | `backend/governance_routes.py` |
+| Override policy | `backend/override_policy.py` |
+| Audit hash chain / examiner pack | `backend/audit.py`, `backend/audit_export.py` |
+| SLA / cycle time | `backend/cycle_time.py` |
+| Framework mapping | `config/risk_framework.json` |
+| Tests | `tests/` (`pytest tests`) |
 | Frontend routing | `frontend/src/App.jsx` |
 | Frontend role rules | `frontend/src/utils/rolePermissions.js` |
 | Frontend auth state | `frontend/src/context/AuthContext.jsx` |
@@ -232,11 +353,13 @@ judgment — the AI drafts, the human decides.
 
 ---
 
-## 9. Not yet implemented / out of scope today
+## 10. Not yet implemented / out of scope today
 
 - No password reset / email verification flow.
 - No per-analyst assignment UI (assignment is a raw field, not yet a
   managed workflow).
-- No admin UI for managing users or risk model weights (both exist as data
-  models but are configured directly, not through a screen).
+- No admin UI for managing users. Risk methodology is managed on
+  `/methodology`. The legacy `RiskModelConfig` / `RiskModelWeight` tables
+  are unused; `MethodologyVersion` replaces them.
+- The SLA uses calendar hours, not business hours.
 - Single-tenant, single-currency-agnostic setup — no multi-bank tenancy.

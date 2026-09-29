@@ -23,13 +23,19 @@ COMMITTEE_STATUSES = {
     "COMMITTEE_REVIEW",
     "APPROVE",
     "APPROVE_WITH_CONDITIONS",
+    "CONDITIONS_MET",
     "DEFER",
     "REJECT",
     "APPROVED",
     "REJECTED",
+    # Deferred by the committee and being reworked.
+    "RETURNED",
+    "REASSESSMENT",
 }
 
-DRAFT_STATUSES = {"", "DRAFT"}
+# RETURNED: deferred back to the Business Owner, so intake is editable again
+# until they resubmit.
+DRAFT_STATUSES = {"", "DRAFT", "RETURNED"}
 INTAKE_STAGE = "REQUEST_CREATED"
 
 

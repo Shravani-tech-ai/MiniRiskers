@@ -10,7 +10,13 @@ import ChannelInformation from "../components/assessment/ChannelInformation";
 import VendorInformation from "../components/assessment/VendorInformation";
 import RiskOverview from "../components/assessment/RiskOverview";
 import AIAssessment from "../components/assessment/AIAssessment";
-import AnalystReview from "../components/assessment/AnalystReview";
+import AnalystReview, {
+  DeferralNotice,
+} from "../components/assessment/AnalystReview";
+import AuditTrail from "../components/assessment/AuditTrail";
+import ConditionsTracker from "../components/assessment/ConditionsTracker";
+import CycleTimePanel from "../components/assessment/CycleTimePanel";
+import DecisionOutcome from "../components/assessment/DecisionOutcome";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import IntakePanel from "../components/assessment/IntakePanel";
 import WorkflowStepper from "../components/assessment/WorkflowStepper";
@@ -26,7 +32,6 @@ import AssessmentPreview from "../components/assessment/AssessmentPreview";
 import ConfirmDialog from "../components/assessment/ConfirmDialog";
 import ResultDialog from "../components/assessment/ResultDialog";
 import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
-import CompletedStageSummary from "../components/assessment/CompletedStageSummary";
 import SubmissionBanner from "../components/assessment/SubmissionBanner";
 import {
   EMPTY_ASSESSMENT_FORMS,
@@ -46,6 +51,7 @@ import api from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import {
   ROLES,
+  canExportAuditPack,
   getDefaultView,
   getLockedStages,
   getRequestPermissions,
@@ -72,8 +78,14 @@ function Assessment() {
   const [analystReviewed, setAnalystReviewed] = useState(false);
   const [committeeDecision, setCommitteeDecision] = useState("");
   const [committeeReason, setCommitteeReason] = useState("");
-  const [committeeConditions, setCommitteeConditions] = useState("");
+  const [committeeConditions, setCommitteeConditions] = useState([
+    { description: "", due_date: "" },
+  ]);
+  const [deferTarget, setDeferTarget] = useState("");
+  const [overrideAcknowledgement, setOverrideAcknowledgement] = useState("");
   const [committeeSubmitted, setCommitteeSubmitted] = useState(false);
+  const [committeeRecord, setCommitteeRecord] = useState(null);
+  const [committeeHistory, setCommitteeHistory] = useState([]);
   const [auditEvents, setAuditEvents] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -303,8 +315,13 @@ function Assessment() {
           setOverrideReason(review.override_reason || "");
           setConsequences(review.consequences || "");
         } else {
+          // Nothing recorded for the current revision (new request, or the
+          // committee deferred it back for another review).
           setAnalystReviewed(false);
           setAnalystReviewRecord(null);
+          setAnalystRating("");
+          setOverrideReason("");
+          setConsequences("");
         }
       } catch (error) {
         console.error(
@@ -319,27 +336,32 @@ function Assessment() {
           `/change-requests/${changeRequestId}/committee-decision`
         );
 
+        setCommitteeHistory(committeeResponse.data.history || []);
+
         if (committeeResponse.data.decided) {
           const decision = committeeResponse.data.decision;
 
           setCommitteeSubmitted(true);
-
-          setCommitteeDecision(
-            decision.decision || ""
-          );
-
-          setCommitteeReason(
-            decision.rationale || ""
-          );
-
+          setCommitteeRecord(decision);
+          setCommitteeDecision(decision.decision || "");
+          setCommitteeReason(decision.rationale || "");
+          setDeferTarget(decision.deferred_to || "");
           setCommitteeConditions(
-            decision.conditions || ""
+            decision.condition_items?.length
+              ? decision.condition_items.map((item) => ({
+                  description: item.description,
+                  due_date: (item.due_date || "").slice(0, 10),
+                }))
+              : [{ description: "", due_date: "" }]
           );
         } else {
           setCommitteeSubmitted(false);
+          setCommitteeRecord(null);
           setCommitteeDecision("");
           setCommitteeReason("");
-          setCommitteeConditions("");
+          setDeferTarget("");
+          setOverrideAcknowledgement("");
+          setCommitteeConditions([{ description: "", due_date: "" }]);
         }
       } catch (error) {
         console.error(
@@ -911,41 +933,50 @@ function Assessment() {
       return;
     }
 
-    if (
-      committeeDecision === "APPROVE_WITH_CONDITIONS" &&
-      !committeeConditions.trim()
-    ) {
-      setError(
-        "Please specify the conditions for approval."
-      );
+    const conditions = committeeConditions.filter((item) =>
+      item.description.trim()
+    );
+
+    if (committeeDecision === "APPROVE_WITH_CONDITIONS" && !conditions.length) {
+      setError("Please specify at least one condition for approval.");
+      return;
+    }
+
+    if (committeeDecision === "DEFER" && !deferTarget) {
+      setError("Choose who the deferred request goes back to.");
       return;
     }
 
     if (!committeeReason.trim()) {
-      setError(
-        "Please provide the rationale for the committee decision."
-      );
+      setError("Please provide the rationale for the committee decision.");
       return;
     }
 
     try {
       setError("");
 
-      await api.post(
+      const response = await api.post(
         `/change-requests/${changeRequestId}/committee-decision`,
-        null,
         {
-          params: {
-            decision: committeeDecision,
-            rationale: committeeReason,
-            conditions: committeeConditions,
-          },
+          decision: committeeDecision,
+          rationale: committeeReason,
+          conditions:
+            committeeDecision === "APPROVE_WITH_CONDITIONS"
+              ? conditions.map((item) => ({
+                  description: item.description,
+                  due_date: item.due_date || null,
+                }))
+              : [],
+          deferred_to: committeeDecision === "DEFER" ? deferTarget : null,
+          override_acknowledgement: overrideAcknowledgement || null,
         }
       );
 
-      setCommitteeSubmitted(true);
       await loadAssessment();
-      setActiveView("COMPLETED");
+      const nextStage = normalizeWorkflowStage(
+        response.data?.change_request?.current_stage
+      );
+      setActiveView(getDefaultView(user?.role, nextStage));
 
     } catch (error) {
       console.error(
@@ -1016,7 +1047,9 @@ function Assessment() {
     try {
       setAdvancingStage(true);
 
-      if (!aiAssessment) {
+      // Generate (or regenerate, on a new revision) the AI draft: that is
+      // what moves the request into analyst review.
+      if (!aiAssessment || changeRequest?.current_stage !== "ANALYST_REVIEW") {
         const generated = await generateAIAssessment();
         if (!generated) {
           return;
@@ -1104,6 +1137,15 @@ function Assessment() {
   const isIntakeStage =
     normalizeWorkflowStage(changeRequest?.current_stage) === "REQUEST_CREATED";
 
+  // The committee's most recent deferral, if it opened the current revision.
+  const lastDecision = committeeHistory[committeeHistory.length - 1];
+  const activeDeferral =
+    lastDecision?.decision === "DEFER" &&
+    (lastDecision.revision || 1) === (changeRequest?.revision || 1) - 1
+      ? lastDecision
+      : null;
+  const canExportAudit = canExportAuditPack(user?.role);
+
   let requestStageHint = null;
   if (permissions.canRunRiskPipeline) {
     requestStageHint =
@@ -1187,6 +1229,11 @@ function Assessment() {
           lockedStages={lockedStages}
         />
 
+        <CycleTimePanel
+          changeRequestId={changeRequestId}
+          refreshKey={auditEvents.length}
+        />
+
         {error && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
@@ -1195,6 +1242,9 @@ function Assessment() {
 
         {activeView === "REQUEST_CREATED" && (
           <>
+        {activeDeferral?.deferred_to === "BUSINESS_OWNER" && isIntakeStage && (
+          <DeferralNotice deferral={activeDeferral} audience="BUSINESS_OWNER" />
+        )}
         {permissions.submitted && (
           <SubmissionBanner
             changeRequest={changeRequest}
@@ -1446,6 +1496,8 @@ function Assessment() {
           <>
 
 <AnalystReview
+  changeRequestId={changeRequestId}
+  deferral={activeDeferral?.deferred_to === "RISK_ANALYST" ? activeDeferral : null}
   riskAssessment={riskAssessment}
   aiAssessment={aiAssessment}
   analystRating={analystRating}
@@ -1468,6 +1520,11 @@ function Assessment() {
 <CommitteeDecision
   riskAssessment={riskAssessment}
   analystRating={analystRating}
+  analystReview={analystReviewRecord}
+  deferTarget={deferTarget}
+  setDeferTarget={setDeferTarget}
+  overrideAcknowledgement={overrideAcknowledgement}
+  setOverrideAcknowledgement={setOverrideAcknowledgement}
   aiAssessment={aiAssessment}
   committeeDecision={committeeDecision}
   setCommitteeDecision={setCommitteeDecision}
@@ -1485,131 +1542,29 @@ function Assessment() {
 
         {activeView === "COMPLETED" && (
           <>
-            <CompletedStageSummary
+            <DecisionOutcome
               changeRequest={changeRequest}
               riskAssessment={riskAssessment}
-              committeeSubmitted={committeeSubmitted}
+              decision={committeeRecord}
             />
 
-    {/* Audit Trail */}
-<div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mt-6">
-  <div className="flex items-center justify-between mb-5">
-    <div>
-      <h2 className="text-lg font-semibold text-slate-900">
-        Audit Trail
-      </h2>
-      <p className="text-sm text-slate-500 mt-1">
-        Immutable record of key assessment and decision activities
-      </p>
-    </div>
-
-    <div className="text-sm text-slate-500">
-      {auditEvents.length} event{auditEvents.length !== 1 ? "s" : ""}
-    </div>
-  </div>
-
-  {auditEvents.length === 0 ? (
-    <div className="text-sm text-slate-500 py-6 text-center">
-      No audit events recorded yet.
-    </div>
-  ) : (
-    <div className="space-y-4">
-      {auditEvents.map((event, index) => (
-        <div
-          key={event.id || index}
-          className="flex gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200"
-        >
-          {/* Timeline dot */}
-          <div className="flex flex-col items-center">
-            <div className="w-3 h-3 rounded-full bg-slate-700 mt-1" />
-
-            {index !== auditEvents.length - 1 && (
-              <div className="w-px bg-slate-300 flex-1 mt-2" />
+            {committeeRecord?.decision === "APPROVE_WITH_CONDITIONS" && (
+              <ConditionsTracker
+                changeRequestId={changeRequestId}
+                role={user?.role}
+                onChanged={loadAssessment}
+              />
             )}
-          </div>
-
-          {/* Event details */}
-          <div className="flex-1">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="font-medium text-slate-900">
-                  {event.action}
-                </p>
-
-                <p className="text-sm text-slate-600 mt-1">
-                  Actor: {event.actor || "System"}
-                </p>
-              </div>
-
-              <span className="text-xs text-slate-500 whitespace-nowrap">
-                {event.created_at
-                  ? new Date(`${event.created_at}Z`).toLocaleString("en-IN", {
-                      timeZone: "Asia/Kolkata",
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                      hour12: true,
-                    })
-                  : ""}
-              </span>
-            </div>
-
-            {event.entity_type && (
-              <p className="text-xs text-slate-500 mt-2">
-                Entity: {event.entity_type}
-                {event.entity_id ? ` #${event.entity_id}` : ""}
-              </p>
-            )}
-
-            {event.old_value && (
-              <p className="text-sm text-slate-700 mt-2">
-                <span className="font-medium">Previous:</span>{" "}
-                {event.old_value}
-              </p>
-            )}
-
-            {event.new_value && (
-              <p className="text-sm text-slate-700 mt-1">
-                <span className="font-medium">New:</span>{" "}
-                {event.new_value}
-              </p>
-            )}
-
-            {event.reason && (
-              <p className="text-sm text-slate-600 mt-2">
-                <span className="font-medium">Reason:</span>{" "}
-                {event.reason}
-              </p>
-            )}
-
-            {event.evidence && (
-              <p className="text-sm text-slate-600 mt-1">
-                <span className="font-medium">Evidence:</span>{" "}
-                {event.evidence}
-              </p>
-            )}
-
-            {event.model_version && (
-              <p className="text-xs text-slate-500 mt-2">
-                Model: {event.model_version}
-              </p>
-            )}
-
-            {event.policy_version && (
-              <p className="text-xs text-slate-500 mt-1">
-                Policy: {event.policy_version}
-              </p>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
           </>
+        )}
+
+        {(activeView === "COMPLETED" || user?.role === ROLES.AUDITOR) && (
+          <AuditTrail
+            changeRequestId={changeRequestId}
+            requestNumber={changeRequest?.request_number}
+            auditEvents={auditEvents}
+            canExport={canExportAudit}
+          />
         )}
 
       </PageContainer>

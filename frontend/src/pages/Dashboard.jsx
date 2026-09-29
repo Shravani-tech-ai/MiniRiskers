@@ -33,6 +33,8 @@ const IN_REVIEW_KEYS = new Set([
   "RISK_ASSESSMENT",
   "ANALYST_REVIEW",
   "COMMITTEE_REVIEW",
+  // Deferred by the committee and being reworked.
+  "DEFERRED",
 ]);
 const IN_ASSESSMENT_KEYS = new Set(["RISK_ASSESSMENT", "ANALYST_REVIEW"]);
 

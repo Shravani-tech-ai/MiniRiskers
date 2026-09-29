@@ -1,0 +1,305 @@
+{
+  "framework_version": "2026.1",
+  "title": "MiniRiskers FCRM risk decomposition — supervisory framework mapping",
+  "description": "Maps every risk category, risk factor and concentration rule used by the MiniRiskers risk model to the published supervisory frameworks it is derived from. Indian clauses were checked against the regulatory texts in Documents/ (paragraph numbers as printed in those copies). International frameworks are cited at the level of the recommendation or document section, not invented paragraph numbers.",
+  "sources": {
+    "FATF_REC": {
+      "title": "FATF Recommendations — International Standards on Combating Money Laundering and the Financing of Terrorism & Proliferation",
+      "issuer": "Financial Action Task Force",
+      "type": "International standard",
+      "in_corpus": false
+    },
+    "FATF_RBA_BANKING": {
+      "title": "FATF Guidance for a Risk-Based Approach — The Banking Sector (2014)",
+      "issuer": "Financial Action Task Force",
+      "type": "International guidance",
+      "in_corpus": false
+    },
+    "WOLFSBERG_RA": {
+      "title": "Wolfsberg Frequently Asked Questions on Risk Assessments for Money Laundering, Sanctions and Bribery & Corruption (2015)",
+      "issuer": "The Wolfsberg Group",
+      "type": "Industry standard",
+      "in_corpus": false
+    },
+    "BCBS_AML": {
+      "title": "Sound management of risks related to money laundering and financing of terrorism",
+      "issuer": "Basel Committee on Banking Supervision",
+      "type": "International supervisory guidance",
+      "in_corpus": false
+    },
+    "RBI_KYC_MD": {
+      "title": "RBI Master Direction — Know Your Customer (KYC) Direction, 2016 (as amended)",
+      "issuer": "Reserve Bank of India",
+      "type": "Indian regulation",
+      "in_corpus": true,
+      "corpus_document": "1-RBI Master Direction on KYC"
+    },
+    "PMLA": {
+      "title": "Prevention of Money Laundering Act, 2002",
+      "issuer": "Government of India",
+      "type": "Indian statute",
+      "in_corpus": true,
+      "corpus_document": "2-Prevention of Money Laundering Act, 2002"
+    },
+    "PML_RULES": {
+      "title": "Prevention of Money-laundering (Maintenance of Records) Rules, 2005",
+      "issuer": "Government of India",
+      "type": "Indian rules",
+      "in_corpus": true,
+      "corpus_document": "3-Prevention of Money Laundering (Maintenance of Records) Rules, 2005"
+    },
+    "FIU_IND": {
+      "title": "FIU-IND reporting formats and guidance",
+      "issuer": "Financial Intelligence Unit — India",
+      "type": "Indian reporting guidance",
+      "in_corpus": true,
+      "corpus_document": "4-FIU-IND reporting material"
+    },
+    "RBI_DPSC": {
+      "title": "RBI Master Direction on Digital Payment Security Controls, 2021",
+      "issuer": "Reserve Bank of India",
+      "type": "Indian regulation",
+      "in_corpus": true,
+      "corpus_document": "5-Master Direction on Digital Payment Security Controls"
+    },
+    "RBI_FRM": {
+      "title": "RBI Master Directions on Fraud Risk Management in Commercial Banks, 2024",
+      "issuer": "Reserve Bank of India",
+      "type": "Indian regulation",
+      "in_corpus": true,
+      "corpus_document": "6-Master Directions on Fraud Risk Management in Commercial Banks"
+    },
+    "RBI_ITGRC": {
+      "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
+      "issuer": "Reserve Bank of India",
+      "type": "Indian regulation",
+      "in_corpus": true,
+      "corpus_document": "7-Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023"
+    },
+    "RBI_ITOS": {
+      "title": "RBI Master Direction on Outsourcing of Information Technology Services, 2023",
+      "issuer": "Reserve Bank of India",
+      "type": "Indian regulation",
+      "in_corpus": true,
+      "corpus_document": "8-Master Direction on Outsourcing of Information Technology Services, 2023"
+    },
+    "UAPA_51A": {
+      "title": "Procedure for implementation of Section 51A of the Unlawful Activities (Prevention) Act, 1967",
+      "issuer": "Ministry of Home Affairs, Government of India",
+      "type": "Indian order",
+      "in_corpus": true,
+      "corpus_document": "9-Section 51A UAPA implementation procedure"
+    }
+  },
+  "methodology_basis": [
+    {
+      "principle": "Risk assessment is decomposed into customer, geography, product/service/transaction and delivery-channel risk.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Para 5A(a)", "requirement": "REs shall carry out an ML/TF risk assessment to identify, assess and mitigate risk for clients, countries or geographic areas, products, services, transactions or delivery channels." },
+        { "source": "FATF_REC", "clause": "Recommendation 1 and Interpretive Note", "requirement": "Identify, assess and understand ML/TF risks and apply a risk-based approach." },
+        { "source": "FATF_RBA_BANKING", "clause": "Section on risk assessment — risk categories", "requirement": "Country/geographic, customer, product/service/transaction and delivery-channel risk as the core risk categories." }
+      ]
+    },
+    {
+      "principle": "New products, business practices and technologies are risk-assessed before launch.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Para 62 (Introduction of New Technologies)", "requirement": "Undertake ML/TF risk assessments prior to the launch or use of new products, practices, services and technologies, and manage the risk with EDD and transaction monitoring." },
+        { "source": "FATF_REC", "clause": "Recommendation 15 (New technologies)", "requirement": "Assess risks of new products, business practices, delivery mechanisms and technologies prior to launch." },
+        { "source": "RBI_DPSC", "clause": "Para 8", "requirement": "Risk assessments of digital payment products both prior to establishing the service and regularly thereafter." }
+      ]
+    },
+    {
+      "principle": "Inherent risk is assessed first, controls are then evaluated, and the result is residual risk. Controls mitigate risk but never eliminate it.",
+      "references": [
+        { "source": "WOLFSBERG_RA", "clause": "FAQ — inherent risk, control effectiveness and residual risk", "requirement": "Assess inherent risk across risk categories, assess the design and operating effectiveness of controls, and derive residual risk." },
+        { "source": "BCBS_AML", "clause": "Assessment, understanding, management and mitigation of risks", "requirement": "Banks should understand their inherent risk and apply mitigating controls proportionate to it." },
+        { "source": "RBI_KYC_MD", "clause": "Para 5A(a)-(b)", "requirement": "Consider all relevant risk factors before determining the overall risk level and the appropriate level and type of mitigation; document the assessment." }
+      ]
+    },
+    {
+      "principle": "Customers and relationships are rated on a Low / Medium / High scale using documented parameters.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Para 12(a)-(c)", "requirement": "Customers shall be categorised as low, medium and high risk, based on documented parameters." }
+      ]
+    }
+  ],
+  "categories": {
+    "CUSTOMER": {
+      "label": "Customer",
+      "definition": "Risk arising from who the customers are: type, status (e.g. PEP), onboarding method and population size.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Para 5A(a); Para 12", "requirement": "Client risk as a mandatory dimension; risk categorisation of customers." },
+        { "source": "FATF_REC", "clause": "Recommendation 10 (Customer due diligence)", "requirement": "CDD measures scaled to customer risk." },
+        { "source": "PML_RULES", "clause": "Rule 9 (Client Due Diligence)", "requirement": "Identify and verify clients and beneficial owners." },
+        { "source": "WOLFSBERG_RA", "clause": "Customer risk category", "requirement": "Customer type and characteristics as an inherent risk category." }
+      ]
+    },
+    "PRODUCT": {
+      "label": "Product",
+      "definition": "Risk from the product or service itself: novelty, cross-border reach and digital delivery.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Para 5A(a); Para 62", "requirement": "Products and services as a risk dimension; pre-launch assessment of new products." },
+        { "source": "FATF_REC", "clause": "Recommendation 15 (New technologies)", "requirement": "Assess risks of new products and business practices." },
+        { "source": "FATF_RBA_BANKING", "clause": "Product/service/transaction risk", "requirement": "Product features that increase anonymity, speed or cross-border reach raise risk." }
+      ]
+    },
+    "GEOGRAPHY": {
+      "label": "Geography",
+      "definition": "Risk from the countries involved: cross-border exposure, high-risk jurisdictions and sanctions.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Para 5A(a); Para 54", "requirement": "Geographic risk dimension; EDD for jurisdictions that do not or insufficiently apply FATF Recommendations." },
+        { "source": "FATF_REC", "clause": "Recommendation 19 (Higher-risk countries)", "requirement": "Enhanced due diligence for business with higher-risk countries." },
+        { "source": "UAPA_51A", "clause": "Section 51A procedure", "requirement": "Freezing and prohibition obligations for designated individuals and entities." },
+        { "source": "WOLFSBERG_RA", "clause": "Country / geographic risk category", "requirement": "Country risk as an inherent risk category." }
+      ]
+    },
+    "TRANSACTION": {
+      "label": "Transaction",
+      "definition": "Risk from how money moves: velocity, cross-border flows, round amounts and rapid movement.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Paras 35-37 (On-going due diligence and monitoring)", "requirement": "Monitor large, complex and unusual transactions and high turnover; align monitoring with risk category." },
+        { "source": "PML_RULES", "clause": "Rule 3 (Maintenance of records of transactions)", "requirement": "Record prescribed cash, cross-border and suspicious transactions." },
+        { "source": "PMLA", "clause": "Section 12 (Reporting entity to maintain records)", "requirement": "Maintain records of transactions and furnish information to FIU-IND." },
+        { "source": "FATF_REC", "clause": "Recommendation 16 (Wire transfers); Recommendation 20 (Reporting of suspicious transactions)", "requirement": "Originator/beneficiary information on transfers and STR reporting." }
+      ]
+    },
+    "CHANNEL": {
+      "label": "Delivery channel",
+      "definition": "Risk from how the product reaches customers: mobile, remote onboarding and third-party channels.",
+      "references": [
+        { "source": "RBI_KYC_MD", "clause": "Para 5A(a); Para 40 (EDD for non-face-to-face onboarding)", "requirement": "Delivery-channel risk dimension; enhanced measures for non-face-to-face onboarding." },
+        { "source": "RBI_DPSC", "clause": "Chapter II (General controls); Chapter IV (Mobile payments application security)", "requirement": "Governance and security controls for internet and mobile payment channels." },
+        { "source": "FATF_RBA_BANKING", "clause": "Delivery channel risk", "requirement": "Non-face-to-face and intermediated channels as risk drivers." }
+      ]
+    },
+    "THIRD_PARTY": {
+      "label": "Third party",
+      "definition": "Risk introduced by vendors and service providers that process transactions or data, including cross-border processing.",
+      "references": [
+        { "source": "RBI_ITOS", "clause": "Para 13 (Due diligence on service providers); Para 17 (Risk management framework); Para 21 (Cross-border outsourcing)", "requirement": "Due diligence, risk management and additional controls for outsourced and cross-border IT services." },
+        { "source": "RBI_KYC_MD", "clause": "Para 14 (Reliance on third-party CDD)", "requirement": "Reliance on third parties does not transfer ultimate responsibility for CDD." },
+        { "source": "FATF_REC", "clause": "Recommendation 17 (Reliance on third parties)", "requirement": "Ultimate responsibility for CDD remains with the financial institution." },
+        { "source": "RBI_DPSC", "clause": "Para 7", "requirement": "Oversight and controls where digital payment services depend on third-party providers." }
+      ]
+    },
+    "FRAUD": {
+      "label": "Fraud",
+      "definition": "Risk that the product is used to commit or launder the proceeds of fraud (e.g. mule accounts, rapid pass-through).",
+      "references": [
+        { "source": "RBI_FRM", "clause": "Section 2.1 (Fraud risk management policy); Section 3 (Early Warning Signals and Red Flagging)", "requirement": "Board-approved fraud risk management and early detection of frauds." },
+        { "source": "RBI_KYC_MD", "clause": "Para 59 (Operation of bank accounts & money mules)", "requirement": "Monitoring to identify money-mule accounts used to launder fraud proceeds." },
+        { "source": "RBI_DPSC", "clause": "Para 8", "requirement": "Risk assessment of digital payment products, including fraud exposure." }
+      ]
+    }
+  },
+  "factors": {
+    "PRODUCT:New Product": [
+      { "source": "RBI_KYC_MD", "clause": "Para 62", "requirement": "Pre-launch ML/TF risk assessment of new products and practices." },
+      { "source": "FATF_REC", "clause": "Recommendation 15", "requirement": "New products and technologies are assessed before launch." }
+    ],
+    "PRODUCT:Cross Border Product": [
+      { "source": "RBI_KYC_MD", "clause": "Para 64 (Wire transfer)", "requirement": "Information requirements for cross-border wire transfers." },
+      { "source": "FATF_REC", "clause": "Recommendation 16", "requirement": "Wire-transfer transparency for cross-border payments." }
+    ],
+    "PRODUCT:Digital Product Channel": [
+      { "source": "RBI_DPSC", "clause": "Paras 4-8", "requirement": "Policy, governance, product-level risk limits and risk assessment for digital payment products." },
+      { "source": "RBI_KYC_MD", "clause": "Para 62", "requirement": "New delivery mechanisms and technologies are risk-assessed." }
+    ],
+    "CUSTOMER:PEP Exposure": [
+      { "source": "RBI_KYC_MD", "clause": "Para 41 (Accounts of Politically Exposed Persons)", "requirement": "Risk management systems, senior management approval and enhanced monitoring for PEPs." },
+      { "source": "FATF_REC", "clause": "Recommendation 12", "requirement": "Enhanced measures for politically exposed persons." }
+    ],
+    "CUSTOMER:High Risk Customer Exposure": [
+      { "source": "RBI_KYC_MD", "clause": "Para 12; Para 37(a)", "requirement": "High-risk categorisation, periodic review and EDD." },
+      { "source": "FATF_REC", "clause": "Recommendation 10", "requirement": "Enhanced CDD for higher-risk customers." }
+    ],
+    "CUSTOMER:Digital Onboarding": [
+      { "source": "RBI_KYC_MD", "clause": "Para 18 (V-CIP); Para 40 (EDD for non-face-to-face onboarding)", "requirement": "Controls for video-based and non-face-to-face customer identification." },
+      { "source": "FATF_REC", "clause": "Recommendation 10; Recommendation 15", "requirement": "CDD reliability for non-face-to-face and technology-enabled onboarding." }
+    ],
+    "CUSTOMER:Large Customer Population": [
+      { "source": "RBI_KYC_MD", "clause": "Para 5A(b)", "requirement": "Risk assessment proportionate to the nature, size and complexity of activities." },
+      { "source": "WOLFSBERG_RA", "clause": "Customer risk — volume and concentration", "requirement": "Customer volumes as an inherent risk driver." }
+    ],
+    "GEOGRAPHY:Cross Border Geography": [
+      { "source": "RBI_KYC_MD", "clause": "Para 5A(a); Para 64", "requirement": "Geographic risk and cross-border wire-transfer requirements." },
+      { "source": "FATF_RBA_BANKING", "clause": "Country/geographic risk", "requirement": "Cross-border exposure increases geographic risk." }
+    ],
+    "GEOGRAPHY:High Risk Jurisdiction": [
+      { "source": "RBI_KYC_MD", "clause": "Para 54", "requirement": "EDD for jurisdictions in FATF statements or insufficiently applying FATF Recommendations." },
+      { "source": "FATF_REC", "clause": "Recommendation 19", "requirement": "Enhanced due diligence and countermeasures for higher-risk countries." }
+    ],
+    "GEOGRAPHY:Sanctions Exposure": [
+      { "source": "UAPA_51A", "clause": "Section 51A procedure", "requirement": "Freeze and report funds of designated individuals and entities." },
+      { "source": "RBI_KYC_MD", "clause": "Paras 51-53 (UAPA and WMD obligations; UNSCR sanctions lists)", "requirement": "Screen against UN and domestic designated lists." },
+      { "source": "FATF_REC", "clause": "Recommendation 6 (Targeted financial sanctions)", "requirement": "Freeze without delay the assets of designated persons." }
+    ],
+    "TRANSACTION:Cross Border Transactions": [
+      { "source": "PML_RULES", "clause": "Rule 3", "requirement": "Records of prescribed cross-border wire transfers." },
+      { "source": "RBI_KYC_MD", "clause": "Para 64", "requirement": "Originator and beneficiary information for cross-border transfers." },
+      { "source": "FATF_REC", "clause": "Recommendation 16", "requirement": "Wire-transfer transparency." }
+    ],
+    "TRANSACTION:High Transaction Velocity": [
+      { "source": "RBI_KYC_MD", "clause": "Para 36(c)", "requirement": "Monitor high account turnover inconsistent with the balance maintained." },
+      { "source": "FATF_REC", "clause": "Recommendation 20", "requirement": "Report suspicious transactions." }
+    ],
+    "TRANSACTION:Round Amount Pattern": [
+      { "source": "RBI_KYC_MD", "clause": "Para 36(a)", "requirement": "Monitor transactions with unusual patterns and no apparent economic rationale." },
+      { "source": "FIU_IND", "clause": "STR red-flag indicators", "requirement": "Unusual transaction patterns as suspicious-transaction indicators." }
+    ],
+    "TRANSACTION:Rapid Movement": [
+      { "source": "RBI_KYC_MD", "clause": "Para 36(a),(d)", "requirement": "Monitor unusual patterns and deposits followed by large withdrawals." },
+      { "source": "PMLA", "clause": "Section 12", "requirement": "Record and report suspicious transactions to FIU-IND." }
+    ],
+    "CHANNEL:Mobile Banking": [
+      { "source": "RBI_DPSC", "clause": "Chapter IV (Mobile payments application security controls)", "requirement": "Security controls for mobile payment applications." }
+    ],
+    "CHANNEL:Remote Onboarding": [
+      { "source": "RBI_KYC_MD", "clause": "Para 18 (V-CIP); Para 40", "requirement": "Controls for remote and non-face-to-face onboarding." },
+      { "source": "FATF_RBA_BANKING", "clause": "Delivery channel risk — non-face-to-face", "requirement": "Non-face-to-face relationships increase channel risk." }
+    ],
+    "CHANNEL:Third Party Channel": [
+      { "source": "RBI_KYC_MD", "clause": "Para 14", "requirement": "Reliance on third parties for CDD keeps ultimate responsibility with the RE." },
+      { "source": "FATF_REC", "clause": "Recommendation 17", "requirement": "Reliance on third parties and intermediaries." }
+    ],
+    "THIRD_PARTY:Third Party Transaction Processing": [
+      { "source": "RBI_ITOS", "clause": "Para 13; Para 17; Para 19 (Monitoring and control of outsourced activities)", "requirement": "Due diligence, risk management and ongoing monitoring of service providers." }
+    ],
+    "THIRD_PARTY:Customer Data Handling": [
+      { "source": "RBI_ITOS", "clause": "Para 16 (Aspects to be considered in agreement)", "requirement": "Contractual confidentiality, security and audit rights over customer data." },
+      { "source": "RBI_ITGRC", "clause": "Information security governance", "requirement": "Protection of customer information across the IT estate." }
+    ],
+    "THIRD_PARTY:Payment Data Handling": [
+      { "source": "RBI_DPSC", "clause": "Para 7", "requirement": "Oversight of third-party providers in the digital payment ecosystem." },
+      { "source": "RBI_ITOS", "clause": "Para 17", "requirement": "Risk management framework for outsourced services." }
+    ],
+    "THIRD_PARTY:Cross Border Processing": [
+      { "source": "RBI_ITOS", "clause": "Para 21 (Additional requirements for cross-border outsourcing)", "requirement": "Country risk, legal enforceability and regulator access for cross-border service providers." }
+    ],
+    "FRAUD:High Transaction Velocity": [
+      { "source": "RBI_FRM", "clause": "Section 3 (Early Warning Signals)", "requirement": "Early warning signals for early detection of frauds." },
+      { "source": "RBI_KYC_MD", "clause": "Para 59", "requirement": "Monitoring to detect money-mule activity." }
+    ],
+    "FRAUD:Rapid Movement Pattern": [
+      { "source": "RBI_KYC_MD", "clause": "Para 59", "requirement": "Identify accounts used to launder the proceeds of fraud." },
+      { "source": "RBI_FRM", "clause": "Section 2.1", "requirement": "Fraud risk management policy and governance." }
+    ]
+  },
+  "concentration_rules": {
+    "cross-border-velocity": [
+      { "source": "FATF_RBA_BANKING", "clause": "Product/transaction and geographic risk", "requirement": "Speed combined with cross-border reach compounds ML/TF risk." },
+      { "source": "RBI_KYC_MD", "clause": "Para 36; Para 64", "requirement": "Enhanced monitoring of unusual high-turnover cross-border activity." }
+    ],
+    "pep-high-risk-customer": [
+      { "source": "RBI_KYC_MD", "clause": "Para 41", "requirement": "PEP relationships need senior management approval and enhanced monitoring." },
+      { "source": "FATF_REC", "clause": "Recommendation 12", "requirement": "Enhanced measures for PEPs." }
+    ],
+    "third-party-cross-border": [
+      { "source": "RBI_ITOS", "clause": "Para 21", "requirement": "Additional requirements for cross-border outsourcing." }
+    ],
+    "sanctions-exposure": [
+      { "source": "UAPA_51A", "clause": "Section 51A procedure", "requirement": "Sanctions obligations are absolute and cannot be offset by other controls." },
+      { "source": "FATF_REC", "clause": "Recommendation 6", "requirement": "Targeted financial sanctions apply without delay." }
+    ]
+  }
+}

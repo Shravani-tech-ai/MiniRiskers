@@ -41,11 +41,27 @@ from backend.permissions import (
     is_submitted,
 )
 from backend.seed_users import seed_development_users
+from backend.audit import (
+    create_audit_event,
+    install_append_only_guards,
+    seal_legacy_events,
+)
+from backend.methodology_store import (
+    ensure_default_methodology,
+    get_active_methodology,
+    get_config_for_version,
+)
+from backend.override_policy import evaluate_override
+from backend.serializers import serialize_condition
+from backend.governance_routes import router as governance_router
+from risk_engine.methodology import score_factors
+from risk_engine.risk_calculator import factor_rows_to_inputs
 from risk_engine.risk_calculator import generate_risk_assessment
 from risk_engine.risk_factor_generator import generate_risk_factors
 from rag.evidence_service import generate_evidence_for_change_request
 from backend.assessment_service import generate_ai_assessment
 from backend.models import (
+    ApprovalCondition,
     Base,
     ChangeRequest,
     Product,
@@ -96,41 +112,6 @@ from backend.intake_service import (
     save_brd_file,
 )
 
-def create_audit_event(
-    db: Session,
-    change_request_id: int,
-    actor: str,
-    action: str,
-    entity_type: str = None,
-    entity_id: int = None,
-    old_value: str = None,
-    new_value: str = None,
-    reason: str = None,
-    evidence: str = None,
-    model_version: str = None,
-    policy_version: str = None,
-    user_id: int = None,
-):
-    event = AuditEvent(
-        change_request_id=change_request_id,
-        actor=actor,
-        user_id=user_id,
-        action=action,
-        entity_type=entity_type,
-        entity_id=entity_id,
-        old_value=old_value,
-        new_value=new_value,
-        reason=reason,
-        evidence=evidence,
-        model_version=model_version,
-        policy_version=policy_version,
-    )
-
-    db.add(event)
-
-    return event
-
-
 class IntakeChatRequest(BaseModel):
     message: str
 
@@ -171,9 +152,43 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(governance_router)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+
+# Columns added after the first release. SQLite's create_all does not alter
+# existing tables, so missing columns are added here on startup.
+SCHEMA_PATCHES = {
+    "audit_events": {
+        "user_id": "INTEGER",
+        "prev_hash": "VARCHAR",
+        "event_hash": "VARCHAR",
+    },
+    "change_requests": {
+        "current_stage": "VARCHAR NOT NULL DEFAULT 'REQUEST_CREATED'",
+        "revision": "INTEGER NOT NULL DEFAULT 1",
+    },
+    "risk_assessments": {
+        "methodology_version_id": "INTEGER",
+        "revision": "INTEGER DEFAULT 1",
+    },
+    "analyst_overrides": {
+        "revision": "INTEGER DEFAULT 1",
+        "override_direction": "VARCHAR DEFAULT 'NONE'",
+        "band_delta": "INTEGER DEFAULT 0",
+        "escalation_level": "VARCHAR DEFAULT 'NONE'",
+        "escalation_reasons": "TEXT",
+        "acknowledged_by": "VARCHAR",
+        "acknowledged_at": "DATETIME",
+        "acknowledgement_note": "TEXT",
+    },
+    "committee_decisions": {
+        "revision": "INTEGER DEFAULT 1",
+        "deferred_to": "VARCHAR",
+    },
+}
 
 
 def apply_sqlite_schema_patches():
@@ -182,33 +197,18 @@ def apply_sqlite_schema_patches():
     inspector = inspect(engine)
     table_names = inspector.get_table_names()
 
-    if "audit_events" in table_names:
-        column_names = {
-            column["name"]
-            for column in inspector.get_columns("audit_events")
+    for table, columns in SCHEMA_PATCHES.items():
+        if table not in table_names:
+            continue
+        existing = {
+            column["name"] for column in inspector.get_columns(table)
         }
-        if "user_id" not in column_names:
+        for name, ddl in columns.items():
+            if name in existing:
+                continue
             with engine.begin() as connection:
                 connection.execute(
-                    text(
-                        "ALTER TABLE audit_events "
-                        "ADD COLUMN user_id INTEGER"
-                    )
-                )
-
-    if "change_requests" in table_names:
-        column_names = {
-            column["name"]
-            for column in inspector.get_columns("change_requests")
-        }
-        if "current_stage" not in column_names:
-            with engine.begin() as connection:
-                connection.execute(
-                    text(
-                        "ALTER TABLE change_requests "
-                        "ADD COLUMN current_stage VARCHAR "
-                        "NOT NULL DEFAULT 'REQUEST_CREATED'"
-                    )
+                    text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}")
                 )
 
 
@@ -322,8 +322,11 @@ def on_startup():
     db = SessionLocal()
     try:
         seed_development_users(db)
+        ensure_default_methodology(db)
+        seal_legacy_events(db)
     finally:
         db.close()
+    install_append_only_guards(engine)
 
 
 @app.get("/")
@@ -385,6 +388,7 @@ def get_change_request(
         "priority": change_request.priority,
         "proposed_go_live_date": change_request.proposed_go_live_date,
         "current_stage": change_request.current_stage,
+        "revision": change_request.revision or 1,
         "created_at": change_request.created_at
     }
 
@@ -900,7 +904,8 @@ def calculate_risk(
 
     assessment = generate_risk_assessment(
         db,
-        change_request_id
+        change_request_id,
+        revision=change_request.revision or 1,
     )
 
     create_audit_event(
@@ -914,7 +919,11 @@ def calculate_risk(
             f"{assessment.inherent_score} "
             f"({assessment.inherent_rating})"
         ),
-        reason="Weighted risk assessment calculated.",
+        reason=(
+            "Weighted risk assessment calculated under methodology "
+            f"v{assessment.risk_model_version}. Residual "
+            f"{assessment.residual_score} ({assessment.residual_rating})."
+        ),
         policy_version=assessment.risk_model_version
     )
 
@@ -1159,6 +1168,154 @@ def generate_ai_assessment_endpoint(
         "assessment": assessment
     }
 
+RATING_VALUES = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
+FINAL_DECISION_STATUS = {
+    "APPROVE": "APPROVED",
+    "APPROVE_WITH_CONDITIONS": "APPROVE_WITH_CONDITIONS",
+    "REJECT": "REJECTED",
+}
+DEFER_TARGETS = {
+    # target: (status, workflow stage it returns to)
+    "BUSINESS_OWNER": ("RETURNED", "REQUEST_CREATED"),
+    "RISK_ANALYST": ("REASSESSMENT", "ANALYST_REVIEW"),
+}
+
+
+def _current_revision(change_request: ChangeRequest) -> int:
+    return change_request.revision or 1
+
+
+def _latest_risk_assessment(db: Session, change_request_id: int):
+    return (
+        db.query(RiskAssessment)
+        .filter(RiskAssessment.change_request_id == change_request_id)
+        .order_by(RiskAssessment.id.desc())
+        .first()
+    )
+
+
+def _current_record(db: Session, model, change_request: ChangeRequest):
+    """Latest analyst review / committee decision for the current revision."""
+    record = (
+        db.query(model)
+        .filter(model.change_request_id == change_request.id)
+        .order_by(model.id.desc())
+        .first()
+    )
+    if record is None:
+        return None
+    if (record.revision or 1) != _current_revision(change_request):
+        return None
+    return record
+
+
+def _evaluate_override_for(
+    db: Session,
+    change_request_id: int,
+    risk_assessment: RiskAssessment,
+    analyst_rating: str,
+) -> dict:
+    config = get_config_for_version(db, risk_assessment.risk_model_version)
+    factors = (
+        db.query(RiskFactor)
+        .filter(RiskFactor.change_request_id == change_request_id)
+        .all()
+    )
+    scored = score_factors(
+        factor_rows_to_inputs(factors),
+        risk_assessment.control_adjustment or 0,
+        config,
+    )
+    return evaluate_override(
+        risk_assessment.residual_rating,
+        analyst_rating,
+        config,
+        scored["concentration_floor"],
+    )
+
+
+def _json_list(value) -> list:
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, list) else [str(parsed)]
+    except (TypeError, json.JSONDecodeError):
+        return [str(value)]
+
+
+def serialize_analyst_review(review: AnalystOverride) -> dict:
+    return {
+        "id": review.id,
+        "change_request_id": review.change_request_id,
+        "risk_assessment_id": review.risk_assessment_id,
+        "revision": review.revision or 1,
+        "system_rating": review.system_rating,
+        "analyst_rating": review.analyst_rating,
+        "override_reason": review.override_reason,
+        "consequences": review.consequences,
+        "override_direction": review.override_direction or "NONE",
+        "band_delta": review.band_delta or 0,
+        "escalation_level": review.escalation_level or "NONE",
+        "escalation_reasons": _json_list(review.escalation_reasons),
+        "acknowledged_by": review.acknowledged_by,
+        "acknowledged_at": review.acknowledged_at,
+        "acknowledgement_note": review.acknowledgement_note,
+        "reviewed_by": review.reviewed_by,
+        "status": review.status,
+        "created_at": review.created_at,
+    }
+
+
+def serialize_committee_decision(db: Session, decision: CommitteeDecision) -> dict:
+    conditions = (
+        db.query(ApprovalCondition)
+        .filter(ApprovalCondition.committee_decision_id == decision.id)
+        .order_by(ApprovalCondition.id.asc())
+        .all()
+    )
+    return {
+        "id": decision.id,
+        "change_request_id": decision.change_request_id,
+        "risk_assessment_id": decision.risk_assessment_id,
+        "analyst_override_id": decision.analyst_override_id,
+        "revision": decision.revision or 1,
+        "decision": decision.decision,
+        "rationale": decision.rationale,
+        "conditions": decision.conditions,
+        "condition_items": [serialize_condition(c) for c in conditions],
+        "deferred_to": decision.deferred_to,
+        "decided_by": decision.decided_by,
+        "status": decision.status,
+        "created_at": decision.created_at,
+    }
+
+
+@app.get("/change-requests/{change_request_id}/override-preview")
+def preview_override(
+    change_request_id: int,
+    analyst_rating: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    get_change_request_or_404(db, change_request_id, current_user)
+    assert_role(
+        current_user,
+        ROLE_RISK_ANALYST,
+        ROLE_RISK_COMMITTEE,
+        ROLE_AUDITOR,
+        ROLE_ADMIN,
+    )
+    if analyst_rating not in RATING_VALUES:
+        raise HTTPException(status_code=400, detail="Unknown rating.")
+    risk_assessment = _latest_risk_assessment(db, change_request_id)
+    if not risk_assessment:
+        raise HTTPException(status_code=404, detail="Risk assessment not found.")
+    return _evaluate_override_for(
+        db, change_request_id, risk_assessment, analyst_rating
+    )
+
+
 @app.post("/change-requests/{change_request_id}/analyst-review")
 def submit_analyst_review(
     change_request_id: int,
@@ -1178,15 +1335,10 @@ def submit_analyst_review(
         {"ANALYST_REVIEW"},
         "Analyst review is not allowed at the current workflow stage.",
     )
-    # Find the latest risk assessment
-    risk_assessment = (
-        db.query(RiskAssessment)
-        .filter(
-            RiskAssessment.change_request_id == change_request_id
-        )
-        .order_by(RiskAssessment.id.desc())
-        .first()
-    )
+    if analyst_rating not in RATING_VALUES:
+        raise HTTPException(status_code=400, detail="Unknown analyst rating.")
+
+    risk_assessment = _latest_risk_assessment(db, change_request_id)
 
     if not risk_assessment:
         raise HTTPException(
@@ -1204,13 +1356,31 @@ def submit_analyst_review(
             detail="Override reason is required when analyst rating differs from system rating."
         )
 
+    evaluation = _evaluate_override_for(
+        db, change_request_id, risk_assessment, analyst_rating
+    )
+    min_chars = evaluation["min_reason_chars"]
+    if min_chars and len(override_reason.strip()) < min_chars:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Lowering the system rating needs a fuller justification: "
+                f"at least {min_chars} characters."
+            ),
+        )
+
     analyst_override = AnalystOverride(
         change_request_id=change_request_id,
         risk_assessment_id=risk_assessment.id,
+        revision=_current_revision(change_request),
         system_rating=system_rating,
         analyst_rating=analyst_rating,
         override_reason=override_reason,
         consequences=consequences,
+        override_direction=evaluation["direction"],
+        band_delta=evaluation["band_delta"],
+        escalation_level=evaluation["escalation_level"],
+        escalation_reasons=json.dumps(evaluation["reasons"]),
         reviewed_by=audit_actor_name(current_user),
         status="SUBMITTED"
     )
@@ -1235,10 +1405,31 @@ def submit_analyst_review(
         old_value=system_rating,
         new_value=analyst_rating,
         reason=override_reason,
-        evidence=consequences
+        evidence=consequences,
+        policy_version=risk_assessment.risk_model_version,
     )
 
+    if evaluation["escalation_level"] != "NONE":
+        create_audit_event(
+            db=db,
+            change_request_id=change_request_id,
+            actor="System",
+            action=(
+                "OVERRIDE_ESCALATED"
+                if evaluation["escalation_level"] == "ESCALATED"
+                else "OVERRIDE_FLAGGED_FOR_ACKNOWLEDGEMENT"
+            ),
+            entity_type="AnalystOverride",
+            entity_id=analyst_override.id,
+            old_value=system_rating,
+            new_value=analyst_rating,
+            reason=" ".join(evaluation["reasons"]),
+            evidence=" ".join(evaluation["consequences"]),
+            policy_version=risk_assessment.risk_model_version,
+        )
+
     change_request.current_stage = "COMMITTEE_REVIEW"
+    change_request.status = "COMMITTEE_REVIEW"
 
     create_audit_event(
         db=db,
@@ -1256,18 +1447,8 @@ def submit_analyst_review(
 
     return {
         "message": "Analyst review submitted successfully.",
-        "review": {
-            "id": analyst_override.id,
-            "change_request_id": change_request_id,
-            "risk_assessment_id": risk_assessment.id,
-            "system_rating": system_rating,
-            "analyst_rating": analyst_rating,
-            "override_reason": override_reason,
-            "consequences": consequences,
-            "reviewed_by": analyst_override.reviewed_by,
-            "status": analyst_override.status,
-            "created_at": analyst_override.created_at,
-        }
+        "review": serialize_analyst_review(analyst_override),
+        "override_evaluation": evaluation,
     }
 
 @app.get("/change-requests/{change_request_id}/analyst-review")
@@ -1276,45 +1457,57 @@ def get_analyst_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
 
-    review = (
+    history = (
         db.query(AnalystOverride)
         .filter(
             AnalystOverride.change_request_id == change_request_id
         )
-        .order_by(AnalystOverride.id.desc())
-        .first()
+        .order_by(AnalystOverride.id.asc())
+        .all()
     )
-
-    if not review:
-        return {
-            "reviewed": False,
-            "review": None
-        }
+    review = _current_record(db, AnalystOverride, change_request)
 
     return {
-        "reviewed": True,
-        "review": {
-            "id": review.id,
-            "change_request_id": review.change_request_id,
-            "risk_assessment_id": review.risk_assessment_id,
-            "system_rating": review.system_rating,
-            "analyst_rating": review.analyst_rating,
-            "override_reason": review.override_reason,
-            "consequences": review.consequences,
-            "reviewed_by": review.reviewed_by,
-            "status": review.status,
-            "created_at": review.created_at
-        }
+        "reviewed": review is not None,
+        "review": serialize_analyst_review(review) if review else None,
+        "revision": _current_revision(change_request),
+        "history": [serialize_analyst_review(item) for item in history],
     }
+
+
+class ConditionInput(BaseModel):
+    description: str
+    due_date: Optional[str] = None
+
+
+class CommitteeDecisionPayload(BaseModel):
+    decision: str
+    rationale: str
+    conditions: list[ConditionInput] = []
+    deferred_to: Optional[str] = None
+    override_acknowledgement: Optional[str] = None
+
+
+def _parse_due_date(value: Optional[str], default_days: int) -> datetime:
+    if value:
+        try:
+            return datetime.fromisoformat(value[:10])
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid condition due date: {value}. Use YYYY-MM-DD.",
+            )
+    return datetime.utcnow() + timedelta(days=default_days)
+
 
 @app.post("/change-requests/{change_request_id}/committee-decision")
 def submit_committee_decision(
     change_request_id: int,
-    decision: str,
-    rationale: str,
-    conditions: str = "",
+    payload: CommitteeDecisionPayload,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -1331,43 +1524,41 @@ def submit_committee_decision(
         "Committee decision is not allowed at the current workflow stage.",
     )
 
-    allowed_decisions = {
-        "APPROVE",
-        "APPROVE_WITH_CONDITIONS",
-        "DEFER",
-        "REJECT"
-    }
+    decision = payload.decision
+    rationale = payload.rationale.strip()
+    conditions = [
+        item for item in payload.conditions if item.description.strip()
+    ]
 
-    if decision not in allowed_decisions:
+    if decision not in {"APPROVE", "APPROVE_WITH_CONDITIONS", "DEFER", "REJECT"}:
         raise HTTPException(
             status_code=400,
             detail="Invalid committee decision."
         )
 
-    if not rationale.strip():
+    if not rationale:
         raise HTTPException(
             status_code=400,
             detail="Committee rationale is required."
         )
 
-    if (
-        decision == "APPROVE_WITH_CONDITIONS"
-        and not conditions.strip()
-    ):
+    if decision == "APPROVE_WITH_CONDITIONS" and not conditions:
         raise HTTPException(
             status_code=400,
-            detail="Conditions are required for APPROVE_WITH_CONDITIONS."
+            detail="At least one condition is required for APPROVE_WITH_CONDITIONS."
         )
 
-    # Get latest risk assessment
-    risk_assessment = (
-        db.query(RiskAssessment)
-        .filter(
-            RiskAssessment.change_request_id == change_request_id
+    if decision == "DEFER" and payload.deferred_to not in DEFER_TARGETS:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Choose who the deferred request goes back to: the Business "
+                "Owner (inputs or controls must change) or the Risk Analyst "
+                "(the assessment must be revisited)."
+            ),
         )
-        .order_by(RiskAssessment.id.desc())
-        .first()
-    )
+
+    risk_assessment = _latest_risk_assessment(db, change_request_id)
 
     if not risk_assessment:
         raise HTTPException(
@@ -1375,16 +1566,43 @@ def submit_committee_decision(
             detail="Risk assessment not found."
         )
 
-    # Get latest analyst review
-    analyst_review = (
-        db.query(AnalystOverride)
-        .filter(
-            AnalystOverride.change_request_id == change_request_id
-        )
-        .order_by(AnalystOverride.id.desc())
-        .first()
-    )
+    analyst_review = _current_record(db, AnalystOverride, change_request)
 
+    # Consequences of an analyst override: acknowledgement and, when
+    # escalated, no unconditional approval.
+    escalation = (
+        (analyst_review.escalation_level or "NONE")
+        if analyst_review
+        else "NONE"
+    )
+    acknowledgement = (payload.override_acknowledgement or "").strip()
+    if escalation != "NONE":
+        if not acknowledgement:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "The analyst lowered the system rating. Acknowledge the "
+                    "override with a note before recording a decision."
+                ),
+            )
+        config = get_config_for_version(db, risk_assessment.risk_model_version)
+        if (
+            escalation == "ESCALATED"
+            and decision == "APPROVE"
+            and config["override_policy"].get(
+                "escalated_blocks_unconditional_approval"
+            )
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "This request carries an escalated analyst downgrade and "
+                    "cannot be approved without conditions. Approve with "
+                    "conditions, defer or reject."
+                ),
+            )
+
+    revision = _current_revision(change_request)
     committee_decision = CommitteeDecision(
         change_request_id=change_request_id,
         risk_assessment_id=risk_assessment.id,
@@ -1393,40 +1611,36 @@ def submit_committee_decision(
             if analyst_review
             else None
         ),
+        revision=revision,
         decision=decision,
         rationale=rationale,
-        conditions=conditions,
+        conditions="\n".join(
+            f"- {item.description.strip()}" for item in conditions
+        ),
+        deferred_to=payload.deferred_to if decision == "DEFER" else None,
         decided_by=audit_actor_name(current_user),
-        status="FINAL"
+        status="FINAL" if decision != "DEFER" else "DEFERRED"
     )
 
     db.add(committee_decision)
-
-    # Store final decision on the risk assessment
-    risk_assessment.final_rating = (
-        analyst_review.analyst_rating
-        if analyst_review
-        else risk_assessment.residual_rating
-    )
-
-    risk_assessment.assessment_status = "DECIDED"
-    risk_assessment.updated_at = datetime.utcnow()
-
-    change_request.status = decision
-    change_request.current_stage = "COMPLETED"
-
-    create_audit_event(
-        db=db,
-        change_request_id=change_request_id,
-        actor="System",
-        action="WORKFLOW_STAGE_CHANGED",
-        entity_type="ChangeRequest",
-        entity_id=change_request.id,
-        new_value="COMPLETED",
-        reason="Committee decision submitted and workflow completed."
-    )
-
     db.flush()
+
+    if escalation != "NONE" and analyst_review:
+        analyst_review.acknowledged_by = audit_actor_name(current_user)
+        analyst_review.acknowledged_at = datetime.utcnow()
+        analyst_review.acknowledgement_note = acknowledgement
+        create_audit_event(
+            db=db,
+            change_request_id=change_request_id,
+            actor=audit_actor_name(current_user),
+            user_id=current_user.id,
+            action="OVERRIDE_ACKNOWLEDGED",
+            entity_type="AnalystOverride",
+            entity_id=analyst_review.id,
+            old_value=analyst_review.system_rating,
+            new_value=analyst_review.analyst_rating,
+            reason=acknowledgement,
+        )
 
     create_audit_event(
         db=db,
@@ -1436,28 +1650,105 @@ def submit_committee_decision(
         action="COMMITTEE_DECISION",
         entity_type="CommitteeDecision",
         entity_id=committee_decision.id,
-        new_value=committee_decision.decision,
-        reason=committee_decision.rationale,
-        evidence=committee_decision.conditions
+        new_value=decision,
+        reason=rationale,
+        evidence=committee_decision.conditions or None,
+        policy_version=risk_assessment.risk_model_version,
     )
+
+    if decision == "DEFER":
+        status_value, return_stage = DEFER_TARGETS[payload.deferred_to]
+        change_request.status = status_value
+        change_request.current_stage = return_stage
+        change_request.revision = revision + 1
+        risk_assessment.assessment_status = "DEFERRED"
+        stage_reason = (
+            "Committee deferred the request back to the Business Owner to "
+            "revise inputs or controls. SLA clock paused until resubmission."
+            if payload.deferred_to == "BUSINESS_OWNER"
+            else "Committee deferred the request back to the Risk Analyst "
+            "for reassessment."
+        )
+        create_audit_event(
+            db=db,
+            change_request_id=change_request_id,
+            actor="System",
+            action="WORKFLOW_STAGE_CHANGED",
+            entity_type="ChangeRequest",
+            entity_id=change_request.id,
+            old_value="COMMITTEE_REVIEW",
+            new_value=return_stage,
+            reason=f"{stage_reason} Revision {revision + 1} opened.",
+        )
+    else:
+        # The analyst's rating (or the system rating) is the final rating.
+        risk_assessment.final_rating = (
+            analyst_review.analyst_rating
+            if analyst_review
+            else risk_assessment.residual_rating
+        )
+        risk_assessment.assessment_status = "DECIDED"
+        change_request.status = FINAL_DECISION_STATUS[decision]
+        change_request.current_stage = "COMPLETED"
+
+        if decision == "APPROVE_WITH_CONDITIONS":
+            default_days = get_active_methodology(db)[1]["workflow"].get(
+                "condition_default_due_days", 30
+            )
+            for item in conditions:
+                condition = ApprovalCondition(
+                    change_request_id=change_request_id,
+                    committee_decision_id=committee_decision.id,
+                    description=item.description.strip(),
+                    due_date=_parse_due_date(item.due_date, default_days),
+                    status="OPEN",
+                )
+                db.add(condition)
+                db.flush()
+                create_audit_event(
+                    db=db,
+                    change_request_id=change_request_id,
+                    actor="System",
+                    action="CONDITION_OPENED",
+                    entity_type="ApprovalCondition",
+                    entity_id=condition.id,
+                    new_value=condition.description,
+                    reason=f"Due {condition.due_date.date().isoformat()}.",
+                )
+
+        outcome_reason = {
+            "APPROVE": "Committee approved the request. Workflow completed.",
+            "APPROVE_WITH_CONDITIONS": (
+                "Committee approved the request subject to conditions. "
+                "Conditions are tracked until verified."
+            ),
+            "REJECT": "Committee rejected the request. Workflow closed.",
+        }[decision]
+        create_audit_event(
+            db=db,
+            change_request_id=change_request_id,
+            actor="System",
+            action="WORKFLOW_STAGE_CHANGED",
+            entity_type="ChangeRequest",
+            entity_id=change_request.id,
+            old_value="COMMITTEE_REVIEW",
+            new_value="COMPLETED",
+            reason=outcome_reason,
+        )
+
+    risk_assessment.updated_at = datetime.utcnow()
 
     db.commit()
     db.refresh(committee_decision)
 
     return {
         "message": "Committee decision submitted successfully.",
-        "decision": {
-            "id": committee_decision.id,
-            "change_request_id": change_request_id,
-            "risk_assessment_id": committee_decision.risk_assessment_id,
-            "analyst_override_id": committee_decision.analyst_override_id,
-            "decision": committee_decision.decision,
-            "rationale": committee_decision.rationale,
-            "conditions": committee_decision.conditions,
-            "decided_by": committee_decision.decided_by,
-            "status": committee_decision.status,
-            "created_at": committee_decision.created_at,
-        }
+        "decision": serialize_committee_decision(db, committee_decision),
+        "change_request": {
+            "status": change_request.status,
+            "current_stage": change_request.current_stage,
+            "revision": change_request.revision,
+        },
     }
 
 @app.get("/change-requests/{change_request_id}/committee-decision")
@@ -1466,37 +1757,29 @@ def get_committee_decision(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    get_change_request_or_404(db, change_request_id, current_user)
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
 
-    decision = (
+    history = (
         db.query(CommitteeDecision)
         .filter(
             CommitteeDecision.change_request_id == change_request_id
         )
-        .order_by(CommitteeDecision.id.desc())
-        .first()
+        .order_by(CommitteeDecision.id.asc())
+        .all()
     )
-
-    if not decision:
-        return {
-            "decided": False,
-            "decision": None
-        }
+    decision = _current_record(db, CommitteeDecision, change_request)
 
     return {
-        "decided": True,
-        "decision": {
-            "id": decision.id,
-            "change_request_id": decision.change_request_id,
-            "risk_assessment_id": decision.risk_assessment_id,
-            "analyst_override_id": decision.analyst_override_id,
-            "decision": decision.decision,
-            "rationale": decision.rationale,
-            "conditions": decision.conditions,
-            "decided_by": decision.decided_by,
-            "status": decision.status,
-            "created_at": decision.created_at,
-        }
+        "decided": decision is not None,
+        "decision": (
+            serialize_committee_decision(db, decision) if decision else None
+        ),
+        "revision": _current_revision(change_request),
+        "history": [
+            serialize_committee_decision(db, item) for item in history
+        ],
     }
 
 @app.get("/change-requests/{change_request_id}/assessment-inputs")
@@ -2468,6 +2751,8 @@ def get_assessments_overview(
                     "reviewed_by": review.reviewed_by,
                     "reviewed_at": review.created_at,
                     "consequences": review.consequences,
+                    "override_direction": review.override_direction or "NONE",
+                    "escalation_level": review.escalation_level or "NONE",
                 }
                 if review
                 else None
@@ -2478,6 +2763,7 @@ def get_assessments_overview(
                     "decided_by": decision.decided_by,
                     "decided_at": decision.created_at,
                     "conditions": decision.conditions,
+                    "deferred_to": decision.deferred_to,
                 }
                 if decision
                 else None
