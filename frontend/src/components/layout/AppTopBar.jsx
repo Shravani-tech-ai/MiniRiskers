@@ -6,7 +6,7 @@ import ThemeToggle from "../ThemeToggle";
 function AppTopBar({ compact = false }) {
   if (compact) {
     return (
-      <header className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 lg:hidden">
+      <header className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 lg:hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-900">

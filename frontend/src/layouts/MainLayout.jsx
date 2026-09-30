@@ -19,14 +19,14 @@ function MainLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#f4f6f9] dark:bg-slate-950">
       <AppTopBar compact />
 
-      <div className="flex min-h-screen">
+      <div className="flex min-h-0 flex-1">
         <AppSidebar />
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="hidden border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-8 py-4 lg:flex">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="hidden shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-8 py-4 lg:flex">
             <div className="flex w-full items-center justify-between gap-3">
               <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
                 FCRM Workbench
@@ -50,7 +50,7 @@ function MainLayout({ children }) {
             </div>
           </header>
 
-          <main className="flex-1 pb-20 lg:pb-8">{children}</main>
+          <main className="min-h-0 flex-1 overflow-y-auto pb-20 lg:pb-8">{children}</main>
         </div>
       </div>
 

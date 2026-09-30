@@ -9,8 +9,8 @@ function AppSidebar() {
   const { user } = useAuth();
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 xl:w-72 lg:flex lg:flex-col">
-      <div className="flex items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-6 py-5">
+    <aside className="hidden h-full w-64 shrink-0 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 xl:w-72 lg:flex lg:flex-col">
+      <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 dark:border-slate-700 px-6 py-5">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900">
           <Shield className="text-white" size={20} />
         </div>
@@ -25,7 +25,7 @@ function AppSidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
         {NAV_ITEMS.filter((item) => !item.hiddenFor?.includes(user?.role)).map((item) => {
           const Icon = item.icon;
           const active = !item.disabled && item.matches(location.pathname);
