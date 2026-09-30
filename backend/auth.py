@@ -79,6 +79,36 @@ class UserPublic(BaseModel):
     is_active: bool
 
 
+class UpdateProfileRequest(BaseModel):
+    full_name: str = Field(..., min_length=2, max_length=128)
+    email: EmailStr
+
+    @field_validator("full_name")
+    @classmethod
+    def normalize_full_name(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("Full name is required.")
+        return cleaned
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+
+class NotificationPreferencesUpdate(BaseModel):
+    workflow: bool | None = None
+    committee: bool | None = None
+    conditions: bool | None = None
+    sla: bool | None = None
+    methodology: bool | None = None
+
+
+class UserPreferencesPublic(BaseModel):
+    notifications: dict[str, bool]
+
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 

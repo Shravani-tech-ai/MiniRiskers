@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from backend.cycle_time import compute_cycle_time
 from backend.methodology_store import get_active_methodology
 from backend.models import ApprovalCondition, AuditEvent, ChangeRequest, Notification, User
+from backend.user_preferences import user_wants_notification
 from backend.permissions import (
     ROLE_ADMIN,
     ROLE_BUSINESS_OWNER,
@@ -149,6 +150,8 @@ def notify_users(
     seen_ids = set()
     for user in users:
         if user.id in seen_ids:
+            continue
+        if not user_wants_notification(user, notification_type):
             continue
         seen_ids.add(user.id)
         item = create_notification(

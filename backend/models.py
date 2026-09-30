@@ -31,6 +31,8 @@ class User(Base):
 
     is_active = Column(Boolean, default=True, nullable=False)
 
+    preferences_json = Column(Text, nullable=True)
+
     created_at = Column(
         DateTime,
         default=datetime.utcnow,

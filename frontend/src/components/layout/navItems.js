@@ -44,5 +44,10 @@ export const NAV_ITEMS = [
     matches: (path) => path === "/methodology",
     hiddenFor: [ROLES.BUSINESS_OWNER],
   },
-  { to: "/", label: "Settings", icon: Settings, disabled: true },
+  {
+    to: "/settings",
+    label: "Settings",
+    icon: Settings,
+    matches: (path) => path === "/settings",
+  },
 ];

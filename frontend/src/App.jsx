@@ -6,6 +6,7 @@ import Analytics from "./pages/Analytics";
 import Methodology from "./pages/Methodology";
 import Assessment from "./pages/Assessment";
 import TrackProgress from "./pages/TrackProgress";
+import Settings from "./pages/Settings";
 import MainLayout from "./layouts/MainLayout";
 import NewRequest from "./pages/NewRequest";
 import Login from "./pages/Login";
@@ -114,6 +115,17 @@ function App() {
             >
               <MainLayout>
                 <NewRequest />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Settings />
               </MainLayout>
             </ProtectedRoute>
           }

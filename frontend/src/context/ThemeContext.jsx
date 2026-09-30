@@ -10,9 +10,18 @@ import {
 const ThemeContext = createContext(null);
 const STORAGE_KEY = "miniriskers-theme";
 
-function getInitialTheme() {
+function resolveTheme(preference) {
+  if (preference === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+  return preference === "dark" ? "dark" : "light";
+}
+
+function getStoredTheme() {
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "dark" || stored === "light") {
+  if (stored === "dark" || stored === "light" || stored === "system") {
     return stored;
   }
   return window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -20,33 +29,56 @@ function getInitialTheme() {
     : "light";
 }
 
-if (typeof document !== "undefined") {
+function applyResolvedTheme(preference) {
   document.documentElement.classList.toggle(
     "dark",
-    getInitialTheme() === "dark"
+    resolveTheme(preference) === "dark"
   );
 }
 
+if (typeof document !== "undefined") {
+  applyResolvedTheme(getStoredTheme());
+}
+
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setTheme] = useState(getStoredTheme);
+
+  const resolvedTheme = useMemo(() => resolveTheme(theme), [theme]);
 
   useLayoutEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
+    document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
+  }, [resolvedTheme]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (theme !== "system") {
+      return undefined;
+    }
+
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      document.documentElement.classList.toggle("dark", media.matches);
+    };
+
+    media.addEventListener("change", handleChange);
+    return () => media.removeEventListener("change", handleChange);
+  }, [theme]);
+
   const value = useMemo(
     () => ({
       theme,
-      isDark: theme === "dark",
+      resolvedTheme,
+      isDark: resolvedTheme === "dark",
       toggleTheme: () =>
-        setTheme((current) => (current === "dark" ? "light" : "dark")),
+        setTheme((current) =>
+          resolveTheme(current) === "dark" ? "light" : "dark"
+        ),
       setTheme,
     }),
-    [theme]
+    [theme, resolvedTheme]
   );
 
   return (

@@ -194,6 +194,9 @@ SCHEMA_PATCHES = {
         "revision": "INTEGER DEFAULT 1",
         "deferred_to": "VARCHAR",
     },
+    "users": {
+        "preferences_json": "TEXT",
+    },
 }
 
 
