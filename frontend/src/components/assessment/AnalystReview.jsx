@@ -6,15 +6,15 @@ import api from "../../services/api";
 function getRiskClass(rating) {
   switch (rating) {
     case "CRITICAL":
-      return "bg-red-100 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900";
+      return "bg-red-100 text-red-900 dark:text-red-900 border-red-200 dark:border-red-900";
     case "HIGH":
       return "bg-orange-100 dark:bg-orange-950/40 text-orange-700 border-orange-200";
     case "MEDIUM":
-      return "bg-yellow-100 text-yellow-700 border-yellow-200";
+      return "bg-yellow-100 text-yellow-900 dark:text-yellow-900 border-yellow-200";
     case "LOW":
-      return "bg-green-100 text-green-700 dark:text-green-300 border-green-200";
+      return "bg-green-100 text-green-900 dark:text-green-900 border-green-200";
     default:
-      return "bg-slate-100 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700";
+      return "bg-slate-100 text-slate-900 dark:text-slate-900 border-slate-200 dark:border-slate-700";
   }
 }
 

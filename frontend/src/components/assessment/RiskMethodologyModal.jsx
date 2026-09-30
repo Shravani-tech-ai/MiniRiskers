@@ -6,15 +6,15 @@ import api from "../../services/api";
 function getRiskClass(rating) {
   switch (rating) {
     case "CRITICAL":
-      return "bg-red-100 text-red-700 dark:text-red-300";
+      return "bg-red-100 text-red-900 dark:text-red-900";
     case "HIGH":
       return "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300";
     case "MEDIUM":
-      return "bg-yellow-100 text-yellow-700";
+      return "bg-yellow-100 text-yellow-900 dark:text-yellow-900";
     case "LOW":
-      return "bg-green-100 text-green-700 dark:text-green-300";
+      return "bg-green-100 text-green-900 dark:text-green-900";
     default:
-      return "bg-slate-100 text-slate-700 dark:text-slate-300";
+      return "bg-slate-100 text-slate-900 dark:text-slate-900";
   }
 }
 
@@ -321,7 +321,7 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                         "rounded-full px-3 py-1 text-xs font-medium",
                         section.provided
                           ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300"
-                          : "bg-slate-100 text-slate-500 dark:text-slate-400",
+                          : "bg-slate-100 text-slate-900 dark:text-slate-900",
                       ].join(" ")}
                     >
                       {section.section} · {section.fields.length} fields

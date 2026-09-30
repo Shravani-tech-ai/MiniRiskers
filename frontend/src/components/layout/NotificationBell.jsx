@@ -37,9 +37,11 @@ function NotificationBell({ compact = false }) {
     ? "relative rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
     : "relative rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800";
 
-  const dotClass = compact
-    ? "absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500"
-    : "absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500";
+  const badgeClass = compact
+    ? "absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
+    : "absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white";
+
+  const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
 
   async function handleNotificationClick(notification) {
     if (!notification.read) {
@@ -56,14 +58,18 @@ function NotificationBell({ compact = false }) {
       <button
         type="button"
         className={buttonClass}
-        aria-label="Notifications"
+        aria-label={
+          unreadCount > 0
+            ? `Notifications, ${unreadCount} unread`
+            : "Notifications"
+        }
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
         <Bell size={18} />
         {unreadCount > 0 ? (
-          <span className={dotClass}>
-            <span className="sr-only">{unreadCount} unread notifications</span>
+          <span className={badgeClass} aria-hidden="true">
+            {badgeLabel}
           </span>
         ) : null}
       </button>

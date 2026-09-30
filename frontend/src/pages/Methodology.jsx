@@ -392,10 +392,10 @@ function ImpactPreview({ versionId }) {
       ) : (
         <>
           <div className="mb-4 flex flex-wrap gap-3 text-sm">
-            <span className="rounded-full bg-slate-100 px-3 py-1">{impact.requests_rescored} requests</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-900 dark:text-slate-900">{impact.requests_rescored} requests</span>
             <span className="rounded-full bg-red-50 dark:bg-red-950/40 px-3 py-1 text-red-700 dark:text-red-300">{impact.ratings_up} rating(s) up</span>
             <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 text-emerald-700 dark:text-emerald-300">{impact.ratings_down} rating(s) down</span>
-            <span className="rounded-full bg-slate-100 px-3 py-1">{impact.unchanged} unchanged</span>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-900 dark:text-slate-900">{impact.unchanged} unchanged</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-sm">

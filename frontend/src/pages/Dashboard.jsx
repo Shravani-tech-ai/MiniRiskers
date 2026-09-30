@@ -746,7 +746,7 @@ function Dashboard() {
                     <div className="space-y-4 p-5">
                       <div className="flex flex-wrap gap-2">
                         <StatusBadge request={selectedRequest} />
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-900 dark:text-slate-900">
                           {formatChangeType(selectedRequest.change_type)}
                         </span>
                       </div>
