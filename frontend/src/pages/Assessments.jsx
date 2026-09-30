@@ -16,6 +16,11 @@ import PageContainer from "../components/layout/PageContainer";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, isSubmitted } from "../utils/rolePermissions";
 import {
+  pillBadgeSelected,
+  pillSelected,
+  pillUnselected,
+} from "../utils/buttonStyles";
+import {
   DECISION_LABELS,
   formatShortDate,
   getDecisionBadgeClass,
@@ -254,16 +259,16 @@ function Assessments() {
             onClick={() => setSection(key)}
             className={[
               "inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-base font-semibold transition",
-              section === key
-                ? "bg-slate-900 text-white shadow-sm"
-                : "border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
+              section === key ? pillSelected : pillUnselected,
             ].join(" ")}
           >
             {value.label}
             <span
               className={[
                 "rounded-full px-2 py-0.5 text-xs tabular-nums",
-                section === key ? "bg-white dark:bg-slate-900/20" : "bg-slate-100 text-slate-500 dark:text-slate-400",
+                section === key
+                  ? pillBadgeSelected
+                  : "bg-slate-100 text-slate-500 dark:text-slate-400",
               ].join(" ")}
             >
               {counts[key]}

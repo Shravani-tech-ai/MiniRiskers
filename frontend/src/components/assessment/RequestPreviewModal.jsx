@@ -113,7 +113,11 @@ function RequestPreviewModal({ requestId, onClose }) {
           </button>
           <button
             type="button"
-            onClick={() => navigate(`/assessment/${requestId}`)}
+            onClick={() =>
+              navigate(`/assessment/${requestId}`, {
+                state: { from: "/dashboard" },
+              })
+            }
             className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
           >
             Open full assessment

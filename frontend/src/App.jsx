@@ -5,6 +5,7 @@ import Assessments from "./pages/Assessments";
 import Analytics from "./pages/Analytics";
 import Methodology from "./pages/Methodology";
 import Assessment from "./pages/Assessment";
+import TrackProgress from "./pages/TrackProgress";
 import MainLayout from "./layouts/MainLayout";
 import NewRequest from "./pages/NewRequest";
 import Login from "./pages/Login";
@@ -49,6 +50,28 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <Analytics />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/track-progress"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TrackProgress />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/track-progress/:changeRequestId"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TrackProgress />
               </MainLayout>
             </ProtectedRoute>
           }

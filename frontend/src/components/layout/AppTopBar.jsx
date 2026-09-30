@@ -1,5 +1,6 @@
-import { Bell, Shield, UserCircle2 } from "lucide-react";
+import { Shield, UserCircle2 } from "lucide-react";
 
+import NotificationBell from "./NotificationBell";
 import ThemeToggle from "../ThemeToggle";
 
 function AppTopBar({ compact = false }) {
@@ -25,14 +26,7 @@ function AppTopBar({ compact = false }) {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle className="rounded-lg p-2" />
-            <button
-              type="button"
-              className="relative rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Notifications"
-            >
-              <Bell size={18} />
-              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500" />
-            </button>
+            <NotificationBell compact />
             <button
               type="button"
               className="rounded-lg p-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"

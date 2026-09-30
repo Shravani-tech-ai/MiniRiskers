@@ -1,27 +1,57 @@
 import { ArrowLeft } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { getDisplayStatus } from "../../utils/rolePermissions";
+import { useAssessmentWorkflow } from "../../context/AssessmentWorkflowContext";
+import { useAuth } from "../../context/AuthContext";
+import {
+  ROLES,
+  getDisplayStatus,
+} from "../../utils/rolePermissions";
 
-function AssessmentHeader({ changeRequest, navigate }) {
+export function getDefaultBackPath(role) {
+  if (
+    role === ROLES.RISK_ANALYST ||
+    role === ROLES.RISK_COMMITTEE ||
+    role === ROLES.AUDITOR
+  ) {
+    return "/assessments";
+  }
+
+  return "/dashboard";
+}
+
+function AssessmentHeader({ changeRequest }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { clearWorkflow } = useAssessmentWorkflow();
+  const backPath = location.state?.from || getDefaultBackPath(user?.role);
+
+  const handleBack = () => {
+    clearWorkflow();
+    navigate(backPath, { replace: true });
+  };
+
   return (
-    <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+    <div className="border-b border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
       <div className="mx-auto w-full max-w-[1680px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8 xl:px-12">
         <button
-          onClick={() => navigate("/dashboard")}
-          className="mb-5 flex items-center gap-2 text-base font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+          type="button"
+          onClick={handleBack}
+          className="relative z-10 mb-5 inline-flex items-center gap-2 text-base font-medium text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
         >
           <ArrowLeft size={18} />
           Back to Change Requests
         </button>
 
-        {changeRequest && (
+        {changeRequest ? (
           <>
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-base font-bold text-slate-600 dark:text-slate-400">
                 {changeRequest.request_number}
               </span>
 
-              <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 {getDisplayStatus(changeRequest).label}
               </span>
             </div>
@@ -38,13 +68,13 @@ function AssessmentHeader({ changeRequest, navigate }) {
               {changeRequest.customer_segment}
             </p>
 
-            {changeRequest.description && (
+            {changeRequest.description ? (
               <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-600 dark:text-slate-400 lg:text-[17px]">
                 {changeRequest.description}
               </p>
-            )}
+            ) : null}
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

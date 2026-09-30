@@ -55,3 +55,20 @@ export function formatShortDate(value) {
       })
     : "";
 }
+
+export function formatDateTime(value, locale) {
+  const date = parseApiDate(value);
+  if (!date) return "";
+
+  const options = {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  };
+
+  return locale
+    ? date.toLocaleString(locale, options)
+    : date.toLocaleString(undefined, options);
+}

@@ -86,48 +86,6 @@ BRD TEXT:
 """
 
 
-def build_intake_agent_prompt(
-    inputs: dict,
-    missing_fields: list[dict],
-    user_message: str,
-) -> str:
-    missing_text = json.dumps(missing_fields, indent=2)
-    inputs_text = json.dumps(inputs, indent=2)
-
-    return f"""
-You are an intake assistant for a financial crime risk assessment workbench.
-
-Your job:
-1. Ask concise questions to collect ONLY missing required fields.
-2. Parse the user's answer and map values to the intake schema.
-3. Never approve the assessment or assign risk ratings.
-
-Current saved inputs:
-{inputs_text}
-
-Missing required fields:
-{missing_text}
-
-User message:
-{user_message}
-
-Respond with JSON only:
-{{
-  "assistant_message": string,
-  "field_updates": {{
-    "product": {{}},
-    "customer": {{}},
-    "geography": {{}},
-    "transaction": {{}},
-    "channel": {{}},
-    "vendor": {{}}
-  }}
-}}
-
-Include only fields you can confidently set from the user's message.
-"""
-
-
 def call_gemini_json(prompt: str) -> dict:
     from backend.gemini_service import generate_json
 
@@ -283,41 +241,6 @@ def get_latest_brd_upload(change_request_id: int) -> dict | None:
         ).isoformat()
         + "Z",
         "preview": text[:400],
-    }
-
-
-def run_intake_agent_turn(
-    db: Session,
-    change_request_id: int,
-    user_message: str,
-) -> dict:
-    inputs = load_assessment_inputs(db, change_request_id)
-    missing = compute_missing_fields(inputs)
-
-    prompt = build_intake_agent_prompt(
-        inputs,
-        missing,
-        user_message,
-    )
-
-    parsed = call_gemini_json(prompt)
-    updates = parsed.get("field_updates") or {}
-    merged = merge_extraction_with_inputs(inputs, updates)
-
-    save_assessment_inputs(db, change_request_id, merged)
-
-    refreshed = load_assessment_inputs(db, change_request_id)
-    still_missing = compute_missing_fields(refreshed)
-
-    return {
-        "assistant_message": parsed.get(
-            "assistant_message",
-            "Thank you. Please provide any remaining details."
-        ),
-        "field_updates": updates,
-        "inputs": refreshed,
-        "missing_fields": still_missing,
-        "completeness_percent": completeness_percent(still_missing),
     }
 
 

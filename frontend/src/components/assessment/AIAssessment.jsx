@@ -7,6 +7,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { btnPrimaryMd } from "../../utils/buttonStyles";
 
 function getRiskClass(rating) {
   switch (rating) {
@@ -131,7 +132,7 @@ function AIAssessment({
           <button
             onClick={generateAIAssessment}
             disabled={!canGenerate || generatingAI}
-            className="mt-5 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className={`mt-5 shadow-sm ${btnPrimaryMd}`}
           >
 
             {generatingAI ? (

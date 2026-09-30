@@ -140,7 +140,7 @@ function AnalystReview({
 
       <div className="space-y-6 p-6">
         <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/40 p-4">
-          <p className="text-sm font-medium text-blue-900">Human decision checkpoint</p>
+          <p className="text-sm font-medium text-blue-900 dark:text-blue-200">Human decision checkpoint</p>
           <p className="mt-1 text-sm leading-6 text-blue-700 dark:text-blue-300">
             The system and AI provide recommendations only. The FCRM analyst is responsible for reviewing the evidence and recording the final assessment rationale.
           </p>
@@ -174,7 +174,7 @@ function AnalystReview({
           <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">AI Recommendation</h4>
           <div className="mt-4 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-indigo-900">AI Recommendation</span>
+              <span className="text-sm font-medium text-indigo-900 dark:text-indigo-200">AI Recommendation</span>
               <span className="rounded-full bg-orange-100 dark:bg-orange-950/40 px-3 py-1 text-xs font-semibold text-orange-700">
                 {aiAssessment?.recommendation || riskAssessment?.ai_recommendation || "Not Generated"}
               </span>

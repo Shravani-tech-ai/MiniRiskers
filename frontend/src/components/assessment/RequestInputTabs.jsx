@@ -1,5 +1,7 @@
 import { Lock } from "lucide-react";
 
+import { tabSelected, tabUnselected } from "../../utils/buttonStyles";
+
 const INPUT_TABS = [
   { id: "product", label: "Product" },
   { id: "customer", label: "Customer" },
@@ -42,10 +44,10 @@ function RequestInputTabs({
               className={[
                 "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-bold transition sm:px-5 sm:text-base",
                 selected
-                  ? "bg-slate-900 text-white"
+                  ? tabSelected
                   : enabled
-                  ? "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                  : "cursor-not-allowed text-slate-300 dark:text-slate-600",
+                  ? tabUnselected
+                  : "cursor-not-allowed text-slate-400 dark:text-slate-600",
               ].join(" ")}
             >
               {!enabled && <Lock size={14} />}

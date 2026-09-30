@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Download, ShieldAlert, ShieldCheck } from "lucide-react";
 
 import api from "../../services/api";
+import { formatDateTime } from "../../utils/riskDisplay";
 
 const EXPORTS = [
   { format: "pdf", label: "Examiner pack (PDF)", type: "application/pdf" },
@@ -11,16 +12,7 @@ const EXPORTS = [
 
 function formatTimestamp(value) {
   if (!value) return "";
-  return new Date(`${value}Z`).toLocaleString("en-IN", {
-    timeZone: "Asia/Kolkata",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
+  return formatDateTime(value, "en-IN") || "";
 }
 
 function AuditTrail({ changeRequestId, requestNumber, auditEvents, canExport }) {

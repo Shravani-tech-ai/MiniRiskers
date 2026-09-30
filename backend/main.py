@@ -54,6 +54,16 @@ from backend.methodology_store import (
 from backend.override_policy import evaluate_override
 from backend.serializers import serialize_condition
 from backend.governance_routes import router as governance_router
+from backend.notification_routes import router as notification_router
+from backend.notifications import (
+    notify_analyst_review_submitted,
+    notify_brd_extracted,
+    notify_committee_decision,
+    notify_condition_opened,
+    notify_override_escalated,
+    notify_request_created,
+    notify_request_submitted,
+)
 from risk_engine.methodology import score_factors
 from risk_engine.risk_calculator import factor_rows_to_inputs
 from risk_engine.risk_calculator import generate_risk_assessment
@@ -107,14 +117,9 @@ from backend.intake_service import (
     extract_text_from_bytes,
     delete_brd_uploads,
     get_latest_brd_upload,
-    run_intake_agent_turn,
     save_assessment_inputs,
     save_brd_file,
 )
-
-class IntakeChatRequest(BaseModel):
-    message: str
-
 
 class ApplyExtractionRequest(BaseModel):
     extracted: dict
@@ -153,6 +158,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(governance_router)
+app.include_router(notification_router)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -512,6 +518,7 @@ def create_change_request(
                 new_value=change_request.status,
                 reason="Change request created.",
             )
+            notify_request_created(db, change_request, current_user)
             db.commit()
             db.refresh(change_request)
             return change_request
@@ -1427,6 +1434,13 @@ def submit_analyst_review(
             evidence=" ".join(evaluation["consequences"]),
             policy_version=risk_assessment.risk_model_version,
         )
+        if evaluation["escalation_level"] == "ESCALATED":
+            notify_override_escalated(
+                db,
+                change_request,
+                system_rating,
+                analyst_rating,
+            )
 
     change_request.current_stage = "COMMITTEE_REVIEW"
     change_request.status = "COMMITTEE_REVIEW"
@@ -1441,6 +1455,7 @@ def submit_analyst_review(
         new_value="COMMITTEE_REVIEW",
         reason="Analyst review submitted successfully and is ready for committee review."
     )
+    notify_analyst_review_submitted(db, change_request, analyst_rating)
 
     db.commit()
     db.refresh(analyst_override)
@@ -1715,6 +1730,7 @@ def submit_committee_decision(
                     new_value=condition.description,
                     reason=f"Due {condition.due_date.date().isoformat()}.",
                 )
+                notify_condition_opened(db, change_request, condition)
 
         outcome_reason = {
             "APPROVE": "Committee approved the request. Workflow completed.",
@@ -1735,6 +1751,8 @@ def submit_committee_decision(
             new_value="COMPLETED",
             reason=outcome_reason,
         )
+
+    notify_committee_decision(db, change_request, decision)
 
     risk_assessment.updated_at = datetime.utcnow()
 
@@ -1864,6 +1882,7 @@ def submit_for_analyst(
         new_value="SUBMITTED",
         reason="Business owner submitted the request for Risk Analyst review.",
     )
+    notify_request_submitted(db, change_request)
     db.commit()
 
     return {
@@ -1961,7 +1980,7 @@ async def extract_brd_intake(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    authorize_intake_write(db, change_request_id, current_user)
+    change_request = authorize_intake_write(db, change_request_id, current_user)
 
     if file is not None:
         file_bytes = await file.read()
@@ -2038,6 +2057,7 @@ async def extract_brd_intake(
             }
         ),
     )
+    notify_brd_extracted(db, change_request)
     db.commit()
 
     return {
@@ -2119,61 +2139,6 @@ def apply_extraction(
         "completeness_percent": completeness_percent(missing),
         "ready_for_risk_calculation": len(missing) == 0,
     }
-
-
-@app.post("/change-requests/{change_request_id}/intake/chat")
-def intake_chat(
-    change_request_id: int,
-    body: IntakeChatRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    authorize_intake_write(db, change_request_id, current_user)
-
-    if not body.message.strip():
-        raise HTTPException(
-            status_code=400,
-            detail="Message is required.",
-        )
-
-    create_audit_event(
-        db=db,
-        change_request_id=change_request_id,
-        actor=audit_actor_name(current_user),
-        user_id=current_user.id,
-        action="INTAKE_AGENT_USER",
-        entity_type="IntakeChat",
-        new_value=body.message.strip(),
-        reason="User message to intake assistant.",
-    )
-    db.flush()
-
-    try:
-        result = run_intake_agent_turn(
-            db,
-            change_request_id,
-            body.message.strip(),
-        )
-    except ValueError as error:
-        raise HTTPException(status_code=502, detail=str(error))
-    except Exception as error:
-        raise HTTPException(
-            status_code=502,
-            detail=f"Intake assistant failed: {error}",
-        )
-
-    create_audit_event(
-        db=db,
-        change_request_id=change_request_id,
-        actor="AI Intake Agent",
-        action="INTAKE_AGENT_ASSISTANT",
-        entity_type="IntakeChat",
-        new_value=result["assistant_message"],
-        reason=json.dumps(result.get("field_updates") or {}),
-    )
-    db.commit()
-
-    return result
 
 
 @app.get("/change-requests/{change_request_id}/controls")

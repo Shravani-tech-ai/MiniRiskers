@@ -168,7 +168,7 @@ function NewRequest() {
         return;
       }
 
-      navigate(`/assessment/${newId}`);
+      navigate(`/assessment/${newId}`, { state: { from: "/dashboard" } });
     } catch (err) {
       console.error("Failed to create change request:", err);
 

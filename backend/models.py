@@ -900,3 +900,33 @@ class ApprovalCondition(Base):
     verification_note = Column(Text)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class Notification(Base):
+    """In-app notification delivered to a single user."""
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(Integer, nullable=False, index=True)
+
+    change_request_id = Column(Integer, nullable=True, index=True)
+
+    notification_type = Column(String, nullable=False, index=True)
+
+    title = Column(String, nullable=False)
+
+    body = Column(Text)
+
+    link_path = Column(String)
+
+    read_at = Column(DateTime, nullable=True)
+
+    metadata_json = Column(Text)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        index=True,
+    )

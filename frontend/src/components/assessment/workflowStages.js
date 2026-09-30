@@ -1,3 +1,5 @@
+import { formatDateTime } from "../../utils/riskDisplay";
+
 export const WORKFLOW_STAGES = [
   {
     key: "REQUEST_CREATED",
@@ -92,17 +94,6 @@ export function formatStageTimestamp(timestamp) {
     return null;
   }
 
-  const date = new Date(timestamp);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const formatted = formatDateTime(timestamp);
+  return formatted || null;
 }

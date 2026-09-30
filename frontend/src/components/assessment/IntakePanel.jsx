@@ -4,21 +4,24 @@ import {
   FileText,
   FileUp,
   Loader2,
-  MessageSquare,
   Sparkles,
   Trash2,
 } from "lucide-react";
 
 import api from "../../services/api";
+import {
+  btnDarkSm,
+  btnPrimarySm,
+  tabSelected,
+  tabUnselected,
+} from "../../utils/buttonStyles";
 
 function IntakePanel({
   changeRequestId,
   intakeMode,
   setIntakeMode,
   completenessPercent,
-  missingFields,
   onExtractionApplied,
-  onAgentUpdate,
   setError,
   readOnly = false,
 }) {
@@ -26,9 +29,6 @@ function IntakePanel({
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [extractionResult, setExtractionResult] = useState(null);
-  const [chatMessage, setChatMessage] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState([]);
   const [brdUpload, setBrdUpload] = useState(null);
   const [loadingBrdStatus, setLoadingBrdStatus] = useState(false);
   const [removingBrd, setRemovingBrd] = useState(false);
@@ -163,49 +163,6 @@ function IntakePanel({
     setExtractionResult(null);
   };
 
-  const handleChat = async (event) => {
-    event.preventDefault();
-
-    if (!chatMessage.trim()) {
-      return;
-    }
-
-    const userText = chatMessage.trim();
-    setChatMessage("");
-
-    try {
-      setChatLoading(true);
-      setError("");
-
-      setChatHistory((previous) => [
-        ...previous,
-        { role: "user", content: userText },
-      ]);
-
-      const response = await api.post(
-        `/change-requests/${changeRequestId}/intake/chat`,
-        { message: userText }
-      );
-
-      setChatHistory((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: response.data.assistant_message,
-        },
-      ]);
-
-      await onAgentUpdate(response.data);
-    } catch (err) {
-      setError(
-        err?.response?.data?.detail ||
-          "Intake assistant could not respond."
-      );
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
   const uploadInfo = brdUpload?.upload;
 
   return (
@@ -230,9 +187,7 @@ function IntakePanel({
               onClick={() => setIntakeMode("brd")}
               className={[
                 "rounded-md px-4 py-2 text-sm font-semibold transition",
-                intakeMode === "brd"
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
+                intakeMode === "brd" ? tabSelected : tabUnselected,
               ].join(" ")}
             >
               BRD upload
@@ -242,9 +197,7 @@ function IntakePanel({
               onClick={() => setIntakeMode("manual")}
               className={[
                 "rounded-md px-4 py-2 text-sm font-semibold transition",
-                intakeMode === "manual"
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
+                intakeMode === "manual" ? tabSelected : tabUnselected,
               ].join(" ")}
             >
               Manual entry
@@ -288,11 +241,8 @@ function IntakePanel({
                   : "Upload a BRD with readable text first"
               }
               className={[
-                "inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition",
-                canExtract
-                  ? "bg-indigo-600 hover:bg-indigo-700"
-                  : "cursor-not-allowed bg-slate-300",
-                extracting ? "opacity-70" : "",
+                btnPrimarySm,
+                !canExtract ? "pointer-events-none" : "",
               ].join(" ")}
             >
               {extracting ? (
@@ -398,7 +348,7 @@ function IntakePanel({
 
               {(extractionResult.extraction_method === "rules" ||
                 extractionResult.extraction_method === "heuristic") && (
-                <p className="mt-1 text-xs text-amber-700">
+                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
                   AI was unavailable; rule-based parsing was used. Review
                   fields carefully.
                 </p>
@@ -451,10 +401,10 @@ function IntakePanel({
               )}
 
               {(extractionResult.missing_fields?.length || 0) > 0 && (
-                <p className="mt-3 text-sm text-amber-700">
+                <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">
                   {extractionResult.missing_fields.length} required field(s)
                   still missing after extraction. You can apply partial values,
-                  then use the intake assistant or manual forms to finish.
+                  then complete the manual forms below.
                 </p>
               )}
 
@@ -462,7 +412,7 @@ function IntakePanel({
                 type="button"
                 onClick={handleApplyExtraction}
                 disabled={readOnly}
-                className="mt-4 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className={`mt-4 ${btnDarkSm}`}
               >
                 Apply to forms
               </button>
@@ -470,68 +420,6 @@ function IntakePanel({
           )}
         </div>
       )}
-
-      <div className="border-t border-slate-200 dark:border-slate-700 p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <MessageSquare size={18} className="text-indigo-600 dark:text-indigo-400" />
-          <h4 className="font-semibold text-slate-900 dark:text-slate-100">
-            Intake assistant
-          </h4>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            Asks only for missing required fields
-          </span>
-        </div>
-
-        {missingFields?.length > 0 && (
-          <p className="mb-3 text-sm text-amber-700">
-            Still needed:{" "}
-            {missingFields.map((field) => field.label).join(", ")}
-          </p>
-        )}
-
-        <div className="mb-3 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3">
-          {chatHistory.length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Ask a question or answer the assistant&apos;s prompts to
-              fill gaps (e.g. &quot;Beneficiary country is UAE&quot;).
-            </p>
-          ) : (
-            chatHistory.map((entry, index) => (
-              <p
-                key={index}
-                className={[
-                  "text-sm leading-6",
-                  entry.role === "user"
-                    ? "text-slate-800 dark:text-slate-200"
-                    : "text-indigo-900",
-                ].join(" ")}
-              >
-                <span className="font-semibold">
-                  {entry.role === "user" ? "You: " : "Assistant: "}
-                </span>
-                {entry.content}
-              </p>
-            ))
-          )}
-        </div>
-
-        <form onSubmit={handleChat} className="flex gap-2">
-          <input
-            type="text"
-            value={chatMessage}
-            onChange={(event) => setChatMessage(event.target.value)}
-            placeholder="Type missing intake details..."
-            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm"
-          />
-          <button
-            type="submit"
-            disabled={readOnly || chatLoading}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            Send
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

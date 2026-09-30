@@ -20,6 +20,13 @@ from backend.audit_export import (
 from backend.auth import audit_actor_name, get_current_user
 from backend.cycle_time import compute_cycle_time, summarize_portfolio
 from backend.database import get_db
+from backend.notifications import (
+    notify_all_conditions_met,
+    notify_condition_evidence_rejected,
+    notify_condition_evidence_submitted,
+    notify_condition_verified,
+    notify_methodology_pending,
+)
 from backend.methodology_store import (
     STATUS_ACTIVE,
     STATUS_DRAFT,
@@ -279,6 +286,7 @@ def submit_for_approval(
     row.status = STATUS_PENDING
     row.submitted_at = datetime.utcnow()
     record_methodology_event(db, row, "SUBMITTED_FOR_APPROVAL", audit_actor_name(current_user), current_user.id)
+    notify_methodology_pending(db, row.version)
     db.commit()
     return _serialize_version(row)
 
@@ -528,6 +536,7 @@ def submit_condition_evidence(
         new_value=condition.description,
         evidence=note,
     )
+    notify_condition_evidence_submitted(db, change_request, condition)
     db.commit()
     return serialize_condition(condition)
 
@@ -564,6 +573,10 @@ def verify_condition(
         new_value=condition.description,
         reason=payload.note.strip() or None,
     )
+    if payload.accepted:
+        notify_condition_verified(db, change_request, condition)
+    else:
+        notify_condition_evidence_rejected(db, change_request, condition)
     db.flush()
 
     remaining = (
@@ -587,6 +600,7 @@ def verify_condition(
             new_value="CONDITIONS_MET",
             reason="Every approval condition has been evidenced and verified.",
         )
+        notify_all_conditions_met(db, change_request)
     db.commit()
     return {
         "condition": serialize_condition(condition),

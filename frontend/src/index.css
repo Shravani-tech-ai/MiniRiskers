@@ -45,6 +45,11 @@ fieldset:disabled label {
   cursor: default;
 }
 
+/* Prevent low-contrast disabled buttons (light bg + white text). */
+button:disabled {
+  cursor: not-allowed;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {

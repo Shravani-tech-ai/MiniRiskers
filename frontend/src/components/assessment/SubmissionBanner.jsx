@@ -1,23 +1,13 @@
 import { CheckCircle2, Lock } from "lucide-react";
 
+import { formatDateTime } from "../../utils/riskDisplay";
+
 function formatSubmittedAt(timestamp) {
   if (!timestamp) {
     return null;
   }
 
-  const date = new Date(`${timestamp}Z`);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  return formatDateTime(timestamp) || null;
 }
 
 function SubmissionBanner({
@@ -34,7 +24,7 @@ function SubmissionBanner({
 
   if (ownsIntake) {
     return (
-      <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-5 py-4 text-base text-emerald-900">
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-5 py-4 text-base text-emerald-900 dark:text-emerald-200">
         <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
         <p>
           <span className="font-semibold">
@@ -48,7 +38,7 @@ function SubmissionBanner({
   }
 
   return (
-    <div className="mb-6 flex items-start gap-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-5 py-4 text-base text-indigo-900">
+    <div className="mb-6 flex items-start gap-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-5 py-4 text-base text-indigo-900 dark:text-indigo-200">
       <Lock size={20} className="mt-0.5 shrink-0 text-indigo-600 dark:text-indigo-400" />
       <p>
         <span className="font-semibold">

@@ -2,6 +2,7 @@ import {
   BarChart3,
   ClipboardList,
   LayoutGrid,
+  Milestone,
   Settings,
   SlidersHorizontal,
 } from "lucide-react";
@@ -23,6 +24,12 @@ export const NAV_ITEMS = [
     label: "Assessments",
     icon: ClipboardList,
     matches: (path) => path === "/assessments",
+  },
+  {
+    to: "/track-progress",
+    label: "Track your Progress",
+    icon: Milestone,
+    matches: (path) => path.startsWith("/track-progress"),
   },
   {
     to: "/analytics",

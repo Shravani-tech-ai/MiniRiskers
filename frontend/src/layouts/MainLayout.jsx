@@ -1,8 +1,9 @@
-import { Bell, LogOut, UserCircle2 } from "lucide-react";
+import { LogOut, UserCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import AppSidebar from "../components/layout/AppSidebar";
 import AppTopBar from "../components/layout/AppTopBar";
+import NotificationBell from "../components/layout/NotificationBell";
 import MobileNav from "../components/layout/MobileNav";
 import ThemeToggle from "../components/ThemeToggle";
 import { useAuth } from "../context/AuthContext";
@@ -32,14 +33,7 @@ function MainLayout({ children }) {
               </p>
               <div className="flex items-center gap-3">
               <ThemeToggle />
-              <button
-                type="button"
-                className="relative rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                aria-label="Notifications"
-              >
-                <Bell size={18} />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-              </button>
+              <NotificationBell />
               <button
                 type="button"
                 onClick={handleLogout}

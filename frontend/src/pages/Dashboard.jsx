@@ -21,6 +21,7 @@ import api from "../services/api";
 import PageContainer from "../components/layout/PageContainer";
 import RequestPreviewModal from "../components/assessment/RequestPreviewModal";
 import { useAuth } from "../context/AuthContext";
+import { pillSelected, pillUnselected } from "../utils/buttonStyles";
 import {
   ROLES,
   getAssessmentPermissions,
@@ -531,9 +532,7 @@ function Dashboard() {
                 onClick={() => setActiveFilter(option.id)}
                 className={[
                   "rounded-full px-5 py-2.5 text-base font-semibold transition",
-                  isActive
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
+                  isActive ? pillSelected : pillUnselected,
                 ].join(" ")}
               >
                 {option.label}

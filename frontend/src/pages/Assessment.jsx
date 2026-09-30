@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AssessmentHeader from "../components/assessment/AssessmentHeader";
 import ProductInformation from "../components/assessment/ProductInformation";
 import CustomerProfile from "../components/assessment/CustomerProfile";
@@ -19,7 +19,6 @@ import CycleTimePanel from "../components/assessment/CycleTimePanel";
 import DecisionOutcome from "../components/assessment/DecisionOutcome";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import IntakePanel from "../components/assessment/IntakePanel";
-import WorkflowStepper from "../components/assessment/WorkflowStepper";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
 import RiskMethodologyModal from "../components/assessment/RiskMethodologyModal";
 import AnalystOutcome, {
@@ -33,6 +32,11 @@ import ConfirmDialog from "../components/assessment/ConfirmDialog";
 import ResultDialog from "../components/assessment/ResultDialog";
 import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
 import SubmissionBanner from "../components/assessment/SubmissionBanner";
+import WorkflowStepper from "../components/assessment/WorkflowStepper";
+import {
+  canNavigateToWorkflowStage,
+  normalizeWorkflowStage,
+} from "../components/assessment/workflowStages";
 import {
   EMPTY_ASSESSMENT_FORMS,
   formatMissingFieldLabels,
@@ -41,10 +45,6 @@ import {
   formsToAssessmentInputs,
   getMissingSectionFields,
 } from "../utils/assessmentFormMapping";
-import {
-  canNavigateToWorkflowStage,
-  normalizeWorkflowStage,
-} from "../components/assessment/workflowStages";
 import PageContainer from "../components/layout/PageContainer";
 
 import api from "../services/api";
@@ -60,9 +60,8 @@ import {
 function Assessment() {
   const { changeRequestId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
-  const lockedStages = getLockedStages(user?.role);
-
   const [changeRequest, setChangeRequest] = useState(null);
   const [riskAssessment, setRiskAssessment] = useState(null);
   const [regulatoryEvidence, setRegulatoryEvidence] = useState([]);
@@ -148,6 +147,7 @@ function Assessment() {
 
   const permissions = getRequestPermissions(user?.role, changeRequest);
   const isBusinessOwner = user?.role === ROLES.BUSINESS_OWNER;
+  const lockedStages = getLockedStages(user?.role);
 
   const applyFormValues = (mapped) => {
     if (!mapped) {
@@ -213,16 +213,18 @@ function Assessment() {
     applyFormValues(mapped);
   };
 
-  const handleIntakeAgentUpdate = async (agentResponse) => {
-    if (agentResponse?.inputs) {
-      const mapped = mapInputsToFormState(agentResponse.inputs);
-      applyMappedForms(mapped, agentResponse.inputs);
-    }
-    await hydrateAssessmentInputs();
-  };
-
   useEffect(() => {
     loadAssessment();
+  }, [changeRequestId]);
+
+  useEffect(() => {
+    if (location.state?.activeView) {
+      setActiveView(location.state.activeView);
+    }
+  }, [location.state?.activeView]);
+
+  useEffect(() => {
+    sessionStorage.setItem("lastChangeRequestId", changeRequestId);
   }, [changeRequestId]);
 
   const loadAssessment = async () => {
@@ -1019,18 +1021,6 @@ function Assessment() {
     }
   };
 
-  const handleStageSelect = (stage) => {
-    if (
-      !lockedStages.includes(stage) &&
-      canNavigateToWorkflowStage(
-        stage,
-        changeRequest?.current_stage
-      )
-    ) {
-      setActiveView(stage);
-    }
-  };
-
   const completeRequestStage = async () => {
     try {
       setAdvancingStage(true);
@@ -1162,54 +1152,35 @@ function Assessment() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-800/50 p-8">
-
-        <div className="mx-auto max-w-7xl">
-
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Loading risk assessment...
-          </p>
-
-        </div>
-
-      </div>
+      <PageContainer>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Loading risk assessment...
+        </p>
+      </PageContainer>
     );
   }
 
-  if (error) {
+  if (error && !changeRequest) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-800/50 p-8">
+      <PageContainer>
+        <button
+          onClick={() => navigate("/dashboard")}
+          className="mb-6 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+        >
+          <ArrowLeft size={16} />
+          Back to Change Requests
+        </button>
 
-        <div className="mx-auto max-w-7xl">
-
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="mb-6 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
-          >
-            <ArrowLeft size={16} />
-            Back to Change Requests
-          </button>
-
-          <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-6">
-
-            <div className="flex items-center gap-3">
-
-              <AlertTriangle
-                size={20}
-                className="text-red-600 dark:text-red-400"
-              />
-
-              <p className="text-sm text-red-700 dark:text-red-300">
-                {error}
-              </p>
-
-            </div>
-
+        <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/40">
+          <div className="flex items-center gap-3">
+            <AlertTriangle
+              size={20}
+              className="text-red-600 dark:text-red-400"
+            />
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
-
         </div>
-
-      </div>
+      </PageContainer>
     );
   }
 
@@ -1221,17 +1192,28 @@ function Assessment() {
       />
 
       <PageContainer className="pb-12">
-        <WorkflowStepper
-          currentStage={changeRequest?.current_stage}
-          activeView={activeView}
-          auditEvents={auditEvents}
-          onStageSelect={handleStageSelect}
-          lockedStages={lockedStages}
-        />
-
         <CycleTimePanel
           changeRequestId={changeRequestId}
           refreshKey={auditEvents.length}
+        />
+
+        <WorkflowStepper
+          variant="horizontal"
+          title="Track your Progress"
+          currentStage={changeRequest?.current_stage}
+          activeView={activeView}
+          auditEvents={auditEvents}
+          lockedStages={lockedStages}
+          onStageSelect={(stage) => {
+            if (
+              lockedStages.includes(stage) ||
+              !canNavigateToWorkflowStage(stage, changeRequest?.current_stage)
+            ) {
+              return;
+            }
+
+            setActiveView(stage);
+          }}
         />
 
         {error && (
@@ -1268,19 +1250,10 @@ function Assessment() {
           intakeMode={intakeMode}
           setIntakeMode={setIntakeMode}
           completenessPercent={completenessPercent}
-          missingFields={missingFields}
           onExtractionApplied={handleExtractionApplied}
-          onAgentUpdate={handleIntakeAgentUpdate}
           setError={setError}
           readOnly={!permissions.canEditIntake}
         />
-
-        {missingFields.length > 0 && (
-          <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-5 py-4 text-base text-amber-900 dark:text-amber-300">
-            Missing required fields:{" "}
-            {formatMissingFieldLabels(missingFields)}
-          </div>
-        )}
           </div>
           )}
 
