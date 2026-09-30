@@ -15,7 +15,6 @@ import AnalystReview, {
 } from "../components/assessment/AnalystReview";
 import AuditTrail from "../components/assessment/AuditTrail";
 import ConditionsTracker from "../components/assessment/ConditionsTracker";
-import CycleTimePanel from "../components/assessment/CycleTimePanel";
 import DecisionOutcome from "../components/assessment/DecisionOutcome";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import IntakePanel from "../components/assessment/IntakePanel";
@@ -32,7 +31,6 @@ import ConfirmDialog from "../components/assessment/ConfirmDialog";
 import ResultDialog from "../components/assessment/ResultDialog";
 import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
 import SubmissionBanner from "../components/assessment/SubmissionBanner";
-import WorkflowStepper from "../components/assessment/WorkflowStepper";
 import {
   canNavigateToWorkflowStage,
   normalizeWorkflowStage,
@@ -1192,30 +1190,6 @@ function Assessment() {
       />
 
       <PageContainer className="pb-12">
-        <CycleTimePanel
-          changeRequestId={changeRequestId}
-          refreshKey={auditEvents.length}
-        />
-
-        <WorkflowStepper
-          variant="horizontal"
-          title="Track your Progress"
-          currentStage={changeRequest?.current_stage}
-          activeView={activeView}
-          auditEvents={auditEvents}
-          lockedStages={lockedStages}
-          onStageSelect={(stage) => {
-            if (
-              lockedStages.includes(stage) ||
-              !canNavigateToWorkflowStage(stage, changeRequest?.current_stage)
-            ) {
-              return;
-            }
-
-            setActiveView(stage);
-          }}
-        />
-
         {error && (
           <div className="mb-6 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
             {error}
