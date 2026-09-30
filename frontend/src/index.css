@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 * {
   box-sizing: border-box;
 }
@@ -12,11 +14,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.dark body {
+  background: #020617;
+  color: #f1f5f9;
+}
+
 @media (min-width: 1280px) {
   html {
     font-size: 106.25%;
   }
 }
+
 /* Saved / read-only intake sections: inputs inside a disabled fieldset. */
 fieldset:disabled input:not([type="checkbox"]):not([type="radio"]),
 fieldset:disabled textarea,
@@ -26,6 +34,30 @@ fieldset:disabled select {
   cursor: default;
 }
 
+.dark fieldset:disabled input:not([type="checkbox"]):not([type="radio"]),
+.dark fieldset:disabled textarea,
+.dark fieldset:disabled select {
+  background-color: #1e293b;
+  color: #cbd5e1;
+}
+
 fieldset:disabled label {
   cursor: default;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset;
+  -webkit-text-fill-color: #0f172a;
+  caret-color: #0f172a;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset;
+  -webkit-text-fill-color: #f1f5f9;
+  caret-color: #f1f5f9;
 }

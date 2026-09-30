@@ -181,11 +181,11 @@ const DASHBOARD_CONFIG = {
 };
 
 const STAT_TONES = {
-  slate: "bg-slate-100 text-slate-700",
-  blue: "bg-blue-50 text-blue-600",
-  emerald: "bg-emerald-50 text-emerald-600",
-  red: "bg-red-50 text-red-600",
-  amber: "bg-amber-50 text-amber-600",
+  slate: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300",
+  blue: "bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400",
+  emerald: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400",
+  red: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
+  amber: "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400",
 };
 
 function formatChangeType(value) {
@@ -198,22 +198,22 @@ function formatChangeType(value) {
 function getStatusStyle(key) {
   switch (key) {
     case "DRAFT":
-      return "bg-slate-100 text-slate-700";
+      return "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
     case "SUBMITTED":
-      return "bg-amber-100 text-amber-800";
+      return "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300";
     case "RISK_ASSESSMENT":
     case "ANALYST_REVIEW":
     case "COMMITTEE_REVIEW":
-      return "bg-blue-100 text-blue-700";
+      return "bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300";
     case "APPROVED":
     case "APPROVED_WITH_CONDITIONS":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300";
     case "DEFERRED":
-      return "bg-orange-100 text-orange-800";
+      return "bg-orange-100 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300";
     case "REJECTED":
-      return "bg-red-100 text-red-700";
+      return "bg-red-100 dark:bg-red-950/40 text-red-700 dark:text-red-300";
     default:
-      return "bg-slate-100 text-slate-700";
+      return "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
   }
 }
 
@@ -233,13 +233,13 @@ function StatusBadge({ request, className = "" }) {
 function getPriorityStyle(priority) {
   switch (priority) {
     case "CRITICAL":
-      return "text-red-700 font-semibold";
+      return "text-red-700 dark:text-red-300 font-semibold";
     case "HIGH":
       return "text-orange-700 font-semibold";
     case "LOW":
-      return "text-emerald-700";
+      return "text-emerald-700 dark:text-emerald-300";
     default:
-      return "text-slate-700";
+      return "text-slate-700 dark:text-slate-300";
   }
 }
 
@@ -403,10 +403,10 @@ function Dashboard() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight text-slate-900 lg:text-4xl">
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 lg:text-4xl">
                 {dashboardTitle}
               </h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -414,7 +414,7 @@ function Dashboard() {
                 Live
               </span>
             </div>
-            <p className="mt-2 text-base text-slate-600 lg:text-lg">
+            <p className="mt-2 text-base text-slate-600 dark:text-slate-400 lg:text-lg">
               {config.subtitle}
             </p>
           </div>
@@ -434,14 +434,14 @@ function Dashboard() {
         <div className="relative">
           <Search
             size={18}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
           />
           <input
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search by ID, title, unit, product, or requester…"
-            className="w-full rounded-xl border border-slate-200 bg-white py-3.5 pl-11 pr-4 text-base text-slate-900 shadow-sm outline-none ring-indigo-100 transition placeholder:text-slate-400 focus:border-indigo-400 focus:ring-2"
+            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 py-3.5 pl-11 pr-4 text-base text-slate-900 dark:text-slate-100 shadow-sm outline-none ring-indigo-100 dark:ring-indigo-900/40 transition placeholder:text-slate-400 dark:placeholder:text-slate-500 dark:text-slate-400 focus:border-indigo-400 focus:ring-2"
           />
         </div>
 
@@ -452,17 +452,17 @@ function Dashboard() {
             return (
               <div
                 key={stat.label}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
+                className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm sm:p-5"
               >
                 <div className="flex items-center gap-3">
                   <div className={`rounded-lg p-2 ${STAT_TONES[stat.tone]}`}>
                     <Icon size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 sm:text-sm sm:normal-case sm:tracking-normal">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400 sm:text-sm sm:normal-case sm:tracking-normal">
                       {stat.label}
                     </p>
-                    <p className="text-3xl font-bold text-slate-900 lg:text-4xl">
+                    <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 lg:text-4xl">
                       {statCounts[index]}
                     </p>
                   </div>
@@ -472,18 +472,18 @@ function Dashboard() {
           })}
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 className="text-xl font-bold text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 Risk overview
               </h2>
-              <p className="mt-1 text-base text-slate-600">
+              <p className="mt-1 text-base text-slate-600 dark:text-slate-400">
                 Residual rating distribution across{" "}
                 {riskSummary.total_assessments} assessed requests
               </p>
             </div>
-            <div className="flex flex-wrap gap-3 text-sm font-medium text-slate-600 lg:text-base">
+            <div className="flex flex-wrap gap-3 text-sm font-medium text-slate-600 dark:text-slate-400 lg:text-base">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-sm bg-red-500" />
                 Critical {riskSummary.critical}
@@ -533,7 +533,7 @@ function Dashboard() {
                   "rounded-full px-5 py-2.5 text-base font-semibold transition",
                   isActive
                     ? "bg-slate-900 text-white shadow-sm"
-                    : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                    : "border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
                 ].join(" ")}
               >
                 {option.label}
@@ -543,28 +543,28 @@ function Dashboard() {
         </div>
 
         {loading && (
-          <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-            <p className="text-sm text-slate-500">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center shadow-sm">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Loading change requests…
             </p>
           </div>
         )}
 
         {!loading && error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6">
-            <p className="text-sm text-red-700">{error}</p>
+          <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-6">
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
         {!loading && !error && filteredRequests.length === 0 && (
-          <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-            <FileText size={40} className="mx-auto text-slate-300" />
-            <h2 className="mt-4 text-lg font-semibold text-slate-900">
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-12 text-center shadow-sm">
+            <FileText size={40} className="mx-auto text-slate-300 dark:text-slate-600" />
+            <h2 className="mt-4 text-lg font-semibold text-slate-900 dark:text-slate-100">
               {changeRequests.length === 0
                 ? "No requests yet"
                 : "No matching requests"}
             </h2>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               {changeRequests.length === 0
                 ? config.emptyText
                 : "Adjust search or filters to find a request."}
@@ -578,14 +578,14 @@ function Dashboard() {
               {filteredRequests.map((request) => (
                 <article
                   key={request.id}
-                  className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                         {request.request_number}
                       </p>
-                      <h3 className="mt-1 text-base font-semibold text-slate-900">
+                      <h3 className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
                         {request.title}
                       </h3>
                     </div>
@@ -594,15 +594,15 @@ function Dashboard() {
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <dt className="text-xs font-medium uppercase text-slate-400">
+                      <dt className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500">
                         Unit
                       </dt>
-                      <dd className="mt-0.5 text-slate-700">
+                      <dd className="mt-0.5 text-slate-700 dark:text-slate-300">
                         {request.business_unit || "—"}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs font-medium uppercase text-slate-400">
+                      <dt className="text-xs font-medium uppercase text-slate-400 dark:text-slate-500">
                         Priority
                       </dt>
                       <dd
@@ -619,7 +619,7 @@ function Dashboard() {
                     <button
                       type="button"
                       onClick={() => setPreviewId(request.id)}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       <Eye size={16} />
                       Preview
@@ -627,7 +627,7 @@ function Dashboard() {
                     <button
                       type="button"
                       onClick={() => openAssessment(request.id)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                      className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       {config.actionLabel(request)}
                       <ArrowRight size={16} />
@@ -638,10 +638,10 @@ function Dashboard() {
             </div>
 
             <div className="hidden gap-6 xl:grid xl:grid-cols-[minmax(0,1fr)_min(420px,36%)]">
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-left text-base">
-                    <thead className="border-b border-slate-200 bg-slate-50 text-sm font-bold uppercase tracking-wide text-slate-500">
+                    <thead className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       <tr>
                         <th className="px-5 py-4">Request</th>
                         <th className="px-5 py-4">Change type</th>
@@ -651,7 +651,7 @@ function Dashboard() {
                         <th className="px-5 py-4 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {filteredRequests.map((request) => {
                         const isSelected = request.id === selectedId;
 
@@ -660,22 +660,22 @@ function Dashboard() {
                             key={request.id}
                             onClick={() => setSelectedId(request.id)}
                             className={[
-                              "cursor-pointer transition hover:bg-slate-50",
-                              isSelected ? "bg-indigo-50/60" : "",
+                              "cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800",
+                              isSelected ? "bg-indigo-50 dark:bg-indigo-950/40/60 dark:bg-indigo-950/30" : "",
                             ].join(" ")}
                           >
                             <td className="px-5 py-4">
-                              <p className="font-semibold text-slate-900">
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">
                                 {request.request_number}
                               </p>
-                              <p className="mt-0.5 max-w-xs truncate text-slate-600">
+                              <p className="mt-0.5 max-w-xs truncate text-slate-600 dark:text-slate-400">
                                 {request.title}
                               </p>
                             </td>
-                            <td className="px-4 py-3 text-slate-700">
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                               {formatChangeType(request.change_type)}
                             </td>
-                            <td className="px-4 py-3 text-slate-700">
+                            <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
                               {request.business_unit || "—"}
                             </td>
                             <td className="px-5 py-4">
@@ -696,7 +696,7 @@ function Dashboard() {
                                     event.stopPropagation();
                                     setPreviewId(request.id);
                                   }}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900"
                                 >
                                   <Eye size={14} />
                                   Preview
@@ -707,7 +707,7 @@ function Dashboard() {
                                     event.stopPropagation();
                                     openAssessment(request.id);
                                   }}
-                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white"
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900"
                                 >
                                   {config.actionLabel(request)}
                                   <ArrowRight size={14} />
@@ -722,22 +722,22 @@ function Dashboard() {
                 </div>
               </div>
 
-              <aside className="sticky top-6 h-fit rounded-xl border border-slate-200 bg-white shadow-sm">
+              <aside className="sticky top-6 h-fit rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
                 {selectedRequest ? (
                   <>
-                    <div className="flex items-start justify-between border-b border-slate-200 p-5">
+                    <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-700 p-5">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
                           {selectedRequest.request_number}
                         </p>
-                        <h3 className="mt-1 text-lg font-semibold text-slate-900">
+                        <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
                           {selectedRequest.title}
                         </h3>
                       </div>
                       <button
                         type="button"
                         onClick={() => setSelectedId(null)}
-                        className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                        className="rounded-lg p-1 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-400"
                         aria-label="Clear selection"
                       >
                         <X size={18} />
@@ -747,44 +747,44 @@ function Dashboard() {
                     <div className="space-y-4 p-5">
                       <div className="flex flex-wrap gap-2">
                         <StatusBadge request={selectedRequest} />
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                           {formatChangeType(selectedRequest.change_type)}
                         </span>
                       </div>
 
                       {selectedRequest.description && (
-                        <p className="text-sm leading-relaxed text-slate-600">
+                        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-400">
                           {selectedRequest.description}
                         </p>
                       )}
 
                       <dl className="space-y-3 text-sm">
-                        <div className="flex justify-between gap-4 border-b border-slate-100 pb-2">
-                          <dt className="text-slate-500">Product type</dt>
-                          <dd className="font-medium text-slate-900">
+                        <div className="flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                          <dt className="text-slate-500 dark:text-slate-400">Product type</dt>
+                          <dd className="font-medium text-slate-900 dark:text-slate-100">
                             {selectedRequest.product_type || "—"}
                           </dd>
                         </div>
-                        <div className="flex justify-between gap-4 border-b border-slate-100 pb-2">
-                          <dt className="text-slate-500">Business unit</dt>
-                          <dd className="font-medium text-slate-900">
+                        <div className="flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                          <dt className="text-slate-500 dark:text-slate-400">Business unit</dt>
+                          <dd className="font-medium text-slate-900 dark:text-slate-100">
                             {selectedRequest.business_unit || "—"}
                           </dd>
                         </div>
-                        <div className="flex justify-between gap-4 border-b border-slate-100 pb-2">
-                          <dt className="text-slate-500">Customer segment</dt>
-                          <dd className="font-medium text-slate-900">
+                        <div className="flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                          <dt className="text-slate-500 dark:text-slate-400">Customer segment</dt>
+                          <dd className="font-medium text-slate-900 dark:text-slate-100">
                             {selectedRequest.customer_segment || "—"}
                           </dd>
                         </div>
-                        <div className="flex justify-between gap-4 border-b border-slate-100 pb-2">
-                          <dt className="text-slate-500">Requested by</dt>
-                          <dd className="font-medium text-slate-900">
+                        <div className="flex justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-2">
+                          <dt className="text-slate-500 dark:text-slate-400">Requested by</dt>
+                          <dd className="font-medium text-slate-900 dark:text-slate-100">
                             {selectedRequest.requested_by || "—"}
                           </dd>
                         </div>
                         <div className="flex justify-between gap-4">
-                          <dt className="text-slate-500">Priority</dt>
+                          <dt className="text-slate-500 dark:text-slate-400">Priority</dt>
                           <dd
                             className={getPriorityStyle(
                               selectedRequest.priority
@@ -799,7 +799,7 @@ function Dashboard() {
                         <button
                           type="button"
                           onClick={() => setPreviewId(selectedRequest.id)}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                         >
                           <Eye size={16} />
                           Preview
@@ -816,7 +816,7 @@ function Dashboard() {
                     </div>
                   </>
                 ) : (
-                  <div className="p-8 text-center text-sm text-slate-500">
+                  <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
                     Select a request to view details.
                   </div>
                 )}

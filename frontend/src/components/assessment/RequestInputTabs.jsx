@@ -19,15 +19,15 @@ function RequestInputTabs({
   return (
     <div className="mb-8">
       <div className="mb-4">
-        <h2 className="text-2xl font-bold text-slate-900">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
           Assessment inputs
         </h2>
-        <p className="mt-2 text-base text-slate-600">
+        <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
           Complete and save each section in order, or use BRD extraction above.
         </p>
       </div>
 
-      <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-slate-200 bg-white p-1">
+      <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1">
         {INPUT_TABS.map((tab) => {
           const selected = activeTab === tab.id;
           const enabled = selected || isTabEnabled(tab.id);
@@ -44,8 +44,8 @@ function RequestInputTabs({
                 selected
                   ? "bg-slate-900 text-white"
                   : enabled
-                  ? "text-slate-600 hover:bg-slate-50"
-                  : "cursor-not-allowed text-slate-300",
+                  ? "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "cursor-not-allowed text-slate-300 dark:text-slate-600",
               ].join(" ")}
             >
               {!enabled && <Lock size={14} />}

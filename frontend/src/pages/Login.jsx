@@ -3,6 +3,7 @@ import { Eye, EyeOff, Loader2, Lock, UserRound } from "lucide-react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import AuthShell from "../components/marketing/AuthShell";
+import { authInputClassName } from "../components/marketing/authFormStyles";
 import { useAuth } from "../context/AuthContext";
 
 function Login() {
@@ -21,7 +22,7 @@ function Login() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-600">
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-400">
         Loading...
       </div>
     );
@@ -60,26 +61,20 @@ function Login() {
       title="Sign in"
       subtitle="Secure access to the FCRM risk assessment workbench."
       footer={
-        <div className="space-y-3">
-          <p className="text-sm text-slate-600">
-            New here?{" "}
-            <Link
-              to="/signup"
-              className="font-semibold text-blue-700 hover:underline"
-            >
-              Create an account
-            </Link>
-          </p>
-          <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-relaxed text-blue-900">
-            Internal access only. Your permissions are determined by your
-            assigned role after sign-in.
-          </p>
-        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          New here?{" "}
+          <Link
+            to="/signup"
+            className="font-semibold text-blue-700 hover:underline dark:text-blue-300"
+          >
+            Create an account
+          </Link>
+        </p>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         {notice ? (
-          <p className="rounded-xl bg-green-50 px-3 py-2 text-sm text-green-700">
+          <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950/40 dark:text-green-300">
             {notice}
           </p>
         ) : null}
@@ -87,14 +82,14 @@ function Login() {
         <div>
           <label
             htmlFor="username"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
+            className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
             Username
           </label>
           <div className="relative">
             <UserRound
               size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
             />
             <input
               id="username"
@@ -103,7 +98,7 @@ function Login() {
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               placeholder="Enter your username"
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none ring-blue-500 focus:ring-2"
+              className={`${authInputClassName} pl-10 pr-3`}
             />
           </div>
         </div>
@@ -111,14 +106,14 @@ function Login() {
         <div>
           <label
             htmlFor="password"
-            className="mb-1.5 block text-sm font-medium text-slate-700"
+            className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
           >
             Password
           </label>
           <div className="relative">
             <Lock
               size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
             />
             <input
               id="password"
@@ -127,12 +122,12 @@ function Login() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Enter your password"
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-10 text-sm outline-none ring-blue-500 focus:ring-2"
+              className={`${authInputClassName} pl-10 pr-10`}
             />
             <button
               type="button"
               onClick={() => setShowPassword((value) => !value)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -141,7 +136,7 @@ function Login() {
         </div>
 
         {error ? (
-          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-lg bg-red-50 px-3 py-1.5 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-300">
             {error}
           </p>
         ) : null}
@@ -149,7 +144,7 @@ function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
         >
           {loading ? (
             <>

@@ -34,8 +34,8 @@ function SubmissionBanner({
 
   if (ownsIntake) {
     return (
-      <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-base text-emerald-900">
-        <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-600" />
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 px-5 py-4 text-base text-emerald-900">
+        <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
         <p>
           <span className="font-semibold">
             Submitted for Risk Analyst review
@@ -48,8 +48,8 @@ function SubmissionBanner({
   }
 
   return (
-    <div className="mb-6 flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-5 py-4 text-base text-indigo-900">
-      <Lock size={20} className="mt-0.5 shrink-0 text-indigo-600" />
+    <div className="mb-6 flex items-start gap-3 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40 px-5 py-4 text-base text-indigo-900">
+      <Lock size={20} className="mt-0.5 shrink-0 text-indigo-600 dark:text-indigo-400" />
       <p>
         <span className="font-semibold">
           Submitted by {submittedBy || "the Business Owner"}

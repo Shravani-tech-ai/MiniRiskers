@@ -3,6 +3,7 @@ import { Eye, EyeOff, Loader2, Lock, Mail, UserRound } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import AuthShell from "../components/marketing/AuthShell";
+import { authInputClassName } from "../components/marketing/authFormStyles";
 import { useAuth } from "../context/AuthContext";
 import { ROLES, roleLabel } from "../utils/rolePermissions";
 
@@ -31,7 +32,7 @@ function Signup() {
 
   if (authLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-600">
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-600 dark:bg-slate-950 dark:text-slate-400">
         Loading...
       </div>
     );
@@ -83,147 +84,155 @@ function Signup() {
 
   return (
     <AuthShell
+      wide
       title="Create your account"
-      subtitle="Choose your role to access the right workflow in MiniRiskers."
+      subtitle="Pick your role to access the right workflow."
       footer={
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-blue-700 hover:underline">
+          <Link to="/login" className="font-semibold text-blue-700 dark:text-blue-300 hover:underline">
             Sign in
           </Link>
         </p>
       }
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Full name
-          </label>
-          <div className="relative">
-            <UserRound
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              name="full_name"
-              value={form.full_name}
-              onChange={handleChange}
-              required
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none ring-blue-500 focus:ring-2"
-            />
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Full name
+            </label>
+            <div className="relative">
+              <UserRound
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+              />
+              <input
+                name="full_name"
+                value={form.full_name}
+                onChange={handleChange}
+                required
+                className={`${authInputClassName} pl-10 pr-3`}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Username
+            </label>
+            <div className="relative">
+              <UserRound
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+              />
+              <input
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                required
+                autoComplete="username"
+                placeholder="letters, numbers, underscore"
+                className={`${authInputClassName} pl-10 pr-3`}
+              />
+            </div>
           </div>
         </div>
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Username
-          </label>
-          <div className="relative">
-            <UserRound
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              name="username"
-              value={form.username}
-              onChange={handleChange}
-              required
-              autoComplete="username"
-              placeholder="lowercase letters, numbers, underscore"
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none ring-blue-500 focus:ring-2"
-            />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Email
+            </label>
+            <div className="relative">
+              <Mail
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+              />
+              <input
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                required
+                autoComplete="email"
+                className={`${authInputClassName} pl-10 pr-3`}
+              />
+            </div>
           </div>
-        </div>
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Email
-          </label>
-          <div className="relative">
-            <Mail
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              name="email"
-              type="email"
-              value={form.email}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Role
+            </label>
+            <select
+              name="role"
+              value={form.role}
               onChange={handleChange}
-              required
-              autoComplete="email"
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm outline-none ring-blue-500 focus:ring-2"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Role
-          </label>
-          <select
-            name="role"
-            value={form.role}
-            onChange={handleChange}
-            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
-          >
-            {SIGNUP_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {roleLabel(role)}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1.5 text-xs text-slate-500">
-            Admin accounts are provisioned separately for security.
-          </p>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Password
-          </label>
-          <div className="relative">
-            <Lock
-              size={16}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            />
-            <input
-              name="password"
-              type={showPassword ? "text" : "password"}
-              value={form.password}
-              onChange={handleChange}
-              required
-              minLength={8}
-              autoComplete="new-password"
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-10 text-sm outline-none ring-blue-500 focus:ring-2"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((value) => !value)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              className={`${authInputClassName} px-3`}
             >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+              {SIGNUP_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {roleLabel(role)}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">
-            Confirm password
-          </label>
-          <input
-            name="confirmPassword"
-            type={showPassword ? "text" : "password"}
-            value={form.confirmPassword}
-            onChange={handleChange}
-            required
-            autoComplete="new-password"
-            className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm outline-none ring-blue-500 focus:ring-2"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Password
+            </label>
+            <div className="relative">
+              <Lock
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+              />
+              <input
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={handleChange}
+                required
+                minLength={8}
+                autoComplete="new-password"
+                className={`${authInputClassName} pl-10 pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Confirm password
+            </label>
+            <input
+              name="confirmPassword"
+              type={showPassword ? "text" : "password"}
+              value={form.confirmPassword}
+              onChange={handleChange}
+              required
+              autoComplete="new-password"
+              className={`${authInputClassName} px-3`}
+            />
+          </div>
         </div>
+
+        <p className="text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+          Admin accounts are provisioned separately for security.
+        </p>
 
         {error ? (
-          <p className="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="rounded-lg bg-red-50 dark:bg-red-950/40 px-3 py-1.5 text-sm text-red-700 dark:text-red-300">
             {error}
           </p>
         ) : null}
@@ -231,7 +240,7 @@ function Signup() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
         >
           {loading ? (
             <>

@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import AppSidebar from "../components/layout/AppSidebar";
 import AppTopBar from "../components/layout/AppTopBar";
 import MobileNav from "../components/layout/MobileNav";
+import ThemeToggle from "../components/ThemeToggle";
 import { useAuth } from "../context/AuthContext";
 import { roleLabel } from "../utils/rolePermissions";
 
@@ -17,22 +18,23 @@ function MainLayout({ children }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6f9]">
+    <div className="min-h-screen bg-[#f4f6f9] dark:bg-slate-950">
       <AppTopBar compact />
 
       <div className="flex min-h-screen">
         <AppSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="hidden border-b border-slate-200 bg-white px-8 py-4 lg:flex">
+          <header className="hidden border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-8 py-4 lg:flex">
             <div className="flex w-full items-center justify-between gap-3">
-              <p className="text-base font-semibold text-slate-700">
+              <p className="text-base font-semibold text-slate-700 dark:text-slate-300">
                 FCRM Workbench
               </p>
               <div className="flex items-center gap-3">
+              <ThemeToggle />
               <button
                 type="button"
-                className="relative rounded-xl border border-slate-200 p-2.5 text-slate-600 hover:bg-slate-50"
+                className="relative rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
                 aria-label="Notifications"
               >
                 <Bell size={18} />
@@ -41,14 +43,14 @@ function MainLayout({ children }) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 <UserCircle2 size={20} />
                 {user?.full_name || user?.username || "User"}
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   ({roleLabel(user?.role)})
                 </span>
-                <LogOut size={16} className="text-slate-500" />
+                <LogOut size={16} className="text-slate-500 dark:text-slate-400" />
               </button>
               </div>
             </div>

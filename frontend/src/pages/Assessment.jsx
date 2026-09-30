@@ -1162,11 +1162,11 @@ function Assessment() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-800/50 p-8">
 
         <div className="mx-auto max-w-7xl">
 
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Loading risk assessment...
           </p>
 
@@ -1178,28 +1178,28 @@ function Assessment() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-800/50 p-8">
 
         <div className="mx-auto max-w-7xl">
 
           <button
             onClick={() => navigate("/dashboard")}
-            className="mb-6 flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+            className="mb-6 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
           >
             <ArrowLeft size={16} />
             Back to Change Requests
           </button>
 
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+          <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-6">
 
             <div className="flex items-center gap-3">
 
               <AlertTriangle
                 size={20}
-                className="text-red-600"
+                className="text-red-600 dark:text-red-400"
               />
 
-              <p className="text-sm text-red-700">
+              <p className="text-sm text-red-700 dark:text-red-300">
                 {error}
               </p>
 
@@ -1235,7 +1235,7 @@ function Assessment() {
         />
 
         {error && (
-          <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-6 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
             {error}
           </div>
         )}
@@ -1276,7 +1276,7 @@ function Assessment() {
         />
 
         {missingFields.length > 0 && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-base text-amber-900">
+          <div className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-5 py-4 text-base text-amber-900 dark:text-amber-300">
             Missing required fields:{" "}
             {formatMissingFieldLabels(missingFields)}
           </div>
@@ -1389,7 +1389,7 @@ function Assessment() {
                 changeRequest?.current_stage
               )
             }
-            className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
           >
             View risk step
           </button>
@@ -1414,7 +1414,7 @@ function Assessment() {
               Preview & submit →
             </button>
           ) : permissions.submitted && isIntakeStage ? (
-            <span className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm font-semibold text-amber-800">
+            <span className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-5 py-3 text-sm font-semibold text-amber-800">
               Awaiting Risk Analyst
             </span>
           ) : null}
@@ -1471,7 +1471,7 @@ function Assessment() {
             type="button"
             onClick={runRiskAssessment}
             disabled={runningRiskAssessment}
-            className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            className="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
           >
             Recalculate risk
           </button>

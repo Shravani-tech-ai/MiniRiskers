@@ -3,15 +3,15 @@ import { AlertTriangle, Plus, ShieldCheck, Trash2 } from "lucide-react";
 function getRiskClass(rating) {
   switch (rating) {
     case "CRITICAL":
-      return "bg-red-100 text-red-700 border-red-200";
+      return "bg-red-100 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900";
     case "HIGH":
-      return "bg-orange-100 text-orange-700 border-orange-200";
+      return "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200";
     case "MEDIUM":
       return "bg-yellow-100 text-yellow-700 border-yellow-200";
     case "LOW":
-      return "bg-green-100 text-green-700 border-green-200";
+      return "bg-green-100 text-green-700 dark:text-green-300 border-green-200";
     default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "bg-slate-100 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700";
   }
 }
 
@@ -20,28 +20,28 @@ const DECISIONS = [
     key: "APPROVE",
     label: "Approve",
     description: "Approve the proposed change without additional conditions. Closes the request.",
-    active: "border-green-500 bg-green-50 ring-2 ring-green-100",
+    active: "border-green-500 bg-green-50 dark:bg-green-950/40 ring-2 ring-green-100",
     hover: "hover:border-green-300",
   },
   {
     key: "APPROVE_WITH_CONDITIONS",
     label: "Approve with Conditions",
     description: "Approve subject to conditions. Each condition is tracked until the analyst verifies the owner's evidence.",
-    active: "border-blue-500 bg-blue-50 ring-2 ring-blue-100",
+    active: "border-blue-500 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-100",
     hover: "hover:border-blue-300",
   },
   {
     key: "DEFER",
     label: "Defer",
     description: "Send the request back for rework. It returns to the committee as a new revision.",
-    active: "border-amber-500 bg-amber-50 ring-2 ring-amber-100",
+    active: "border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-2 ring-amber-100",
     hover: "hover:border-amber-300",
   },
   {
     key: "REJECT",
     label: "Reject",
     description: "Do not approve the proposed change. The request is closed.",
-    active: "border-red-500 bg-red-50 ring-2 ring-red-100",
+    active: "border-red-500 bg-red-50 dark:bg-red-950/40 ring-2 ring-red-100",
     hover: "hover:border-red-300",
   },
 ];
@@ -67,12 +67,12 @@ function OverridePanel({ review, acknowledgement, setAcknowledgement, canSubmit 
   return (
     <div
       className={`rounded-lg border p-4 ${
-        escalated ? "border-red-200 bg-red-50" : "border-amber-200 bg-amber-50"
+        escalated ? "border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40" : "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40"
       }`}
     >
       <div
         className={`flex items-center gap-2 text-sm font-semibold ${
-          escalated ? "text-red-800" : "text-amber-900"
+          escalated ? "text-red-800" : "text-amber-900 dark:text-amber-300"
         }`}
       >
         <AlertTriangle size={16} />
@@ -80,19 +80,19 @@ function OverridePanel({ review, acknowledgement, setAcknowledgement, canSubmit 
           ? "Escalated analyst override"
           : "Analyst override requires acknowledgement"}
       </div>
-      <p className={`mt-2 text-sm ${escalated ? "text-red-800" : "text-amber-900"}`}>
+      <p className={`mt-2 text-sm ${escalated ? "text-red-800" : "text-amber-900 dark:text-amber-300"}`}>
         {review.reviewed_by || "The analyst"} lowered the system rating from{" "}
         <b>{review.system_rating}</b> to <b>{review.analyst_rating}</b>.
       </p>
       {review.escalation_reasons?.length > 0 && (
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700 dark:text-slate-300">
           {review.escalation_reasons.map((reason) => (
             <li key={reason}>{reason}</li>
           ))}
         </ul>
       )}
       {review.override_reason && (
-        <p className="mt-2 text-sm text-slate-700">
+        <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
           <span className="font-medium">Analyst's reason:</span> {review.override_reason}
         </p>
       )}
@@ -102,12 +102,12 @@ function OverridePanel({ review, acknowledgement, setAcknowledgement, canSubmit 
         </p>
       )}
       {review.acknowledged_by ? (
-        <p className="mt-3 text-sm text-slate-700">
+        <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
           Acknowledged by {review.acknowledged_by}: {review.acknowledgement_note}
         </p>
       ) : (
         <>
-          <label className="mt-4 block text-sm font-semibold text-slate-700">
+          <label className="mt-4 block text-sm font-semibold text-slate-700 dark:text-slate-300">
             Committee acknowledgement of the override
           </label>
           <textarea
@@ -116,7 +116,7 @@ function OverridePanel({ review, acknowledgement, setAcknowledgement, canSubmit 
             rows={3}
             disabled={!canSubmit}
             placeholder="Record why the committee accepts (or does not accept) the analyst's lower rating..."
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 disabled:bg-slate-50"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50"
           />
         </>
       )}
@@ -129,21 +129,21 @@ function ConditionsEditor({ conditions, setConditions, disabled }) {
     setConditions(conditions.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   return (
     <div>
-      <label className="text-sm font-semibold text-slate-700">Approval conditions</label>
-      <p className="mt-1 text-xs text-slate-500">
+      <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Approval conditions</label>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
         Each condition is tracked separately: the Business Owner submits evidence and the Risk Analyst verifies it.
         Leave the due date empty to use the methodology default.
       </p>
       <div className="mt-3 space-y-3">
         {conditions.map((condition, index) => (
-          <div key={index} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 md:flex-row md:items-start">
+          <div key={index} className="flex flex-col gap-2 rounded-lg border border-slate-200 dark:border-slate-700 p-3 md:flex-row md:items-start">
             <textarea
               value={condition.description}
               onChange={(e) => update(index, { description: e.target.value })}
               rows={2}
               disabled={disabled}
               placeholder="e.g. Enhanced transaction monitoring enabled before go-live"
-              className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
+              className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100"
             />
             <input
               type="date"
@@ -151,14 +151,14 @@ function ConditionsEditor({ conditions, setConditions, disabled }) {
               onChange={(e) => update(index, { due_date: e.target.value })}
               disabled={disabled}
               aria-label="Due date"
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 md:w-44"
+              className="rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 md:w-44"
             />
             <button
               type="button"
               onClick={() => setConditions(conditions.filter((_, i) => i !== index))}
               disabled={disabled || conditions.length === 1}
               aria-label="Remove condition"
-              className="rounded-lg border border-slate-200 p-2 text-slate-500 hover:bg-slate-50 disabled:opacity-40"
+              className="rounded-lg border border-slate-200 dark:border-slate-700 p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40"
             >
               <Trash2 size={16} />
             </button>
@@ -169,7 +169,7 @@ function ConditionsEditor({ conditions, setConditions, disabled }) {
         type="button"
         onClick={() => setConditions([...conditions, { description: "", due_date: "" }])}
         disabled={disabled}
-        className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
       >
         <Plus size={15} />
         Add condition
@@ -214,15 +214,15 @@ function CommitteeDecision({
     !(committeeDecision === "APPROVE" && approveBlocked);
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 bg-slate-50 p-6">
+    <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6">
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-purple-100 p-2.5">
             <ShieldCheck size={22} className="text-purple-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900">Risk Committee Decision</h3>
-            <p className="mt-1 text-sm text-slate-500">Final governance checkpoint for the proposed change.</p>
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">Risk Committee Decision</h3>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Final governance checkpoint for the proposed change.</p>
           </div>
         </div>
       </div>
@@ -236,35 +236,35 @@ function CommitteeDecision({
         </div>
 
         <div>
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Decision Context</h4>
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Decision Context</h4>
           <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">System Residual Risk</p>
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">System Residual Risk</p>
               <div className="mt-2 flex items-center gap-3">
-                <span className="text-2xl font-bold text-slate-900">{riskAssessment?.residual_score?.toFixed(1) || "—"}</span>
+                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{riskAssessment?.residual_score?.toFixed(1) || "—"}</span>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getRiskClass(riskAssessment?.residual_rating)}`}>
                   {riskAssessment?.residual_rating || "—"}
                 </span>
               </div>
               {riskAssessment?.risk_model_version && (
-                <p className="mt-2 text-xs text-slate-400">Methodology v{riskAssessment.risk_model_version}</p>
+                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">Methodology v{riskAssessment.risk_model_version}</p>
               )}
             </div>
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Analyst Rating</p>
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Analyst Rating</p>
               <div className="mt-2 flex items-center gap-3">
-                <span className="text-2xl font-bold text-slate-900">{analystRating || "Not Submitted"}</span>
+                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{analystRating || "Not Submitted"}</span>
                 {analystReview?.override_direction && analystReview.override_direction !== "NONE" && (
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
                     {analystReview.override_direction === "DOWNGRADE" ? "Lowered" : "Raised"}{" "}
                     {Math.abs(analystReview.band_delta)} band{Math.abs(analystReview.band_delta) > 1 ? "s" : ""}
                   </span>
                 )}
               </div>
             </div>
-            <div className="rounded-lg border border-slate-200 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">AI Recommendation</p>
-              <p className="mt-2 text-sm font-semibold text-slate-900">{aiAssessment?.recommendation || riskAssessment?.ai_recommendation || "Not Generated"}</p>
+            <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">AI Recommendation</p>
+              <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{aiAssessment?.recommendation || riskAssessment?.ai_recommendation || "Not Generated"}</p>
             </div>
           </div>
         </div>
@@ -277,8 +277,8 @@ function CommitteeDecision({
         />
 
         <div>
-          <label className="text-sm font-semibold text-slate-700">Committee Decision</label>
-          <p className="mt-1 text-xs text-slate-500">Select the outcome for this change request.</p>
+          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Committee Decision</label>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Select the outcome for this change request.</p>
           <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
             {DECISIONS.map((option) => {
               const blocked = option.key === "APPROVE" && approveBlocked;
@@ -289,11 +289,11 @@ function CommitteeDecision({
                   onClick={() => setCommitteeDecision(option.key)}
                   disabled={!editable || blocked}
                   className={`rounded-lg border p-4 text-left transition disabled:cursor-not-allowed ${
-                    committeeDecision === option.key ? option.active : `border-slate-200 ${option.hover}`
+                    committeeDecision === option.key ? option.active : `border-slate-200 dark:border-slate-700 ${option.hover}`
                   } ${blocked ? "opacity-50" : ""}`}
                 >
-                  <p className="font-semibold text-slate-900">{option.label}</p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{option.label}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {blocked
                       ? "Not available: the analyst's downgrade was escalated."
                       : option.description}
@@ -314,7 +314,7 @@ function CommitteeDecision({
 
         {committeeDecision === "DEFER" && (
           <div>
-            <label className="text-sm font-semibold text-slate-700">Send back to</label>
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Send back to</label>
             <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
               {DEFER_TARGETS.map((target) => (
                 <button
@@ -324,12 +324,12 @@ function CommitteeDecision({
                   disabled={!editable}
                   className={`rounded-lg border p-4 text-left transition ${
                     deferTarget === target.key
-                      ? "border-amber-500 bg-amber-50 ring-2 ring-amber-100"
-                      : "border-slate-200 hover:border-amber-300"
+                      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/40 ring-2 ring-amber-100"
+                      : "border-slate-200 dark:border-slate-700 hover:border-amber-300"
                   }`}
                 >
-                  <p className="font-semibold text-slate-900">{target.label}</p>
-                  <p className="mt-1 text-xs text-slate-500">{target.description}</p>
+                  <p className="font-semibold text-slate-900 dark:text-slate-100">{target.label}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{target.description}</p>
                 </button>
               ))}
             </div>
@@ -337,21 +337,21 @@ function CommitteeDecision({
         )}
 
         <div>
-          <label className="text-sm font-semibold text-slate-700">
+          <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             {committeeDecision === "DEFER" ? "What must change (shared with the recipient)" : "Committee Rationale"}
           </label>
-          <p className="mt-1 text-xs text-slate-500">Record the reasoning behind the committee decision.</p>
-          <textarea value={committeeReason} onChange={(e) => setCommitteeReason(e.target.value)} rows={5} disabled={!editable} placeholder="Explain the basis for the committee decision..." className="mt-3 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-700 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 disabled:bg-slate-50" />
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Record the reasoning behind the committee decision.</p>
+          <textarea value={committeeReason} onChange={(e) => setCommitteeReason(e.target.value)} rows={5} disabled={!editable} placeholder="Explain the basis for the committee decision..." className="mt-3 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 disabled:bg-slate-50 dark:disabled:bg-slate-800/50" />
         </div>
 
-        <div className="flex items-center justify-between border-t border-slate-200 pt-6">
+        <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-6">
           {committeeSubmitted ? (
-            <div className="flex items-center gap-2 text-sm font-medium text-green-700">
+            <div className="flex items-center gap-2 text-sm font-medium text-green-700 dark:text-green-300">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100">✓</span>
               Committee decision recorded
             </div>
           ) : (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 dark:text-slate-500">
               {needsAck ? "Acknowledge the analyst override before deciding." : "This decision is recorded in the audit trail."}
             </p>
           )}

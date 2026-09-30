@@ -12,19 +12,19 @@ function VendorInformation({
   const locked = readOnly || Boolean(section.locked);
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
 
       {/* Header */}
-      <div className="border-b border-slate-200 bg-slate-50 p-6">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6">
 
         <div className="flex items-center justify-between">
 
           <div>
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">
               Vendor / Third-Party Information
             </h3>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Capture third-party involvement and outsourcing risk characteristics.
             </p>
           </div>
@@ -42,7 +42,7 @@ function VendorInformation({
         {/* Vendor Name */}
         <div>
 
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Vendor Name *
           </label>
 
@@ -56,7 +56,7 @@ function VendorInformation({
               })
             }
             placeholder="Example: Global Payments Partner"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
         </div>
@@ -64,7 +64,7 @@ function VendorInformation({
         {/* Vendor Type */}
         <div>
 
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Vendor Type *
           </label>
 
@@ -78,7 +78,7 @@ function VendorInformation({
               })
             }
             placeholder="Payment Processor / Technology Provider"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
         </div>
@@ -86,7 +86,7 @@ function VendorInformation({
         {/* Vendor Country */}
         <div>
 
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Vendor Country
           </label>
 
@@ -100,7 +100,7 @@ function VendorInformation({
               })
             }
             placeholder="India"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
         </div>
@@ -108,7 +108,7 @@ function VendorInformation({
         {/* Criticality */}
         <div>
 
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Criticality
           </label>
 
@@ -120,7 +120,7 @@ function VendorInformation({
                 criticality: e.target.value,
               })
             }
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           >
             <option value="">Select criticality</option>
             <option value="LOW">
@@ -145,7 +145,7 @@ function VendorInformation({
         {/* Outsourcing Type */}
         <div>
 
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Outsourcing Type
           </label>
 
@@ -159,7 +159,7 @@ function VendorInformation({
               })
             }
             placeholder="Technology / Payment Processing"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
         </div>
@@ -167,7 +167,7 @@ function VendorInformation({
         {/* Service Description */}
         <div className="md:col-span-2">
 
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Service Description
           </label>
 
@@ -181,7 +181,7 @@ function VendorInformation({
               })
             }
             placeholder="Describe the services provided by the vendor..."
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
         </div>
@@ -189,14 +189,14 @@ function VendorInformation({
         {/* Vendor Risk Characteristics */}
         <div className="md:col-span-2">
 
-          <p className="mb-3 text-sm font-medium text-slate-700">
+          <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
             Vendor Risk Characteristics
           </p>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
 
             {/* Handles Customer Data */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -210,14 +210,14 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Handles Customer Data
               </span>
 
             </label>
 
             {/* Handles Transactions */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -231,14 +231,14 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Handles Transactions
               </span>
 
             </label>
 
             {/* Handles Payment Data */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -252,14 +252,14 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Handles Payment Data
               </span>
 
             </label>
 
             {/* Cross-Border Processing */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -273,7 +273,7 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Cross-Border Processing
               </span>
 
@@ -286,14 +286,14 @@ function VendorInformation({
         {/* Vendor Governance */}
         <div className="md:col-span-2">
 
-          <p className="mb-3 text-sm font-medium text-slate-700">
+          <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
             Vendor Governance
           </p>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
 
             {/* Due Diligence */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -307,14 +307,14 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Due Diligence Completed
               </span>
 
             </label>
 
             {/* Contract */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -328,14 +328,14 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Contract Completed
               </span>
 
             </label>
 
             {/* Audit Rights */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -349,14 +349,14 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Audit Rights
               </span>
 
             </label>
 
             {/* Business Continuity Plan */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
 
               <input
                 type="checkbox"
@@ -370,7 +370,7 @@ function VendorInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Business Continuity Plan
               </span>
 

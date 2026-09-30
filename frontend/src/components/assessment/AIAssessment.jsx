@@ -11,19 +11,19 @@ import {
 function getRiskClass(rating) {
   switch (rating) {
     case "CRITICAL":
-      return "bg-red-100 text-red-700 border-red-200";
+      return "bg-red-100 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900";
 
     case "HIGH":
-      return "bg-orange-100 text-orange-700 border-orange-200";
+      return "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300 border-orange-200";
 
     case "MEDIUM":
       return "bg-yellow-100 text-yellow-700 border-yellow-200";
 
     case "LOW":
-      return "bg-green-100 text-green-700 border-green-200";
+      return "bg-green-100 text-green-700 dark:text-green-300 border-green-200";
 
     default:
-      return "bg-slate-100 text-slate-700 border-slate-200";
+      return "bg-slate-100 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700";
   }
 }
 
@@ -32,7 +32,7 @@ function getScoreColor(score) {
   const numericScore = Number(score || 0);
 
   if (numericScore >= 76) {
-    return "text-red-600";
+    return "text-red-600 dark:text-red-400";
   }
 
   if (numericScore >= 51) {
@@ -61,13 +61,13 @@ function AIAssessment({
   canGenerate = true,
 }) {
   return (
-    <div className="mt-6 rounded-xl border border-indigo-200 bg-white shadow-sm">
+    <div className="mt-6 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 shadow-sm">
 
       {/* ===================================================== */}
       {/* HEADER */}
       {/* ===================================================== */}
 
-      <div className="border-b border-indigo-100 bg-indigo-50/40 p-6">
+      <div className="border-b border-indigo-100 bg-indigo-50 dark:bg-indigo-950/40/40 p-6">
 
         <div className="flex items-start justify-between gap-4">
 
@@ -76,17 +76,17 @@ function AIAssessment({
             <div className="rounded-lg bg-indigo-100 p-2.5">
               <Sparkles
                 size={22}
-                className="text-indigo-600"
+                className="text-indigo-600 dark:text-indigo-400"
               />
             </div>
 
             <div>
 
-              <h3 className="font-semibold text-slate-900">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
                 AI-Assisted FCRM Assessment
               </h3>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 AI prepares the assessment using the calculated risk
                 and regulatory evidence. FCRM retains the final decision.
               </p>
@@ -96,7 +96,7 @@ function AIAssessment({
           </div>
 
           {aiAssessment?.recommendation && (
-            <span className="rounded-full bg-orange-100 px-3 py-1.5 text-xs font-semibold text-orange-700">
+            <span className="rounded-full bg-orange-100 dark:bg-orange-950/40 px-3 py-1.5 text-xs font-semibold text-orange-700 dark:text-orange-300">
               {aiAssessment.recommendation}
             </span>
           )}
@@ -119,11 +119,11 @@ function AIAssessment({
             className="mx-auto text-indigo-400"
           />
 
-          <h4 className="mt-4 font-semibold text-slate-800">
+          <h4 className="mt-4 font-semibold text-slate-800 dark:text-slate-200">
             AI assessment not generated yet
           </h4>
 
-          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500">
+          <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500 dark:text-slate-400">
             Generate an AI-assisted assessment using the calculated
             financial crime risk factors and retrieved regulatory evidence.
           </p>
@@ -168,19 +168,19 @@ function AIAssessment({
           <div className="flex flex-wrap items-center gap-3">
 
             {aiAssessment.model && (
-              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
                 Model: {aiAssessment.model}
               </span>
             )}
 
             {aiAssessment.model_version && (
-              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600">
+              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
                 Version: {aiAssessment.model_version}
               </span>
             )}
 
             {aiAssessment.status && (
-              <span className="inline-flex items-center gap-1.5 rounded-md bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+              <span className="inline-flex items-center gap-1.5 rounded-md bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700 dark:text-green-300">
                 <CheckCircle2 size={13} />
                 {aiAssessment.status}
               </span>
@@ -197,13 +197,13 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Executive Summary
               </h4>
 
-              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5">
 
-                <p className="text-sm leading-7 text-slate-700">
+                <p className="text-sm leading-7 text-slate-700 dark:text-slate-300">
                   {aiAssessment.assessment.executive_summary}
                 </p>
 
@@ -222,11 +222,11 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Change Description
               </h4>
 
-              <p className="mt-3 text-sm leading-7 text-slate-700">
+              <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300">
                 {aiAssessment.assessment.change_description}
               </p>
 
@@ -243,7 +243,7 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Risk Assessment
               </h4>
 
@@ -255,14 +255,14 @@ function AIAssessment({
 
                   <div
                     key={category}
-                    className="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                    className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-4"
                   >
 
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                       {formatCategory(category)}
                     </p>
 
-                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                    <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                       {analysis}
                     </p>
 
@@ -285,28 +285,28 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Inherent Risk Analysis
               </h4>
 
-              <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-5">
+              <div className="mt-4 rounded-lg border border-red-100 bg-red-50 dark:bg-red-950/40 p-5">
 
                 <div className="flex items-center gap-3">
 
                   <div className="rounded-lg bg-red-100 p-2">
                     <ShieldAlert
                       size={20}
-                      className="text-red-600"
+                      className="text-red-600 dark:text-red-400"
                     />
                   </div>
 
                   <div>
 
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                       Inherent Risk
                     </p>
 
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Risk before considering controls
                     </p>
 
@@ -339,7 +339,7 @@ function AIAssessment({
 
 
                 {aiAssessment.assessment.inherent_risk.analysis && (
-                  <p className="mt-4 text-sm leading-7 text-slate-700">
+                  <p className="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-300">
                     {aiAssessment.assessment.inherent_risk.analysis}
                   </p>
                 )}
@@ -359,7 +359,7 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Key Risk Factors
               </h4>
 
@@ -370,12 +370,12 @@ function AIAssessment({
 
                     <div
                       key={index}
-                      className="flex items-start gap-3 rounded-lg border border-slate-200 p-4"
+                      className="flex items-start gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-4"
                     >
 
                       <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-orange-500" />
 
-                      <p className="text-sm leading-6 text-slate-700">
+                      <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
                         {factor}
                       </p>
 
@@ -399,11 +399,11 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Control Assessment
               </h4>
 
-              <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-5">
+              <div className="mt-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5">
 
                 <div className="flex items-start gap-3">
 
@@ -412,7 +412,7 @@ function AIAssessment({
                     className="mt-0.5 shrink-0 text-green-600"
                   />
 
-                  <p className="text-sm leading-7 text-slate-700">
+                  <p className="text-sm leading-7 text-slate-700 dark:text-slate-300">
                     {aiAssessment.assessment.control_assessment}
                   </p>
 
@@ -433,7 +433,7 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Residual Risk Analysis
               </h4>
 
@@ -441,7 +441,7 @@ function AIAssessment({
 
                 <div className="flex items-center gap-3">
 
-                  <div className="rounded-lg bg-orange-100 p-2">
+                  <div className="rounded-lg bg-orange-100 dark:bg-orange-950/40 p-2">
                     <ShieldCheck
                       size={20}
                       className="text-orange-600"
@@ -450,11 +450,11 @@ function AIAssessment({
 
                   <div>
 
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                       Residual Risk
                     </p>
 
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Risk after considering controls
                     </p>
 
@@ -487,7 +487,7 @@ function AIAssessment({
 
 
                 {aiAssessment.assessment.residual_risk.analysis && (
-                  <p className="mt-4 text-sm leading-7 text-slate-700">
+                  <p className="mt-4 text-sm leading-7 text-slate-700 dark:text-slate-300">
                     {aiAssessment.assessment.residual_risk.analysis}
                   </p>
                 )}
@@ -507,7 +507,7 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 Regulatory Considerations
               </h4>
 
@@ -518,7 +518,7 @@ function AIAssessment({
 
                     <div
                       key={index}
-                      className="flex items-start gap-3 rounded-lg border border-slate-200 p-4"
+                      className="flex items-start gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-4"
                     >
 
                       <FileText
@@ -526,7 +526,7 @@ function AIAssessment({
                         className="mt-0.5 shrink-0 text-indigo-500"
                       />
 
-                      <p className="text-sm leading-6 text-slate-700">
+                      <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
                         {item}
                       </p>
 
@@ -550,7 +550,7 @@ function AIAssessment({
 
             <section>
 
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 AI Recommendation
               </h4>
 
@@ -565,11 +565,11 @@ function AIAssessment({
 
                   <div>
 
-                    <p className="font-semibold text-slate-900">
+                    <p className="font-semibold text-slate-900 dark:text-slate-100">
                       {aiAssessment.recommendation}
                     </p>
 
-                    <p className="mt-1 text-sm leading-6 text-slate-600">
+                    <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
                       This is an AI-generated recommendation and does not
                       constitute the final FCRM decision.
                     </p>

@@ -93,7 +93,7 @@ function useTooltip() {
 
   const node = tip ? (
     <div
-      className="pointer-events-none absolute z-10 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg"
+      className="pointer-events-none absolute z-10 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2 text-xs shadow-lg"
       style={{
         left: Math.min(Math.max(tip.x, 70), tip.width - 70),
         top: tip.y - 12,
@@ -121,8 +121,8 @@ function TipBody({ value, label, color }) {
       {color && (
         <span className="h-0.5 w-3 rounded-full" style={{ backgroundColor: color }} />
       )}
-      <span className="font-bold tabular-nums text-slate-900">{value}</span>
-      <span className="text-slate-500">{label}</span>
+      <span className="font-bold tabular-nums text-slate-900 dark:text-slate-100">{value}</span>
+      <span className="text-slate-500 dark:text-slate-400">{label}</span>
     </div>
   );
 }
@@ -130,12 +130,12 @@ function TipBody({ value, label, color }) {
 function DataTable({ columns, rows }) {
   return (
     <details className="mt-4 text-sm">
-      <summary className="cursor-pointer select-none text-xs font-semibold text-slate-500 hover:text-slate-700">
+      <summary className="cursor-pointer select-none text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300">
         View data
       </summary>
       <div className="mt-2 overflow-x-auto">
         <table className="w-full text-left text-xs">
-          <thead className="text-slate-500">
+          <thead className="text-slate-500 dark:text-slate-400">
             <tr>
               {columns.map((column, index) => (
                 <th
@@ -147,9 +147,9 @@ function DataTable({ columns, rows }) {
               ))}
             </tr>
           </thead>
-          <tbody className="text-slate-700">
+          <tbody className="text-slate-700 dark:text-slate-300">
             {rows.map((row) => (
-              <tr key={row[0]} className="border-t border-slate-100">
+              <tr key={row[0]} className="border-t border-slate-100 dark:border-slate-800">
                 {row.map((cell, index) => (
                   <td
                     key={index}
@@ -170,10 +170,10 @@ function DataTable({ columns, rows }) {
 function ChartCard({ title, subtitle, children, className = "" }) {
   return (
     <section
-      className={`rounded-xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6 ${className}`}
+      className={`rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm lg:p-6 ${className}`}
     >
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
-      {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{title}</h2>
+      {subtitle && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{subtitle}</p>}
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -181,7 +181,7 @@ function ChartCard({ title, subtitle, children, className = "" }) {
 
 function EmptyChart({ text = "Not enough data yet." }) {
   return (
-    <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-slate-200 text-sm text-slate-400">
+    <div className="flex h-40 items-center justify-center rounded-lg border border-dashed border-slate-200 dark:border-slate-700 text-sm text-slate-400 dark:text-slate-500">
       {text}
     </div>
   );
@@ -209,13 +209,13 @@ function HBarChart({ data, max, format = (v) => formatNumber(v), unit = "", tick
                 />
               )}
             >
-              <span className="truncate text-sm text-slate-600">{d.label}</span>
+              <span className="truncate text-sm text-slate-600 dark:text-slate-400">{d.label}</span>
               <div className="pr-12">
               <div className="relative flex h-6 items-center">
                 {ticks?.map((tick) => (
                   <span
                     key={tick}
-                    className="absolute inset-y-0 w-px bg-slate-100"
+                    className="absolute inset-y-0 w-px bg-slate-100 dark:bg-slate-800"
                     style={{ left: `${(tick / scaleMax) * 100}%` }}
                   />
                 ))}
@@ -227,7 +227,7 @@ function HBarChart({ data, max, format = (v) => formatNumber(v), unit = "", tick
                     backgroundColor: d.color || SERIES.primary,
                   }}
                 />
-                <span className="relative ml-2 text-sm font-semibold tabular-nums text-slate-800">
+                <span className="relative ml-2 text-sm font-semibold tabular-nums text-slate-800 dark:text-slate-200">
                   {format(d.value)}
                   {unit}
                 </span>
@@ -241,7 +241,7 @@ function HBarChart({ data, max, format = (v) => formatNumber(v), unit = "", tick
         <div className="mt-1 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[9rem_minmax(0,1fr)]">
           <span />
           <div className="pr-12">
-          <div className="relative h-4 text-[11px] text-slate-400">
+          <div className="relative h-4 text-[11px] text-slate-400 dark:text-slate-500">
             {[0, ...ticks].map((tick) => (
               <span
                 key={tick}
@@ -271,7 +271,7 @@ function ColumnChart({ data, height = 180 }) {
     <div ref={containerRef} className="relative">
       <div className="flex gap-2">
         <div
-          className="relative w-6 shrink-0 text-right text-[11px] tabular-nums text-slate-400"
+          className="relative w-6 shrink-0 text-right text-[11px] tabular-nums text-slate-400 dark:text-slate-500"
           style={{ height }}
         >
           {ticks.map((tick) => (
@@ -288,7 +288,7 @@ function ColumnChart({ data, height = 180 }) {
           {ticks.map((tick) => (
             <span
               key={tick}
-              className={`absolute inset-x-0 h-px ${tick === 0 ? "bg-slate-300" : "bg-slate-100"}`}
+              className={`absolute inset-x-0 h-px ${tick === 0 ? "bg-slate-300" : "bg-slate-100 dark:bg-slate-800"}`}
               style={{ bottom: `${(tick / niceMax) * 100}%` }}
             />
           ))}
@@ -305,7 +305,7 @@ function ColumnChart({ data, height = 180 }) {
                   />
                 )}
               >
-                <span className="mb-1 text-xs font-semibold tabular-nums text-slate-800">
+                <span className="mb-1 text-xs font-semibold tabular-nums text-slate-800 dark:text-slate-200">
                   {d.value > 0 ? formatNumber(d.value) : ""}
                 </span>
                 <div
@@ -324,7 +324,7 @@ function ColumnChart({ data, height = 180 }) {
         {data.map((d) => (
           <span
             key={d.label}
-            className="min-w-0 flex-1 truncate text-center text-xs text-slate-500"
+            className="min-w-0 flex-1 truncate text-center text-xs text-slate-500 dark:text-slate-400"
           >
             {d.label}
           </span>
@@ -342,7 +342,7 @@ function DumbbellChart({ rows }) {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="mb-4 flex flex-wrap gap-4 text-xs text-slate-600">
+      <div className="mb-4 flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-400">
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: SERIES.inherent }} />
           Inherent (before controls)
@@ -359,21 +359,21 @@ function DumbbellChart({ rows }) {
           return (
             <div
               key={row.label}
-              className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 rounded-md py-1 outline-none hover:bg-slate-50 sm:grid-cols-[8rem_minmax(0,1fr)]"
+              className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-center gap-3 rounded-md py-1 outline-none hover:bg-slate-50 dark:hover:bg-slate-800 sm:grid-cols-[8rem_minmax(0,1fr)]"
               {...bind(
                 <div className="space-y-1">
-                  <p className="font-semibold text-slate-700">{row.label}</p>
+                  <p className="font-semibold text-slate-700 dark:text-slate-300">{row.label}</p>
                   <TipBody value={formatNumber(row.inherent, 1)} label="Inherent" color={SERIES.inherent} />
                   <TipBody value={formatNumber(row.residual, 1)} label="Residual" color={SERIES.residual} />
                 </div>
               )}
             >
-              <span className="truncate text-sm text-slate-600">{row.label}</span>
+              <span className="truncate text-sm text-slate-600 dark:text-slate-400">{row.label}</span>
               <div className="relative h-6">
                 {ticks.map((tick) => (
                   <span
                     key={tick}
-                    className={`absolute inset-y-0 w-px ${tick === 0 ? "bg-slate-300" : "bg-slate-100"}`}
+                    className={`absolute inset-y-0 w-px ${tick === 0 ? "bg-slate-300" : "bg-slate-100 dark:bg-slate-800"}`}
                     style={{ left: `${tick}%` }}
                   />
                 ))}
@@ -388,7 +388,7 @@ function DumbbellChart({ rows }) {
                   // Inherent is drawn larger underneath so equal scores stay visible.
                   <span
                     key={key}
-                    className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white ${
+                    className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-white dark:ring-slate-900 ${
                       key === "inherent" ? "h-4 w-4" : "h-2.5 w-2.5"
                     }`}
                     style={{ left: `${value}%`, backgroundColor: SERIES[key] }}
@@ -401,7 +401,7 @@ function DumbbellChart({ rows }) {
       </div>
       <div className="mt-1 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[8rem_minmax(0,1fr)]">
         <span />
-        <div className="relative h-4 text-[11px] text-slate-400">
+        <div className="relative h-4 text-[11px] text-slate-400 dark:text-slate-500">
           {ticks.map((tick) => (
             <span
               key={tick}
@@ -420,13 +420,13 @@ function DumbbellChart({ rows }) {
 
 function StatTile({ icon: Icon, label, value, hint }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-        <Icon size={16} className="text-slate-400" />
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm sm:p-5">
+      <div className="flex items-center gap-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+        <Icon size={16} className="text-slate-400 dark:text-slate-500" />
         {label}
       </div>
-      <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900">{value}</p>
-      {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+      <p className="mt-2 text-3xl font-semibold tabular-nums text-slate-900 dark:text-slate-100">{value}</p>
+      {hint && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{hint}</p>}
     </div>
   );
 }
@@ -558,8 +558,8 @@ function SlaSection({ cycle }) {
   return (
     <section className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">Intake-to-decision SLA</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">Intake-to-decision SLA</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
           Target {formatHours(target)} from Business Owner submission to committee decision (brief: ~2 days vs a
           15–20 business-day baseline). Time a request spends back with the Business Owner after a deferral is excluded.
         </p>
@@ -624,7 +624,7 @@ function SlaSection({ cycle }) {
           {open.length ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-xs uppercase text-slate-400">
+                <thead className="text-xs uppercase text-slate-400 dark:text-slate-500">
                   <tr>
                     <th className="py-2 text-left">Request</th>
                     <th className="py-2 text-left">Stage</th>
@@ -636,9 +636,9 @@ function SlaSection({ cycle }) {
                   {open.slice(0, 10).map((item) => {
                     const meta = SLA_STATUS_META[item.sla_status] || SLA_STATUS_META.NOT_STARTED;
                     return (
-                      <tr key={item.change_request_id} className="border-t border-slate-100">
+                      <tr key={item.change_request_id} className="border-t border-slate-100 dark:border-slate-800">
                         <td className="py-2 font-medium">{item.request_number}</td>
-                        <td className="py-2 text-slate-600">{item.current_stage_label || "—"}</td>
+                        <td className="py-2 text-slate-600 dark:text-slate-400">{item.current_stage_label || "—"}</td>
                         <td className="py-2 text-right tabular-nums">{formatHours(item.sla_hours)}</td>
                         <td className="py-2 text-right">
                           <span className={`whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold ${meta.className}`}>{meta.label}</span>
@@ -683,10 +683,10 @@ function Analytics() {
   return (
     <PageContainer className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 lg:text-4xl">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 lg:text-4xl">
           Analytics
         </h1>
-        <p className="mt-2 text-base text-slate-600 lg:text-lg">
+        <p className="mt-2 text-base text-slate-600 dark:text-slate-400 lg:text-lg">
           Risk profile, workflow throughput, and decision outcomes across the
           requests you can access.
           {user?.role === ROLES.BUSINESS_OWNER &&
@@ -695,13 +695,13 @@ function Analytics() {
       </div>
 
       {loading && (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500 shadow-sm">
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-10 text-center text-sm text-slate-500 dark:text-slate-400 shadow-sm">
           Loading analytics…
         </div>
       )}
 
       {!loading && error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+        <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-6 text-sm text-red-700 dark:text-red-300">
           {error}
         </div>
       )}
@@ -872,7 +872,7 @@ function Analytics() {
 
           <SlaSection cycle={cycle} />
 
-          <p className="flex items-center gap-2 text-xs text-slate-400">
+          <p className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
             <Clock3 size={14} />
             Figures are computed live from the latest assessment of each request.
           </p>

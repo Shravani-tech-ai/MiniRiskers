@@ -17,3 +17,4 @@ bcrypt>=4.0.1,<4.1
 python-multipart
 pytest
 httpx
+langchain_huggingface

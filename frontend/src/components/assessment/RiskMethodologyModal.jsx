@@ -6,15 +6,15 @@ import api from "../../services/api";
 function getRiskClass(rating) {
   switch (rating) {
     case "CRITICAL":
-      return "bg-red-100 text-red-700";
+      return "bg-red-100 text-red-700 dark:text-red-300";
     case "HIGH":
-      return "bg-orange-100 text-orange-700";
+      return "bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-300";
     case "MEDIUM":
       return "bg-yellow-100 text-yellow-700";
     case "LOW":
-      return "bg-green-100 text-green-700";
+      return "bg-green-100 text-green-700 dark:text-green-300";
     default:
-      return "bg-slate-100 text-slate-700";
+      return "bg-slate-100 text-slate-700 dark:text-slate-300";
   }
 }
 
@@ -33,8 +33,8 @@ function RatingBadge({ rating }) {
 function Section({ step, title, children }) {
   return (
     <section>
-      <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500">
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 text-xs text-indigo-700">
+      <h4 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-xs text-indigo-700 dark:text-indigo-300">
           {step}
         </span>
         {title}
@@ -46,7 +46,7 @@ function Section({ step, title, children }) {
 
 function Formula({ children }) {
   return (
-    <p className="rounded-lg bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+    <p className="rounded-lg bg-slate-50 dark:bg-slate-800/50 px-3 py-2 font-mono text-xs text-slate-700 dark:text-slate-300">
       {children}
     </p>
   );
@@ -59,22 +59,22 @@ function CategoryRow({ category }) {
   return (
     <>
       <tr
-        className={hasFactors ? "cursor-pointer hover:bg-slate-50" : ""}
+        className={hasFactors ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800" : ""}
         onClick={() => hasFactors && setOpen(!open)}
       >
-        <td className="px-3 py-2.5 font-medium text-slate-800">
+        <td className="px-3 py-2.5 font-medium text-slate-800 dark:text-slate-200">
           <span className="inline-flex items-center gap-1.5">
             <ChevronDown
               size={14}
               className={[
                 "transition",
-                hasFactors ? "text-slate-400" : "invisible",
+                hasFactors ? "text-slate-400 dark:text-slate-500" : "invisible",
                 open ? "" : "-rotate-90",
               ].join(" ")}
             />
             {category.label}
           </span>
-          <span className="ml-2 text-xs text-slate-400">
+          <span className="ml-2 text-xs text-slate-400 dark:text-slate-500">
             {category.factors.length} factor
             {category.factors.length === 1 ? "" : "s"}
           </span>
@@ -86,15 +86,15 @@ function CategoryRow({ category }) {
         <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
           {category.weighted_contribution}
         </td>
-        <td className="px-3 py-2.5 text-right tabular-nums text-slate-500">
+        <td className="px-3 py-2.5 text-right tabular-nums text-slate-500 dark:text-slate-400">
           {category.share_of_inherent_pct}%
         </td>
       </tr>
       {open && (
         <tr>
-          <td colSpan={5} className="bg-slate-50 px-3 pb-3 pt-1">
+          <td colSpan={5} className="bg-slate-50 dark:bg-slate-800/50 px-3 pb-3 pt-1">
             <table className="w-full text-xs">
-              <thead className="text-slate-400">
+              <thead className="text-slate-400 dark:text-slate-500">
                 <tr>
                   <th className="py-1.5 pl-6 text-left font-semibold">Factor</th>
                   <th className="py-1.5 text-right font-semibold">Score</th>
@@ -103,12 +103,12 @@ function CategoryRow({ category }) {
                   <th className="py-1.5 text-right font-semibold">Evidence</th>
                 </tr>
               </thead>
-              <tbody className="text-slate-700">
+              <tbody className="text-slate-700 dark:text-slate-300">
                 {category.factors.map((factor) => (
-                  <tr key={factor.name} className="border-t border-slate-200">
+                  <tr key={factor.name} className="border-t border-slate-200 dark:border-slate-700">
                     <td className="py-1.5 pl-6">
                       {factor.name}
-                      <span className="ml-1.5 text-slate-400">
+                      <span className="ml-1.5 text-slate-400 dark:text-slate-500">
                         ({factor.value})
                       </span>
                     </td>
@@ -122,7 +122,7 @@ function CategoryRow({ category }) {
                     </td>
                   </tr>
                 ))}
-                <tr className="border-t border-slate-300 font-semibold">
+                <tr className="border-t border-slate-300 dark:border-slate-600 font-semibold">
                   <td className="py-1.5 pl-6">
                     Category score = {category.factors
                       .reduce((sum, f) => sum + f.weighted_score, 0)
@@ -136,8 +136,8 @@ function CategoryRow({ category }) {
               </tbody>
             </table>
             {category.framework_basis?.length > 0 && (
-              <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">
-                <p className="font-semibold text-slate-700">Supervisory framework basis</p>
+              <div className="mt-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 text-xs text-slate-600 dark:text-slate-400">
+                <p className="font-semibold text-slate-700 dark:text-slate-300">Supervisory framework basis</p>
                 <ul className="mt-1 list-disc space-y-0.5 pl-5">
                   {category.framework_basis.map((ref) => (
                     <li key={`${ref.source}-${ref.clause}`}>
@@ -237,15 +237,15 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
       <div
         role="dialog"
         aria-modal="true"
-        className="flex max-h-full w-full max-w-4xl flex-col rounded-xl bg-white shadow-xl"
+        className="flex max-h-full w-full max-w-4xl flex-col rounded-xl bg-white dark:bg-slate-900 shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5">
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-700 p-5">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
               {report?.change_request?.request_number || "Risk methodology"}
             </p>
-            <h3 className="mt-1 text-lg font-semibold text-slate-900">
+            <h3 className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
               How this risk was calculated
             </h3>
           </div>
@@ -253,22 +253,22 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            className="rounded-lg p-1.5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-400"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-5 text-sm text-slate-700">
+        <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-5 text-sm text-slate-700 dark:text-slate-300">
           {loading && (
-            <div className="flex items-center justify-center gap-2 py-16 text-slate-500">
+            <div className="flex items-center justify-center gap-2 py-16 text-slate-500 dark:text-slate-400">
               <Loader2 size={18} className="animate-spin" />
               Building methodology…
             </div>
           )}
 
           {!loading && error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">
+            <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-red-700 dark:text-red-300">
               {error}
             </div>
           )}
@@ -276,31 +276,31 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
           {report && (
             <>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Inherent
                   </p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="text-2xl font-bold text-slate-900">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                       {report.assessment.inherent_score}
                     </span>
                     <RatingBadge rating={report.assessment.inherent_rating} />
                   </div>
                 </div>
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Control effectiveness
                   </p>
-                  <p className="mt-2 text-2xl font-bold text-slate-900">
+                  <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">
                     {report.controls.average_effectiveness}%
                   </p>
                 </div>
-                <div className="rounded-lg border border-slate-200 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Residual
                   </p>
                   <div className="mt-2 flex items-center gap-2">
-                    <span className="text-2xl font-bold text-slate-900">
+                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
                       {report.assessment.residual_score}
                     </span>
                     <RatingBadge rating={report.assessment.residual_rating} />
@@ -309,7 +309,7 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
               </div>
 
               <Section step={1} title="Inputs taken into consideration">
-                <p className="mb-3 text-slate-600">
+                <p className="mb-3 text-slate-600 dark:text-slate-400">
                   {report.factor_count} risk factors were triggered from the
                   submitted intake sections.
                 </p>
@@ -320,8 +320,8 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                       className={[
                         "rounded-full px-3 py-1 text-xs font-medium",
                         section.provided
-                          ? "bg-emerald-50 text-emerald-800"
-                          : "bg-slate-100 text-slate-500",
+                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300"
+                          : "bg-slate-100 text-slate-500 dark:text-slate-400",
                       ].join(" ")}
                     >
                       {section.section} · {section.fields.length} fields
@@ -338,9 +338,9 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                   </Formula>
                   <Formula>{report.inherent.formula}</Formula>
                 </div>
-                <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700">
                   <table className="w-full text-sm">
-                    <thead className="bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                       <tr>
                         <th className="px-3 py-2 text-left">Category</th>
                         <th className="px-3 py-2 text-right">Score</th>
@@ -349,11 +349,11 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                         <th className="px-3 py-2 text-right">Share</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                       {report.categories.map((category) => (
                         <CategoryRow key={category.category} category={category} />
                       ))}
-                      <tr className="bg-slate-50 font-bold text-slate-900">
+                      <tr className="bg-slate-50 dark:bg-slate-800/50 font-bold text-slate-900 dark:text-slate-100">
                         <td className="px-3 py-2.5">Inherent risk</td>
                         <td />
                         <td className="px-3 py-2.5 text-right">1.00</td>
@@ -365,14 +365,14 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-2 text-xs text-slate-400">
+                <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
                   Click a category to see the risk factors behind its score.
                 </p>
               </Section>
 
               <Section step={3} title="Controls → residual risk">
                 <Formula>{residual.formula}</Formula>
-                <dl className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200">
+                <dl className="mt-3 divide-y divide-slate-100 dark:divide-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
                   {[
                     [
                       `${report.inherent.score} × (1 − ${report.controls.average_effectiveness} / 100)`,
@@ -383,13 +383,13 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                     ["Applicable floor", residual.applied_floor],
                   ].map(([label, value]) => (
                     <div key={label} className="flex justify-between gap-4 px-3 py-2">
-                      <dt className="text-slate-600">{label}</dt>
-                      <dd className="font-medium tabular-nums text-slate-900">
+                      <dt className="text-slate-600 dark:text-slate-400">{label}</dt>
+                      <dd className="font-medium tabular-nums text-slate-900 dark:text-slate-100">
                         {value}
                       </dd>
                     </div>
                   ))}
-                  <div className="flex items-center justify-between gap-4 bg-slate-50 px-3 py-2.5 font-bold text-slate-900">
+                  <div className="flex items-center justify-between gap-4 bg-slate-50 dark:bg-slate-800/50 px-3 py-2.5 font-bold text-slate-900 dark:text-slate-100">
                     <dt>Residual risk</dt>
                     <dd className="flex items-center gap-2 tabular-nums">
                       {residual.score}
@@ -397,13 +397,13 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                     </dd>
                   </div>
                 </dl>
-                <p className="mt-3 text-slate-600">{residual.explanation}</p>
+                <p className="mt-3 text-slate-600 dark:text-slate-400">{residual.explanation}</p>
                 {residual.triggered_rules.length > 0 && (
                   <ul className="mt-3 space-y-2">
                     {residual.triggered_rules.map((rule) => (
                       <li
                         key={rule.name}
-                        className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900"
+                        className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-amber-900 dark:text-amber-300"
                       >
                         <span className="font-semibold">{rule.name}</span> —
                         floor {rule.floor} (factors: {rule.factors.join(", ")})
@@ -414,7 +414,7 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
               </Section>
 
               <Section step={4} title="Regulatory evidence">
-                <p className="text-slate-600">
+                <p className="text-slate-600 dark:text-slate-400">
                   {report.evidence.count} passages retrieved across{" "}
                   {report.evidence.documents.length} source documents. Evidence
                   supports the review; it does not change the scores.
@@ -422,7 +422,7 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
               </Section>
 
               <Section step={5} title="Notes & assumptions">
-                <ul className="list-disc space-y-1.5 pl-5 text-slate-600">
+                <ul className="list-disc space-y-1.5 pl-5 text-slate-600 dark:text-slate-400">
                   {report.notes.map((note) => (
                     <li key={note}>{note}</li>
                   ))}
@@ -432,11 +432,11 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
           )}
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-slate-200 p-4">
+        <div className="flex justify-end gap-3 border-t border-slate-200 dark:border-slate-700 p-4">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             Close
           </button>

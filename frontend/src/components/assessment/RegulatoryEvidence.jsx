@@ -34,24 +34,24 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
 
   return (
     <div className="mt-8 xl:mt-0">
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 p-6">
+      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="border-b border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <FileText size={20} className="text-blue-600" />
+              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/40 p-2">
+                <FileText size={20} className="text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100">
                   Regulatory Evidence
                 </h3>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   Regulatory sources retrieved to support the risk assessment
                 </p>
               </div>
             </div>
 
-            <span className="shrink-0 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">
+            <span className="shrink-0 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400">
               {total} records
             </span>
           </div>
@@ -59,13 +59,13 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
 
         {total === 0 ? (
           <div className="p-6">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               No regulatory evidence available.
             </p>
           </div>
         ) : (
           <>
-            <ol className="divide-y divide-slate-100">
+            <ol className="divide-y divide-slate-100 dark:divide-slate-800">
               {pageItems.map((evidence, offset) => {
                 const index = start + offset;
 
@@ -74,16 +74,16 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
                     key={evidence.id || index}
                     className="flex items-start gap-4 px-6 py-4"
                   >
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold tabular-nums text-slate-600">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold tabular-nums text-slate-600 dark:text-slate-400">
                       {index + 1}
                     </span>
-                    <p className="min-w-0 flex-1 text-sm font-medium leading-6 text-slate-800">
+                    <p className="min-w-0 flex-1 text-sm font-medium leading-6 text-slate-800 dark:text-slate-200">
                       {evidence.query || evidence.document_name || "Regulatory evidence"}
                     </p>
                     <button
                       type="button"
                       onClick={() => showEvidence(index)}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                     >
                       <Eye size={14} />
                       View evidence
@@ -93,8 +93,8 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
               })}
             </ol>
 
-            <div className="flex items-center justify-between gap-3 border-t border-slate-200 px-6 py-4">
-              <span className="text-sm font-semibold tabular-nums text-slate-500">
+            <div className="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-700 px-6 py-4">
+              <span className="text-sm font-semibold tabular-nums text-slate-500 dark:text-slate-400">
                 {page + 1}/{pageCount}
               </span>
               <div className="flex gap-2">
@@ -102,7 +102,7 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
                   <button
                     type="button"
                     onClick={() => setPage(page - 1)}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
                     <ChevronLeft size={15} />
                     Previous

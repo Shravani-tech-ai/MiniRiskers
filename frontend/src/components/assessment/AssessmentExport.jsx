@@ -40,7 +40,7 @@ function AssessmentExport({ changeRequestId, setError }) {
       <button
         type="button"
         onClick={() => download("json")}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
       >
         <Download size={15} />
         Export JSON
@@ -48,7 +48,7 @@ function AssessmentExport({ changeRequestId, setError }) {
       <button
         type="button"
         onClick={() => download("pdf")}
-        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
       >
         <Download size={15} />
         Export PDF

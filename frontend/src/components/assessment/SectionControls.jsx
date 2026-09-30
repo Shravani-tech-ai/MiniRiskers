@@ -13,7 +13,7 @@ export function SectionStatus({ saved, section = {} }) {
 
   return (
     <div className="flex shrink-0 items-center gap-2">
-      <span className="rounded-full bg-green-100 px-3 py-1.5 text-xs font-semibold text-green-700">
+      <span className="rounded-full bg-green-100 dark:bg-green-950/40 px-3 py-1.5 text-xs font-semibold text-green-700 dark:text-green-300">
         ✓ Saved
       </span>
 
@@ -21,7 +21,7 @@ export function SectionStatus({ saved, section = {} }) {
         <button
           type="button"
           onClick={section.onEdit}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
         >
           <Pencil size={13} />
           Edit
@@ -54,9 +54,9 @@ export function SectionFooter({
   const showSave = !readOnly && !locked;
 
   return (
-    <div className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+    <div className="border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-6 py-4">
       {error && (
-        <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mb-3 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-sm text-red-700 dark:text-red-300">
           {error}
         </p>
       )}
@@ -68,7 +68,7 @@ export function SectionFooter({
               type="button"
               onClick={() => onNavigate?.(previousTab.id)}
               disabled={!canGoPrevious}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <ArrowLeft size={16} />
               Previous: {previousTab.label}
@@ -82,7 +82,7 @@ export function SectionFooter({
               type="button"
               onClick={onCancel}
               disabled={saving}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
             >
               Cancel
             </button>
@@ -111,7 +111,7 @@ export function SectionFooter({
               title={
                 canGoNext ? undefined : `Save ${label} to continue`
               }
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Next: {nextTab.label}
               <ArrowRight size={16} />

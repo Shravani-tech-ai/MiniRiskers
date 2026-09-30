@@ -94,18 +94,18 @@ function ControlsSection({
       : 0;
 
   return (
-    <div className="mt-8 rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 p-6">
+    <div className="mt-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="border-b border-slate-200 dark:border-slate-700 p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-green-50 p-2">
+            <div className="rounded-lg bg-green-50 dark:bg-green-950/40 p-2">
               <ShieldCheck size={20} className="text-green-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900">
+              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
                 Controls & residual risk
               </h3>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Document mitigating controls. Residual risk uses average
                 control effectiveness vs inherent score.
               </p>
@@ -114,8 +114,8 @@ function ControlsSection({
 
           {riskAssessment && (
             <div className="text-right text-sm">
-              <p className="text-slate-500">Control adjustment</p>
-              <p className="font-semibold text-slate-900">
+              <p className="text-slate-500 dark:text-slate-400">Control adjustment</p>
+              <p className="font-semibold text-slate-900 dark:text-slate-100">
                 {riskAssessment.control_adjustment ?? "—"}
               </p>
             </div>
@@ -126,7 +126,7 @@ function ControlsSection({
       <div className="grid gap-6 p-6 lg:grid-cols-2">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Control name *
             </label>
             <input
@@ -135,13 +135,13 @@ function ControlsSection({
               onChange={(event) =>
                 setForm({ ...form, control_name: event.target.value })
               }
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Category
               </label>
               <input
@@ -153,11 +153,11 @@ function ControlsSection({
                     control_category: event.target.value,
                   })
                 }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm"
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Effectiveness (0–100)
               </label>
               <input
@@ -171,13 +171,13 @@ function ControlsSection({
                     effectiveness_score: Number(event.target.value),
                   })
                 }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700">
+            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Description
             </label>
             <textarea
@@ -186,7 +186,7 @@ function ControlsSection({
                 setForm({ ...form, description: event.target.value })
               }
               rows={3}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm"
             />
           </div>
 
@@ -200,28 +200,28 @@ function ControlsSection({
         </form>
 
         <div>
-          <p className="text-sm font-semibold text-slate-700">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
             Registered controls ({controls.length})
           </p>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
             Average effectiveness: {avgEffectiveness.toFixed(1)}%
           </p>
 
           <div className="mt-4 space-y-3">
             {controls.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 No controls recorded yet.
               </p>
             ) : (
               controls.map((control) => (
                 <div
                   key={control.id}
-                  className="rounded-lg border border-slate-200 p-3"
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 p-3"
                 >
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-slate-900 dark:text-slate-100">
                     {control.control_name}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                     {control.control_category} ·{" "}
                     {control.control_type} · Effectiveness{" "}
                     {control.effectiveness_score ?? "—"}%
@@ -236,7 +236,7 @@ function ControlsSection({
               type="button"
               onClick={handleRecalculate}
               disabled={recalculating}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200"
             >
               {recalculating && (
                 <Loader2 size={14} className="animate-spin" />

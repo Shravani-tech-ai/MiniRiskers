@@ -12,19 +12,19 @@ function TransactionProfile({
   const locked = readOnly || Boolean(section.locked);
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
 
       {/* Header */}
-      <div className="border-b border-slate-200 bg-slate-50 p-6">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6">
 
         <div className="flex items-center justify-between">
 
           <div>
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">
               Transaction Profile
             </h3>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Define transaction volumes, amounts, frequency and
               transaction behaviour.
             </p>
@@ -41,7 +41,7 @@ function TransactionProfile({
 
         {/* Transaction Type */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Transaction Type *
           </label>
 
@@ -55,13 +55,13 @@ function TransactionProfile({
               })
             }
             placeholder="International Transfer"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Expected Frequency */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Expected Frequency
           </label>
 
@@ -75,13 +75,13 @@ function TransactionProfile({
               })
             }
             placeholder="Daily / Weekly / Monthly"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Average Transaction Amount */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Average Transaction Amount
           </label>
 
@@ -95,13 +95,13 @@ function TransactionProfile({
               })
             }
             placeholder="25000"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Maximum Transaction Amount */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Maximum Transaction Amount
           </label>
 
@@ -115,13 +115,13 @@ function TransactionProfile({
               })
             }
             placeholder="100000"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Daily Volume */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Expected Daily Volume
           </label>
 
@@ -135,13 +135,13 @@ function TransactionProfile({
               })
             }
             placeholder="50000"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Monthly Volume */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Expected Monthly Volume
           </label>
 
@@ -155,13 +155,13 @@ function TransactionProfile({
               })
             }
             placeholder="1500000"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Number of Countries */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Number of Countries
           </label>
 
@@ -175,13 +175,13 @@ function TransactionProfile({
               })
             }
             placeholder="4"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Transaction Velocity */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Transaction Velocity
           </label>
 
@@ -195,21 +195,21 @@ function TransactionProfile({
               })
             }
             placeholder="8"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Transaction Characteristics */}
         <div className="md:col-span-2">
 
-          <p className="mb-3 text-sm font-medium text-slate-700">
+          <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
             Transaction Characteristics
           </p>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 
             {/* Cash */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={transactionForm.cash_involved}
@@ -222,13 +222,13 @@ function TransactionProfile({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Cash Involved
               </span>
             </label>
 
             {/* Cross Border */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={transactionForm.cross_border}
@@ -241,13 +241,13 @@ function TransactionProfile({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Cross-Border Transactions
               </span>
             </label>
 
             {/* Round Amount */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={transactionForm.round_amount_risk}
@@ -260,13 +260,13 @@ function TransactionProfile({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Round Amount Pattern
               </span>
             </label>
 
             {/* Rapid Movement */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={transactionForm.rapid_movement_possible}
@@ -279,7 +279,7 @@ function TransactionProfile({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Rapid Movement Possible
               </span>
             </label>

@@ -4,13 +4,13 @@ import { Timer } from "lucide-react";
 import api from "../../services/api";
 
 export const SLA_STATUS_META = {
-  NOT_STARTED: { label: "Not submitted", className: "bg-slate-100 text-slate-600", bar: "bg-slate-300" },
-  ON_TRACK: { label: "On track", className: "bg-emerald-50 text-emerald-700", bar: "bg-emerald-500" },
-  AT_RISK: { label: "At risk", className: "bg-amber-50 text-amber-800", bar: "bg-amber-400" },
-  PAUSED: { label: "Paused (with owner)", className: "bg-slate-100 text-slate-700", bar: "bg-slate-400" },
-  BREACHED: { label: "SLA breached", className: "bg-red-50 text-red-700", bar: "bg-red-500" },
-  MET: { label: "SLA met", className: "bg-emerald-50 text-emerald-700", bar: "bg-emerald-500" },
-  MISSED: { label: "SLA missed", className: "bg-red-50 text-red-700", bar: "bg-red-500" },
+  NOT_STARTED: { label: "Not submitted", className: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400", bar: "bg-slate-300" },
+  ON_TRACK: { label: "On track", className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300", bar: "bg-emerald-500" },
+  AT_RISK: { label: "At risk", className: "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300", bar: "bg-amber-400" },
+  PAUSED: { label: "Paused (with owner)", className: "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300", bar: "bg-slate-400" },
+  BREACHED: { label: "SLA breached", className: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300", bar: "bg-red-500" },
+  MET: { label: "SLA met", className: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300", bar: "bg-emerald-500" },
+  MISSED: { label: "SLA missed", className: "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300", bar: "bg-red-500" },
 };
 
 export function formatHours(hours) {
@@ -38,15 +38,15 @@ function CycleTimePanel({ changeRequestId, refreshKey }) {
   const used = Math.min(data.sla_used_pct || 0, 100);
 
   return (
-    <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:p-6">
+    <div className="mb-8 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm lg:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Timer size={20} className="text-slate-400" />
+          <Timer size={20} className="text-slate-400 dark:text-slate-500" />
           <div>
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               Intake-to-decision SLA · target {formatHours(data.sla_target_hours)}
             </p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {data.sla_status === "NOT_STARTED"
                 ? "The clock starts when the Business Owner submits the request."
                 : data.decided_at
@@ -63,7 +63,7 @@ function CycleTimePanel({ changeRequestId, refreshKey }) {
       {data.sla_status !== "NOT_STARTED" && (
         <>
           <div
-            className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100"
+            className="mt-4 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
             role="progressbar"
             aria-valuenow={Math.round(data.sla_used_pct || 0)}
             aria-valuemin={0}
@@ -77,17 +77,17 @@ function CycleTimePanel({ changeRequestId, refreshKey }) {
               <div
                 key={stage.stage}
                 className={`rounded-lg border px-3 py-2 ${
-                  stage.in_progress ? "border-indigo-300 bg-indigo-50" : "border-slate-200"
+                  stage.in_progress ? "border-indigo-300 bg-indigo-50 dark:bg-indigo-950/40" : "border-slate-200 dark:border-slate-700"
                 }`}
               >
-                <p className="text-xs text-slate-500">{stage.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{stage.label}</p>
                 <p
                   className={`text-sm font-semibold tabular-nums ${
-                    stage.over_target ? "text-red-600" : "text-slate-900"
+                    stage.over_target ? "text-red-600 dark:text-red-400" : "text-slate-900 dark:text-slate-100"
                   }`}
                 >
                   {formatHours(stage.hours)}
-                  <span className="font-normal text-slate-400">
+                  <span className="font-normal text-slate-400 dark:text-slate-500">
                     {stage.target_hours ? ` / ${formatHours(stage.target_hours)}` : ""}
                   </span>
                 </p>

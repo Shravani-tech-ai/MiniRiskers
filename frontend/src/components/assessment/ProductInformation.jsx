@@ -12,19 +12,19 @@ function ProductInformation({
   const locked = readOnly || Boolean(section.locked);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
 
       {/* Header */}
-      <div className="border-b border-slate-200 bg-slate-50 p-6">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6">
 
         <div className="flex items-center justify-between">
 
           <div>
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">
               Product Information
             </h3>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Define the product characteristics and transaction
               capabilities.
             </p>
@@ -41,7 +41,7 @@ function ProductInformation({
 
         {/* Product Name */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Product Name *
           </label>
 
@@ -55,13 +55,13 @@ function ProductInformation({
               })
             }
             placeholder="Digital International Remittance"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Product Category */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Product Category
           </label>
 
@@ -75,13 +75,13 @@ function ProductInformation({
               })
             }
             placeholder="Remittance / Payments / Lending"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Product Description */}
         <div className="md:col-span-2">
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Product Description
           </label>
 
@@ -95,13 +95,13 @@ function ProductInformation({
             }
             rows={3}
             placeholder="Describe the product, service and intended use."
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Transaction Type */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Transaction Type *
           </label>
 
@@ -115,13 +115,13 @@ function ProductInformation({
               })
             }
             placeholder="International Transfer"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Currency */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Currency
           </label>
 
@@ -135,13 +135,13 @@ function ProductInformation({
               })
             }
             placeholder="INR"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Transaction Limit */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Transaction Limit
           </label>
 
@@ -155,13 +155,13 @@ function ProductInformation({
               })
             }
             placeholder="100000"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Expected Transaction Volume */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Expected Transaction Volume
           </label>
 
@@ -175,13 +175,13 @@ function ProductInformation({
               })
             }
             placeholder="50000"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Expected Transaction Frequency */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Expected Transaction Frequency
           </label>
 
@@ -195,13 +195,13 @@ function ProductInformation({
               })
             }
             placeholder="Daily / Weekly / Monthly"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Supported Countries */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Supported Countries
           </label>
 
@@ -215,21 +215,21 @@ function ProductInformation({
               })
             }
             placeholder="India, UAE, UK, USA"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Product Characteristics */}
         <div className="md:col-span-2">
 
-          <p className="mb-3 text-sm font-medium text-slate-700">
+          <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
             Product Characteristics
           </p>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
 
             {/* Digital Channel */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={productForm.digital_channel}
@@ -242,13 +242,13 @@ function ProductInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Digital Channel
               </span>
             </label>
 
             {/* Branch Channel */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={productForm.branch_channel}
@@ -261,13 +261,13 @@ function ProductInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Branch Channel
               </span>
             </label>
 
             {/* Agent Channel */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={productForm.agent_channel}
@@ -280,13 +280,13 @@ function ProductInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Agent Channel
               </span>
             </label>
 
             {/* Cross Border */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={productForm.cross_border}
@@ -299,13 +299,13 @@ function ProductInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Cross Border
               </span>
             </label>
 
             {/* Cash Involved */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={productForm.cash_involved}
@@ -318,7 +318,7 @@ function ProductInformation({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Cash Involved
               </span>
             </label>

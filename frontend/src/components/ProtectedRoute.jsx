@@ -8,7 +8,7 @@ function ProtectedRoute({ children, allowedRoles = null }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f4f6f9] text-sm text-slate-600">
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f6f9] dark:bg-slate-950 text-sm text-slate-600 dark:text-slate-400">
         Loading session...
       </div>
     );

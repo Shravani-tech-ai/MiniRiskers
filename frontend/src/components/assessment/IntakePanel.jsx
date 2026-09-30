@@ -209,22 +209,22 @@ function IntakePanel({
   const uploadInfo = brdUpload?.upload;
 
   return (
-    <div className="mb-8 rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 p-5">
+    <div className="mb-8 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="border-b border-slate-200 dark:border-slate-700 p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">
               Intake method
             </h3>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Upload a BRD or enter values manually. Completeness:{" "}
-              <span className="font-semibold text-indigo-600">
+              <span className="font-semibold text-indigo-600 dark:text-indigo-400">
                 {completenessPercent ?? 0}%
               </span>
             </p>
           </div>
 
-          <div className="flex rounded-lg border border-slate-200 p-1">
+          <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 p-1">
             <button
               type="button"
               onClick={() => setIntakeMode("brd")}
@@ -232,7 +232,7 @@ function IntakePanel({
                 "rounded-md px-4 py-2 text-sm font-semibold transition",
                 intakeMode === "brd"
                   ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-50",
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
               ].join(" ")}
             >
               BRD upload
@@ -244,7 +244,7 @@ function IntakePanel({
                 "rounded-md px-4 py-2 text-sm font-semibold transition",
                 intakeMode === "manual"
                   ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-50",
+                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800",
               ].join(" ")}
             >
               Manual entry
@@ -268,7 +268,7 @@ function IntakePanel({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={readOnly || uploading}
-              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
             >
               {uploading ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -305,7 +305,7 @@ function IntakePanel({
           </div>
 
           {loadingBrdStatus && !uploadInfo && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Checking for uploaded BRD...
             </p>
           )}
@@ -315,8 +315,8 @@ function IntakePanel({
               className={[
                 "rounded-lg border p-4",
                 uploadInfo.has_text
-                  ? "border-green-200 bg-green-50"
-                  : "border-amber-200 bg-amber-50",
+                  ? "border-green-200 bg-green-50 dark:bg-green-950/40"
+                  : "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40",
               ].join(" ")}
             >
               <div className="flex items-start gap-3">
@@ -333,18 +333,18 @@ function IntakePanel({
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     {uploadInfo.has_text
                       ? "BRD uploaded successfully"
                       : "BRD uploaded but no text detected"}
                   </p>
 
-                  <p className="mt-1 text-sm text-slate-700">
+                  <p className="mt-1 text-sm text-slate-700 dark:text-slate-300">
                     <span className="font-medium">File:</span>{" "}
                     {uploadInfo.filename}
                   </p>
 
-                  <p className="mt-1 text-xs text-slate-600">
+                  <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                     {uploadInfo.character_count?.toLocaleString() || 0}{" "}
                     characters
                     {uploadInfo.size_bytes
@@ -353,14 +353,14 @@ function IntakePanel({
                   </p>
 
                   {!uploadInfo.has_text && (
-                    <p className="mt-2 text-xs text-amber-800">
+                    <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">
                       Use a .txt/.md file or a PDF with selectable text.
                       Image-only PDFs cannot be parsed.
                     </p>
                   )}
 
                   {uploadInfo.preview && uploadInfo.has_text && (
-                    <p className="mt-3 line-clamp-3 rounded-md border border-green-100 bg-white/80 p-2 text-xs leading-5 text-slate-600">
+                    <p className="mt-3 line-clamp-3 rounded-md border border-green-100 bg-white dark:bg-slate-900/80 p-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
                       {uploadInfo.preview}
                     </p>
                   )}
@@ -371,7 +371,7 @@ function IntakePanel({
                   onClick={handleRemoveBrd}
                   disabled={readOnly || removingBrd}
                   title="Remove uploaded BRD"
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-50 disabled:opacity-50"
                 >
                   {removingBrd ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -385,14 +385,14 @@ function IntakePanel({
           )}
 
           {!uploadInfo && !loadingBrdStatus && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               No BRD uploaded yet. Upload a file to enable extraction.
             </p>
           )}
 
           {extractionResult && (
-            <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-4">
-              <p className="text-sm font-semibold text-slate-900">
+            <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40/40 p-4">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Review extracted values
               </p>
 
@@ -405,21 +405,21 @@ function IntakePanel({
               )}
 
               {extractionResult.extraction_method === "ai+rules" && (
-                <p className="mt-1 text-xs text-slate-600">
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                   Combined AI extraction and rule-based field mapping.
                 </p>
               )}
 
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 {extractionResult.diff_from_saved?.length || 0} fields
                 differ from saved data. Apply to populate the forms
                 below.
               </p>
 
               {extractionResult.diff_from_saved?.length > 0 && (
-                <div className="mt-4 max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white">
+                <div className="mt-4 max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                   <table className="min-w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
                       <tr>
                         <th className="px-3 py-2">Field</th>
                         <th className="px-3 py-2">Extracted</th>
@@ -431,7 +431,7 @@ function IntakePanel({
                         (row) => (
                           <tr
                             key={`${row.section}.${row.field}`}
-                            className="border-t border-slate-100"
+                            className="border-t border-slate-100 dark:border-slate-800"
                           >
                             <td className="px-3 py-2 font-medium">
                               {row.section}.{row.field}
@@ -439,7 +439,7 @@ function IntakePanel({
                             <td className="px-3 py-2">
                               {String(row.current ?? "—")}
                             </td>
-                            <td className="px-3 py-2 text-slate-400">
+                            <td className="px-3 py-2 text-slate-400 dark:text-slate-500">
                               {String(row.baseline ?? "—")}
                             </td>
                           </tr>
@@ -471,13 +471,13 @@ function IntakePanel({
         </div>
       )}
 
-      <div className="border-t border-slate-200 p-5">
+      <div className="border-t border-slate-200 dark:border-slate-700 p-5">
         <div className="mb-3 flex items-center gap-2">
-          <MessageSquare size={18} className="text-indigo-600" />
-          <h4 className="font-semibold text-slate-900">
+          <MessageSquare size={18} className="text-indigo-600 dark:text-indigo-400" />
+          <h4 className="font-semibold text-slate-900 dark:text-slate-100">
             Intake assistant
           </h4>
-          <span className="text-xs text-slate-500">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             Asks only for missing required fields
           </span>
         </div>
@@ -489,9 +489,9 @@ function IntakePanel({
           </p>
         )}
 
-        <div className="mb-3 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <div className="mb-3 max-h-40 space-y-2 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-3">
           {chatHistory.length === 0 ? (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Ask a question or answer the assistant&apos;s prompts to
               fill gaps (e.g. &quot;Beneficiary country is UAE&quot;).
             </p>
@@ -502,7 +502,7 @@ function IntakePanel({
                 className={[
                   "text-sm leading-6",
                   entry.role === "user"
-                    ? "text-slate-800"
+                    ? "text-slate-800 dark:text-slate-200"
                     : "text-indigo-900",
                 ].join(" ")}
               >
@@ -521,7 +521,7 @@ function IntakePanel({
             value={chatMessage}
             onChange={(event) => setChatMessage(event.target.value)}
             placeholder="Type missing intake details..."
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2 text-sm"
           />
           <button
             type="submit"

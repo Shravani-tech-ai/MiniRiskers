@@ -12,18 +12,18 @@ function Geography({
   const locked = readOnly || Boolean(section.locked);
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
 
       {/* Header */}
-      <div className="border-b border-slate-200 bg-slate-50 p-6">
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6">
         <div className="flex items-center justify-between">
 
           <div>
-            <h3 className="font-semibold text-slate-900">
+            <h3 className="font-semibold text-slate-900 dark:text-slate-100">
               Geography
             </h3>
 
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
               Define geographic exposure and cross-border risk.
             </p>
           </div>
@@ -39,7 +39,7 @@ function Geography({
 
         {/* Country */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Country *
           </label>
 
@@ -53,13 +53,13 @@ function Geography({
               })
             }
             placeholder="India"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Country Code */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Country Code
           </label>
 
@@ -73,13 +73,13 @@ function Geography({
               })
             }
             placeholder="IN"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm uppercase outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm uppercase outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Geographic Exposure */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Geographic Exposure
           </label>
 
@@ -91,7 +91,7 @@ function Geography({
                 domestic_or_cross_border: e.target.value,
               })
             }
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           >
             <option value="">Select exposure</option>
             <option value="DOMESTIC">Domestic</option>
@@ -101,7 +101,7 @@ function Geography({
 
         {/* Customer Country */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Customer Country
           </label>
 
@@ -115,13 +115,13 @@ function Geography({
               })
             }
             placeholder="India"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Transaction Country */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Transaction Country *
           </label>
 
@@ -135,13 +135,13 @@ function Geography({
               })
             }
             placeholder="India"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Beneficiary Country */}
         <div>
-          <label className="text-sm font-medium text-slate-700">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Beneficiary Country *
           </label>
 
@@ -155,21 +155,21 @@ function Geography({
               })
             }
             placeholder="UAE"
-            className="mt-2 w-full rounded-lg border border-slate-300 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
 
         {/* Risk Characteristics */}
         <div className="md:col-span-2">
 
-          <p className="mb-3 text-sm font-medium text-slate-700">
+          <p className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
             Geographic Risk Characteristics
           </p>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
 
             {/* High Risk Jurisdiction */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={geographyForm.high_risk_jurisdiction_flag}
@@ -182,13 +182,13 @@ function Geography({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 High-Risk Jurisdiction Exposure
               </span>
             </label>
 
             {/* Sanctions */}
-            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-3">
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-700 p-3">
               <input
                 type="checkbox"
                 checked={geographyForm.sanctions_exposure}
@@ -201,7 +201,7 @@ function Geography({
                 className="h-4 w-4"
               />
 
-              <span className="text-sm text-slate-700">
+              <span className="text-sm text-slate-700 dark:text-slate-300">
                 Sanctions Exposure
               </span>
             </label>
