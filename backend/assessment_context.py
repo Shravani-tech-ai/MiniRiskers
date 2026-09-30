@@ -219,6 +219,12 @@ def build_assessment_context(
                 "control_adjustment":
                     risk_assessment.control_adjustment,
 
+                "controls_assessed":
+                    bool(risk_assessment.controls_assessed),
+
+                "residual_status":
+                    risk_assessment.residual_status or "CALCULATED",
+
                 "residual_score":
                     risk_assessment.residual_score,
 

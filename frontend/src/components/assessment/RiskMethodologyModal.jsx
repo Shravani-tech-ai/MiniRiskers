@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, Download, Loader2, X } from "lucide-react";
 
 import api from "../../services/api";
+import { isResidualPending } from "../../utils/riskDisplay";
 
 function getRiskClass(rating) {
   switch (rating) {
@@ -228,6 +229,7 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
   };
 
   const residual = report?.residual;
+  const residualPending = isResidualPending(report?.assessment);
 
   return (
     <div
@@ -299,12 +301,18 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                     Residual
                   </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                      {report.assessment.residual_score}
-                    </span>
-                    <RatingBadge rating={report.assessment.residual_rating} />
-                  </div>
+                  {residualPending ? (
+                    <p className="mt-2 text-lg font-bold text-amber-700 dark:text-amber-300">
+                      Pending controls
+                    </p>
+                  ) : (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                        {report.assessment.residual_score}
+                      </span>
+                      <RatingBadge rating={report.assessment.residual_rating} />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -371,45 +379,53 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
               </Section>
 
               <Section step={3} title="Controls → residual risk">
-                <Formula>{residual.formula}</Formula>
-                <dl className="mt-3 divide-y divide-slate-100 dark:divide-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                  {[
-                    [
-                      `${report.inherent.score} × (1 − ${report.controls.average_effectiveness} / 100)`,
-                      residual.raw_score,
-                    ],
-                    ["Base floor from inherent risk", residual.base_floor],
-                    ["Risk concentration floor", residual.concentration_floor],
-                    ["Applicable floor", residual.applied_floor],
-                  ].map(([label, value]) => (
-                    <div key={label} className="flex justify-between gap-4 px-3 py-2">
-                      <dt className="text-slate-600 dark:text-slate-400">{label}</dt>
-                      <dd className="font-medium tabular-nums text-slate-900 dark:text-slate-100">
-                        {value}
-                      </dd>
-                    </div>
-                  ))}
-                  <div className="flex items-center justify-between gap-4 bg-slate-50 dark:bg-slate-800/50 px-3 py-2.5 font-bold text-slate-900 dark:text-slate-100">
-                    <dt>Residual risk</dt>
-                    <dd className="flex items-center gap-2 tabular-nums">
-                      {residual.score}
-                      <RatingBadge rating={residual.rating} />
-                    </dd>
-                  </div>
-                </dl>
-                <p className="mt-3 text-slate-600 dark:text-slate-400">{residual.explanation}</p>
-                {residual.triggered_rules.length > 0 && (
-                  <ul className="mt-3 space-y-2">
-                    {residual.triggered_rules.map((rule) => (
-                      <li
-                        key={rule.name}
-                        className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-amber-900 dark:text-amber-300"
-                      >
-                        <span className="font-semibold">{rule.name}</span> —
-                        floor {rule.floor} (factors: {rule.factors.join(", ")})
-                      </li>
-                    ))}
-                  </ul>
+                {residualPending ? (
+                  <p className="text-slate-600 dark:text-slate-400">
+                    {residual.explanation}
+                  </p>
+                ) : (
+                  <>
+                    <Formula>{residual.formula}</Formula>
+                    <dl className="mt-3 divide-y divide-slate-100 dark:divide-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                      {[
+                        [
+                          `${report.inherent.score} × (1 − ${report.controls.average_effectiveness} / 100)`,
+                          residual.raw_score,
+                        ],
+                        ["Base floor from inherent risk", residual.base_floor],
+                        ["Risk concentration floor", residual.concentration_floor],
+                        ["Applicable floor", residual.applied_floor],
+                      ].map(([label, value]) => (
+                        <div key={label} className="flex justify-between gap-4 px-3 py-2">
+                          <dt className="text-slate-600 dark:text-slate-400">{label}</dt>
+                          <dd className="font-medium tabular-nums text-slate-900 dark:text-slate-100">
+                            {value}
+                          </dd>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between gap-4 bg-slate-50 dark:bg-slate-800/50 px-3 py-2.5 font-bold text-slate-900 dark:text-slate-100">
+                        <dt>Residual risk</dt>
+                        <dd className="flex items-center gap-2 tabular-nums">
+                          {residual.score}
+                          <RatingBadge rating={residual.rating} />
+                        </dd>
+                      </div>
+                    </dl>
+                    <p className="mt-3 text-slate-600 dark:text-slate-400">{residual.explanation}</p>
+                    {residual.triggered_rules.length > 0 && (
+                      <ul className="mt-3 space-y-2">
+                        {residual.triggered_rules.map((rule) => (
+                          <li
+                            key={rule.name}
+                            className="rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-amber-900 dark:text-amber-300"
+                          >
+                            <span className="font-semibold">{rule.name}</span> —
+                            floor {rule.floor} (factors: {rule.factors.join(", ")})
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
                 )}
               </Section>
 

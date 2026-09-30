@@ -66,7 +66,10 @@ from backend.notifications import (
 )
 from risk_engine.methodology import score_factors
 from risk_engine.risk_calculator import factor_rows_to_inputs
-from risk_engine.risk_calculator import generate_risk_assessment
+from risk_engine.risk_calculator import (
+    generate_risk_assessment,
+    is_residual_calculated,
+)
 from risk_engine.risk_factor_generator import generate_risk_factors
 from rag.evidence_service import generate_evidence_for_change_request
 from backend.assessment_service import generate_ai_assessment
@@ -179,6 +182,8 @@ SCHEMA_PATCHES = {
     "risk_assessments": {
         "methodology_version_id": "INTEGER",
         "revision": "INTEGER DEFAULT 1",
+        "controls_assessed": "INTEGER DEFAULT 0",
+        "residual_status": "VARCHAR DEFAULT 'CALCULATED'",
     },
     "analyst_overrides": {
         "revision": "INTEGER DEFAULT 1",
@@ -444,6 +449,10 @@ def get_risk_assessment(
         "inherent_rating": risk_assessment.inherent_rating,
 
         "control_adjustment": risk_assessment.control_adjustment,
+        "controls_assessed": bool(risk_assessment.controls_assessed),
+        "residual_status": (
+            risk_assessment.residual_status or "CALCULATED"
+        ),
 
         "residual_score": risk_assessment.residual_score,
         "residual_rating": risk_assessment.residual_rating,
@@ -931,8 +940,13 @@ def calculate_risk(
         ),
         reason=(
             "Weighted risk assessment calculated under methodology "
-            f"v{assessment.risk_model_version}. Residual "
-            f"{assessment.residual_score} ({assessment.residual_rating})."
+            f"v{assessment.risk_model_version}. "
+            + (
+                f"Residual {assessment.residual_score} "
+                f"({assessment.residual_rating})."
+                if is_residual_calculated(assessment)
+                else "Inherent risk calculated; residual pending control assessment."
+            )
         ),
         policy_version=assessment.risk_model_version
     )
@@ -1130,6 +1144,21 @@ def generate_ai_assessment_endpoint(
         },
         "AI assessment generation is not allowed at the current workflow stage.",
     )
+
+    risk_assessment = _latest_risk_assessment(db, change_request_id)
+    if not risk_assessment:
+        raise HTTPException(
+            status_code=400,
+            detail="Run the risk assessment before generating the AI draft.",
+        )
+    if not is_residual_calculated(risk_assessment):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Document mitigating controls and calculate residual risk "
+                "before generating the AI assessment."
+            ),
+        )
 
     recommendation, assessment = generate_ai_assessment(
         db,
@@ -1354,6 +1383,15 @@ def submit_analyst_review(
         raise HTTPException(
             status_code=404,
             detail="Risk assessment not found."
+        )
+
+    if not is_residual_calculated(risk_assessment):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Residual risk is pending control assessment. Document "
+                "controls and recalculate before submitting analyst review."
+            ),
         )
 
     system_rating = risk_assessment.residual_rating
@@ -2695,6 +2733,10 @@ def get_assessments_overview(
                     "inherent_rating": assessment.inherent_rating,
                     "residual_score": assessment.residual_score,
                     "residual_rating": assessment.residual_rating,
+                    "residual_status": (
+                        assessment.residual_status or "CALCULATED"
+                    ),
+                    "controls_assessed": bool(assessment.controls_assessed),
                     "final_rating": assessment.final_rating,
                     "control_adjustment": assessment.control_adjustment,
                     "category_scores": {

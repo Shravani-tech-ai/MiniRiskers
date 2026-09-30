@@ -184,7 +184,12 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
         )
 
     # ---- Controls & residual --------------------------------------------
-    control_effectiveness = _round(assessment.control_adjustment)
+    residual_pending = (
+        getattr(assessment, "residual_status", None) == "PENDING_CONTROLS"
+    )
+    control_effectiveness = (
+        0 if residual_pending else _round(assessment.control_adjustment)
+    )
     raw_residual = _round(inherent_score * (1 - control_effectiveness / 100))
     base_floor = get_base_residual_floor(inherent_score, config)
     triggered_rules = [
@@ -198,10 +203,18 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
         [5] + [rule["floor"] for rule in triggered_rules]
     )
     applied_floor = max(base_floor, concentration_floor)
-    residual_score = _round(assessment.residual_score)
-    floor_applied = applied_floor > raw_residual
+    residual_score = (
+        None if residual_pending else _round(assessment.residual_score)
+    )
+    floor_applied = not residual_pending and applied_floor > raw_residual
 
-    if floor_applied:
+    if residual_pending:
+        residual_explanation = (
+            "Mitigating controls have not been documented yet. Residual "
+            "risk will be calculated once controls are recorded and "
+            "effectiveness is assessed."
+        )
+    elif floor_applied:
         floor_source = (
             "risk concentration rule"
             if concentration_floor >= base_floor
@@ -214,9 +227,10 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
         )
     elif not control_effectiveness:
         residual_explanation = (
-            "No control effectiveness was recorded, so residual risk "
-            f"equals inherent risk ({inherent_score}), which is above "
-            f"every applicable floor (highest: {applied_floor})."
+            "Controls were documented but average effectiveness is 0%, so "
+            f"residual risk before floors equals inherent risk "
+            f"({inherent_score}), which is above every applicable floor "
+            f"(highest: {applied_floor})."
         )
     else:
         residual_explanation = (
@@ -269,7 +283,12 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
         "of this calculation; the analyst may override the system rating "
         "with a documented reason.",
     ]
-    if not controls:
+    if getattr(assessment, "residual_status", None) == "PENDING_CONTROLS":
+        notes.append(
+            "No controls were recorded for this request, so residual risk "
+            "has not been calculated yet."
+        )
+    elif not controls:
         notes.append(
             "No controls were recorded for this request, so control "
             "effectiveness is 0% and residual risk before floors equals "
@@ -295,6 +314,14 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
             "inherent_rating": assessment.inherent_rating,
             "residual_score": residual_score,
             "residual_rating": assessment.residual_rating,
+            "residual_status": getattr(
+                assessment,
+                "residual_status",
+                "CALCULATED",
+            ),
+            "controls_assessed": bool(
+                getattr(assessment, "controls_assessed", False)
+            ),
             "final_rating": assessment.final_rating,
         },
         "rating_bands": rating_band_ranges(config),

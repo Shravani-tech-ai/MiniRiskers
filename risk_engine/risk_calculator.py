@@ -9,6 +9,25 @@ from backend.models import (
 from risk_engine.methodology import score_factors
 
 
+RESIDUAL_PENDING = "PENDING_CONTROLS"
+RESIDUAL_CALCULATED = "CALCULATED"
+
+
+def count_controls(db: Session, change_request_id: int) -> int:
+    return (
+        db.query(Control)
+        .filter(Control.change_request_id == change_request_id)
+        .count()
+    )
+
+
+def is_residual_calculated(assessment: RiskAssessment) -> bool:
+    status = getattr(assessment, "residual_status", None)
+    if status:
+        return status == RESIDUAL_CALCULATED
+    return assessment.residual_score is not None
+
+
 # ============================================================
 # MINI RISKERS RISK MODEL
 # ============================================================
@@ -69,12 +88,19 @@ def generate_risk_assessment(
         .all()
     )
 
+    controls_count = count_controls(db, change_request_id)
+    control_effectiveness = calculate_control_effectiveness(
+        db,
+        change_request_id,
+    )
+
     result = score_factors(
         factor_rows_to_inputs(factors),
-        calculate_control_effectiveness(db, change_request_id),
+        control_effectiveness,
         config,
     )
     category_scores = result["category_scores"]
+    controls_assessed = controls_count > 0
 
     assessment = RiskAssessment(
         change_request_id=change_request_id,
@@ -94,10 +120,20 @@ def generate_risk_assessment(
         inherent_score=result["inherent_score"],
         inherent_rating=result["inherent_rating"],
 
-        control_adjustment=result["control_effectiveness"],
+        control_adjustment=(
+            result["control_effectiveness"] if controls_assessed else None
+        ),
+        controls_assessed=controls_assessed,
+        residual_status=(
+            RESIDUAL_CALCULATED if controls_assessed else RESIDUAL_PENDING
+        ),
 
-        residual_score=result["residual_score"],
-        residual_rating=result["residual_rating"],
+        residual_score=(
+            result["residual_score"] if controls_assessed else None
+        ),
+        residual_rating=(
+            result["residual_rating"] if controls_assessed else None
+        ),
 
         ai_recommendation="REQUIRES_FCRM_REVIEW",
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AlertTriangle, CornerUpLeft, ShieldAlert } from "lucide-react";
 
 import api from "../../services/api";
+import { isResidualPending } from "../../utils/riskDisplay";
 
 function getRiskClass(rating) {
   switch (rating) {
@@ -119,6 +120,7 @@ function AnalystReview({
   }, [analystRating, changeRequestId, analystReviewed]);
 
   const minChars = preview?.min_reason_chars || 0;
+  const residualPending = isResidualPending(riskAssessment);
 
   return (
     <div className="mt-6">
@@ -160,12 +162,22 @@ function AnalystReview({
             </div>
             <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">Residual Risk</p>
-              <div className="mt-2 flex items-center gap-3">
-                <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{riskAssessment?.residual_score?.toFixed(1) || "—"}</span>
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getRiskClass(riskAssessment?.residual_rating)}`}>
-                  {riskAssessment?.residual_rating || "—"}
-                </span>
-              </div>
+              {residualPending ? (
+                <div className="mt-2">
+                  <p className="text-lg font-bold text-amber-700 dark:text-amber-300">Pending</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    Document controls on the risk assessment step before
+                    submitting analyst review.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center gap-3">
+                  <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{riskAssessment?.residual_score?.toFixed(1) || "—"}</span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getRiskClass(riskAssessment?.residual_rating)}`}>
+                    {riskAssessment?.residual_rating || "—"}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -185,11 +197,19 @@ function AnalystReview({
           </div>
         </div>
 
+        {residualPending && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/40 p-4 text-sm text-amber-900 dark:text-amber-300">
+            Residual risk has not been calculated yet. Return to the risk
+            assessment step, add controls, and recalculate before recording
+            analyst review.
+          </div>
+        )}
+
         <div>
           <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Analyst Rating</label>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Accept the system rating, or select a different rating and explain why.</p>
           <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
-          {!analystReviewed && canSubmit && riskAssessment?.residual_rating && (
+          {!analystReviewed && canSubmit && !residualPending && riskAssessment?.residual_rating && (
             <button
               type="button"
               onClick={() => {
@@ -215,7 +235,7 @@ function AnalystReview({
                 setOverrideReason("");
               }
             }}
-            disabled={analystReviewed || !canSubmit}
+            disabled={analystReviewed || !canSubmit || residualPending}
             className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 md:w-72"
           >
             <option value="">Select rating</option>
@@ -276,7 +296,7 @@ function AnalystReview({
           ) : (
             <p className="text-xs text-slate-400 dark:text-slate-500">Final committee decision remains separate from analyst review.</p>
           )}
-          {!analystReviewed && canSubmit && (
+          {!analystReviewed && canSubmit && !residualPending && (
             <button onClick={submitAnalystReview} className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
               Submit Analyst Review
             </button>

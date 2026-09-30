@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 
 import { btnPrimaryMd } from "../../utils/buttonStyles";
+import { isResidualPending } from "../../utils/riskDisplay";
 
 function getRiskClass(rating) {
   switch (rating) {
@@ -111,8 +112,9 @@ function RiskOverview({
             </h3>
 
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-400">
-              Generate risk factors, calculate inherent and residual risk,
-              and retrieve relevant regulatory evidence for this change request.
+              Generate risk factors, calculate inherent risk, and retrieve
+              relevant regulatory evidence. Document controls below to
+              calculate residual risk.
             </p>
 
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -309,14 +311,32 @@ function RiskOverview({
 
           {/* RESIDUAL RISK */}
 
-          <div className="rounded-xl border border-green-200 bg-white dark:bg-slate-900 p-6 shadow-sm">
+          <div
+            className={[
+              "rounded-xl border bg-white dark:bg-slate-900 p-6 shadow-sm",
+              isResidualPending(riskAssessment)
+                ? "border-amber-200 dark:border-amber-900"
+                : "border-green-200",
+            ].join(" ")}
+          >
 
             <div className="flex items-center gap-3">
 
-              <div className="rounded-lg bg-green-50 dark:bg-green-950/40 p-2">
+              <div
+                className={[
+                  "rounded-lg p-2",
+                  isResidualPending(riskAssessment)
+                    ? "bg-amber-50 dark:bg-amber-950/40"
+                    : "bg-green-50 dark:bg-green-950/40",
+                ].join(" ")}
+              >
                 <ShieldCheck
                   size={22}
-                  className="text-green-600"
+                  className={
+                    isResidualPending(riskAssessment)
+                      ? "text-amber-600"
+                      : "text-green-600"
+                  }
                 />
               </div>
 
@@ -327,7 +347,9 @@ function RiskOverview({
                 </h3>
 
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Risk after considering controls
+                  {isResidualPending(riskAssessment)
+                    ? "Pending control assessment"
+                    : "Risk after considering controls"}
                 </p>
 
               </div>
@@ -335,27 +357,38 @@ function RiskOverview({
             </div>
 
             <div className="mt-6">
+              {isResidualPending(riskAssessment) ? (
+                <div>
+                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                    Pending
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                    Add mitigating controls in the section below. Residual
+                    risk will be calculated automatically once controls are
+                    documented.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-end gap-3">
 
-              <div className="flex items-end gap-3">
+                  <span
+                    className={`text-4xl font-bold ${getScoreColor(
+                      Number(riskAssessment.residual_score || 0)
+                    )}`}
+                  >
+                    {riskAssessment.residual_score?.toFixed(1) || "—"}
+                  </span>
 
-                <span
-                  className={`text-4xl font-bold ${getScoreColor(
-                    Number(riskAssessment.residual_score || 0)
-                  )}`}
-                >
-                  {riskAssessment.residual_score?.toFixed(1) || "—"}
-                </span>
+                  <span
+                    className={`mb-1 rounded-full border px-3 py-1 text-xs font-semibold ${getRiskClass(
+                      riskAssessment.residual_rating
+                    )}`}
+                  >
+                    {riskAssessment.residual_rating || "—"}
+                  </span>
 
-                <span
-                  className={`mb-1 rounded-full border px-3 py-1 text-xs font-semibold ${getRiskClass(
-                    riskAssessment.residual_rating
-                  )}`}
-                >
-                  {riskAssessment.residual_rating || "—"}
-                </span>
-
-              </div>
-
+                </div>
+              )}
             </div>
 
           </div>

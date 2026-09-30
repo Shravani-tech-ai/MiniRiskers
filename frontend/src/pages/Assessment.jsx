@@ -9,6 +9,7 @@ import TransactionProfile from "../components/assessment/TransactionProfile";
 import ChannelInformation from "../components/assessment/ChannelInformation";
 import VendorInformation from "../components/assessment/VendorInformation";
 import RiskOverview from "../components/assessment/RiskOverview";
+import ControlsSection from "../components/assessment/ControlsSection";
 import AIAssessment from "../components/assessment/AIAssessment";
 import AnalystReview, {
   DeferralNotice,
@@ -54,6 +55,7 @@ import {
   getLockedStages,
   getRequestPermissions,
 } from "../utils/rolePermissions";
+import { isResidualPending } from "../utils/riskDisplay";
 
 function Assessment() {
   const { changeRequestId } = useParams();
@@ -62,6 +64,7 @@ function Assessment() {
   const { user } = useAuth();
   const [changeRequest, setChangeRequest] = useState(null);
   const [riskAssessment, setRiskAssessment] = useState(null);
+  const [controls, setControls] = useState([]);
   const [regulatoryEvidence, setRegulatoryEvidence] = useState([]);
   const [riskFactors, setRiskFactors] = useState([]);
   const [showMethodology, setShowMethodology] = useState(false);
@@ -288,6 +291,15 @@ function Assessment() {
         setRiskFactors(factorsResponse.data.risk_factors || []);
       } catch {
         setRiskFactors([]);
+      }
+
+      try {
+        const controlsResponse = await api.get(
+          `/change-requests/${changeRequestId}/controls`
+        );
+        setControls(controlsResponse.data.controls || []);
+      } catch {
+        setControls([]);
       }
 
       try {
@@ -822,12 +834,12 @@ function Assessment() {
         return false;
       }
 
-      // Step 1: Generate risk factors
+      // Step 1: Generate risk factors from intake data
       await api.post(
         `/change-requests/${changeRequestId}/generate-risk-factors`
       );
 
-      // Step 2: Calculate risk
+      // Step 2: Calculate inherent risk (residual stays pending until controls)
       await api.post(
         `/change-requests/${changeRequestId}/calculate-risk`
       );
@@ -1392,6 +1404,15 @@ function Assessment() {
                 isBusinessOwner ? undefined : () => setShowMethodology(true)
               }
             />
+            {permissions.canRunRiskPipeline && riskAssessment && (
+              <ControlsSection
+                changeRequestId={changeRequestId}
+                controls={controls}
+                riskAssessment={riskAssessment}
+                onControlsChanged={loadAssessment}
+                setError={setError}
+              />
+            )}
             {permissions.canViewAnalystReview && (
               <AIAssessment
                 aiAssessment={aiAssessment}
@@ -1412,7 +1433,11 @@ function Assessment() {
 
         {permissions.canRunRiskPipeline ? (
         <AssessmentStageFooter
-          hint="Generate AI assessment to unlock analyst review (required by workflow)."
+          hint={
+            riskAssessment && isResidualPending(riskAssessment)
+              ? "Document controls above to calculate residual risk, then continue to analyst review."
+              : "Generate AI assessment to unlock analyst review (required by workflow)."
+          }
         >
           <button
             type="button"
@@ -1420,12 +1445,17 @@ function Assessment() {
             disabled={runningRiskAssessment}
             className="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
           >
-            Recalculate risk
+            Recalculate inherent risk
           </button>
           <button
             type="button"
             onClick={advanceToAnalystStage}
-            disabled={advancingStage || generatingAI || !riskAssessment}
+            disabled={
+              advancingStage ||
+              generatingAI ||
+              !riskAssessment ||
+              isResidualPending(riskAssessment)
+            }
             className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
           >
             {advancingStage || generatingAI

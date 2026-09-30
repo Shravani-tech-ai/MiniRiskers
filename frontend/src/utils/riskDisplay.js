@@ -1,5 +1,16 @@
 export const RATING_ORDER = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
+export function isResidualPending(riskAssessment) {
+  if (!riskAssessment) {
+    return false;
+  }
+
+  return (
+    riskAssessment.residual_status === "PENDING_CONTROLS" ||
+    riskAssessment.residual_score == null
+  );
+}
+
 export function getRatingBadgeClass(rating) {
   switch (rating) {
     case "CRITICAL":

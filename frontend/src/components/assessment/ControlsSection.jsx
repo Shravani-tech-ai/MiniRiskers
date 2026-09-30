@@ -54,7 +54,7 @@ function ControlsSection({
         effectiveness_score: 75,
       });
 
-      await onControlsChanged();
+      await recalculateResidual();
     } catch (err) {
       setError(
         err?.response?.data?.detail || "Failed to save control."
@@ -64,7 +64,7 @@ function ControlsSection({
     }
   };
 
-  const handleRecalculate = async () => {
+  const recalculateResidual = async () => {
     try {
       setRecalculating(true);
       setError("");
@@ -106,8 +106,9 @@ function ControlsSection({
                 Controls & residual risk
               </h3>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Document mitigating controls. Residual risk uses average
-                control effectiveness vs inherent score.
+                Document mitigating controls before residual risk can be
+                calculated. Residual uses average control effectiveness
+                against the inherent score.
               </p>
             </div>
           </div>
@@ -231,18 +232,11 @@ function ControlsSection({
             )}
           </div>
 
-          {controls.length > 0 && riskAssessment && (
-            <button
-              type="button"
-              onClick={handleRecalculate}
-              disabled={recalculating}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200"
-            >
-              {recalculating && (
-                <Loader2 size={14} className="animate-spin" />
-              )}
-              Recalculate residual risk
-            </button>
+          {controls.length > 0 && riskAssessment && recalculating && (
+            <p className="mt-4 inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+              <Loader2 size={14} className="animate-spin" />
+              Recalculating residual risk...
+            </p>
           )}
         </div>
       </div>

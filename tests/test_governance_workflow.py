@@ -37,7 +37,36 @@ def make_request(db, factors, title="Test request"):
     return change_request.id
 
 
+def add_test_control(client, tokens, request_id, effectiveness_score=0):
+    response = client.post(
+        f"/change-requests/{request_id}/control",
+        headers=tokens["RISK_ANALYST"],
+        params={
+            "control_name": "Sanctions screening",
+            "control_category": "AML",
+            "description": "Automated sanctions screening on onboarding",
+            "control_type": "PREVENTIVE",
+            "control_strength": "STRONG",
+            "implemented": True,
+            "implementation_status": "IMPLEMENTED",
+            "owner": "FCRM",
+            "effectiveness_score": effectiveness_score,
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
 def advance_to_analyst_review(client, db, tokens, request_id):
+    inherent = client.post(
+        f"/change-requests/{request_id}/calculate-risk",
+        headers=tokens["RISK_ANALYST"],
+    )
+    assert inherent.status_code == 200, inherent.text
+    assert inherent.json()["residual_status"] == "PENDING_CONTROLS"
+
+    add_test_control(client, tokens, request_id)
+
     response = client.post(
         f"/change-requests/{request_id}/calculate-risk",
         headers=tokens["RISK_ANALYST"],

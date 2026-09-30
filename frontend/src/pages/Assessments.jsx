@@ -25,6 +25,7 @@ import {
   formatShortDate,
   getDecisionBadgeClass,
   getRatingBadgeClass,
+  isResidualPending,
 } from "../utils/riskDisplay";
 
 const SECTIONS = {
@@ -89,25 +90,40 @@ function Pending({ text = "Pending" }) {
 
 function RiskStep({ item }) {
   if (item.risk) {
+    const pending = isResidualPending(item.risk);
     const rating = item.risk.residual_rating;
     return (
       <StepCard icon={SearchCheck} title="Risk assessment" done>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">
-            {Number(item.risk.residual_score ?? 0).toFixed(1)}
-          </span>
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${getRatingBadgeClass(
-              rating
-            )}`}
-          >
-            {rating}
-          </span>
-        </div>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Residual · inherent {Number(item.risk.inherent_score ?? 0).toFixed(1)} ·{" "}
-          {formatShortDate(item.risk.calculated_at)}
-        </p>
+        {pending ? (
+          <>
+            <p className="font-semibold text-amber-700 dark:text-amber-300">
+              Residual pending
+            </p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Inherent {Number(item.risk.inherent_score ?? 0).toFixed(1)} ·{" "}
+              {formatShortDate(item.risk.calculated_at)}
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-100">
+                {Number(item.risk.residual_score ?? 0).toFixed(1)}
+              </span>
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${getRatingBadgeClass(
+                  rating
+                )}`}
+              >
+                {rating}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Residual · inherent {Number(item.risk.inherent_score ?? 0).toFixed(1)} ·{" "}
+              {formatShortDate(item.risk.calculated_at)}
+            </p>
+          </>
+        )}
       </StepCard>
     );
   }

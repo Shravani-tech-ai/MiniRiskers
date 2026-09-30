@@ -471,6 +471,16 @@ class RiskAssessment(Base):
 
     control_adjustment = Column(Float)
 
+    controls_assessed = Column(
+        Boolean,
+        default=False,
+    )
+
+    residual_status = Column(
+        String,
+        default="PENDING_CONTROLS",
+    )
+
     residual_score = Column(Float)
 
     residual_rating = Column(String)
