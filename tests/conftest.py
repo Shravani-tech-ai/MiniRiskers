@@ -12,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 _DB_DIR = tempfile.mkdtemp(prefix="miniriskers-test-")
 os.environ["MINIRISKERS_DATABASE_URL"] = f"sqlite:///{_DB_DIR}/test.db"
 os.environ.setdefault("JWT_SECRET", "test-secret")
+os.environ.setdefault("MINIRISKERS_DISABLE_EMBEDDINGS", "1")
 
 
 @pytest.fixture(scope="session")
