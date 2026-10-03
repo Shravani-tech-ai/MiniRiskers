@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   BarChart3,
   CheckCircle2,
   Clock3,
   FileText,
   Gauge,
+  Lightbulb,
   ShieldAlert,
   Timer,
 } from "lucide-react";
@@ -658,25 +660,181 @@ function SlaSection({ cycle }) {
   );
 }
 
+function OverrideInsightsSection({ insights }) {
+  if (!insights) {
+    return null;
+  }
+
+  const { summary, by_category, top_factors_in_downgrades, methodology_suggestions } = insights;
+  const categoryChart = by_category
+    .filter((item) => item.downgrade_correlation > 0)
+    .slice(0, 7)
+    .map((item) => ({
+      label: CATEGORY_LABELS[item.category] || item.category,
+      value: item.downgrade_correlation,
+      color: item.downgrade_rate_pct >= 50 ? STATUS.critical : SERIES.primary,
+    }));
+
+  return (
+    <section className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+          Override learning loop
+        </h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          Where analysts downgrade the system rating — used to propose methodology tuning
+          (methodology v{insights.active_methodology_version}). Changes still require
+          maker-checker approval on the Methodology screen.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile
+          icon={Gauge}
+          label="Analyst reviews"
+          value={formatNumber(summary.analyst_reviews)}
+          hint={`${summary.downgrades} downgrade(s) · ${summary.upgrades} upgrade(s)`}
+        />
+        <StatTile
+          icon={ShieldAlert}
+          label="Downgrade rate"
+          value={
+            summary.analyst_reviews
+              ? `${formatNumber((summary.downgrades / summary.analyst_reviews) * 100)}%`
+              : "—"
+          }
+          hint="of reviews lowered the system rating"
+        />
+        <StatTile
+          icon={CheckCircle2}
+          label="Accepted as scored"
+          value={formatNumber(summary.accepted)}
+          hint="no override direction recorded"
+        />
+        <StatTile
+          icon={Lightbulb}
+          label="Draft suggestions"
+          value={formatNumber(methodology_suggestions.length)}
+          hint="for the risk function to review"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        <ChartCard
+          title="Categories in downgraded cases"
+          subtitle="How often each category was a top-2 score driver when an analyst downgraded"
+        >
+          {categoryChart.length ? (
+            <>
+              <HBarChart data={categoryChart} />
+              <DataTable
+                columns={["Category", "Top driver count", "Downgrade hits", "Hit rate"]}
+                rows={by_category
+                  .filter((item) => item.downgrade_correlation > 0)
+                  .map((item) => [
+                    CATEGORY_LABELS[item.category] || item.category,
+                    item.assessments_as_top_driver,
+                    item.downgrade_correlation,
+                    item.downgrade_rate_pct === null
+                      ? "—"
+                      : `${formatNumber(item.downgrade_rate_pct, 1)}%`,
+                  ])}
+              />
+            </>
+          ) : (
+            <EmptyChart text="No analyst downgrades recorded yet." />
+          )}
+        </ChartCard>
+
+        <ChartCard
+          title="Factors in downgraded cases"
+          subtitle="Risk factors most common when analysts lowered the rating"
+        >
+          {top_factors_in_downgrades.length ? (
+            <DataTable
+              columns={["Category", "Factor", "Downgrades"]}
+              rows={top_factors_in_downgrades.map((item) => [
+                CATEGORY_LABELS[item.category] || item.category,
+                item.factor,
+                item.downgrade_count,
+              ])}
+            />
+          ) : (
+            <EmptyChart text="No downgrade factor patterns yet." />
+          )}
+        </ChartCard>
+      </div>
+
+      {methodology_suggestions.length > 0 && (
+        <ChartCard
+          title="Suggested methodology drafts"
+          subtitle="Proposals derived from override patterns — publish only after what-if review"
+        >
+          <ul className="space-y-3">
+            {methodology_suggestions.map((item, index) => (
+              <li
+                key={`${item.type}-${item.category}-${item.factor || index}`}
+                className="rounded-lg border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900 dark:bg-amber-950/20"
+              >
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {item.type === "weight_increase"
+                    ? `Consider increasing ${CATEGORY_LABELS[item.category] || item.category} weight`
+                    : `Review factor: ${item.factor}`}
+                  {" "}
+                  <span className="font-normal text-slate-500 dark:text-slate-400">
+                    ({item.confidence} confidence)
+                  </span>
+                </p>
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">{item.reason}</p>
+                {item.suggested_weight != null && (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                    Current weight {item.current_weight} → suggested {item.suggested_weight}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+          <Link
+            to="/methodology"
+            className="mt-4 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          >
+            Open methodology tuning →
+          </Link>
+        </ChartCard>
+      )}
+    </section>
+  );
+}
+
 function Analytics() {
   const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [cycle, setCycle] = useState(null);
+  const [overrideInsights, setOverrideInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const canViewOverrideInsights = user?.role !== ROLES.BUSINESS_OWNER;
 
   useEffect(() => {
-    Promise.all([
+    const requests = [
       api.get("/assessments/overview"),
       api.get("/analytics/cycle-time").catch(() => null),
-    ])
-      .then(([overview, cycleTime]) => {
+    ];
+    if (canViewOverrideInsights) {
+      requests.push(api.get("/analytics/override-insights").catch(() => null));
+    }
+
+    Promise.all(requests)
+      .then((results) => {
+        const [overview, cycleTime] = results;
+        const insights = canViewOverrideInsights ? results[2] : null;
         setItems(overview.data.items || []);
         setCycle(cycleTime?.data || null);
+        setOverrideInsights(insights?.data || null);
       })
       .catch(() => setError("Unable to load analytics."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [canViewOverrideInsights]);
 
   const data = useMemo(() => buildAnalytics(items), [items]);
 
@@ -871,6 +1029,10 @@ function Analytics() {
           </div>
 
           <SlaSection cycle={cycle} />
+
+          {canViewOverrideInsights && (
+            <OverrideInsightsSection insights={overrideInsights} />
+          )}
 
           <p className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
             <Clock3 size={14} />

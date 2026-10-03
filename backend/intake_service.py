@@ -24,6 +24,9 @@ from backend.models import (
 )
 
 UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads"
+BRD_PROMPT_PATH = (
+    Path(__file__).resolve().parent.parent / "ai" / "prompts" / "brd-extraction.md"
+)
 
 
 def save_brd_file(
@@ -57,33 +60,11 @@ def delete_brd_uploads(change_request_id: int) -> bool:
 
 def build_brd_extraction_prompt(document_text: str) -> str:
     trimmed = document_text[:120000]
-
-    return f"""
-You extract structured intake data from a real-world banking BRD
-(product / change request). The document may use tables, bullets, Word
-headings, or narrative text — not a fixed template.
-
-Rules:
-1. Map content to the JSON schema even when labels differ
-   (e.g. "Primary country" -> geography.country,
-   "Individual (retail)" -> customer.customer_type as INDIVIDUAL).
-2. product.transaction_type AND transaction.transaction_type may both
-   be needed; copy or adapt from product vs transaction sections.
-3. Extract only what is stated or clearly implied; use null if absent.
-4. Return valid JSON only (no markdown fences).
-
-Required mappings (synonyms):
-- Product name, offering name -> product.product_name
-- Vendor / third party name -> vendor.vendor_name
-- Onboarding, KYC approach -> customer.onboarding_method
-- Countries, corridors, jurisdictions -> geography fields
-
-Schema:
-{EXTRACTION_JSON_SCHEMA}
-
-BRD TEXT:
-{trimmed}
-"""
+    template = BRD_PROMPT_PATH.read_text(encoding="utf-8")
+    return (
+        template.replace("{{SCHEMA}}", EXTRACTION_JSON_SCHEMA)
+        .replace("{{DOCUMENT_TEXT}}", trimmed)
+    )
 
 
 def call_gemini_json(prompt: str) -> dict:

@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -151,8 +152,12 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
+        origin.strip()
+        for origin in os.getenv(
+            "MINIRISKERS_CORS_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173",
+        ).split(",")
+        if origin.strip()
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -350,6 +355,22 @@ def root():
         "application": "MiniRiskers",
         "status": "running",
         "message": "Risk Assessment Workbench API"
+    }
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "application": "MiniRiskers"}
+
+
+@app.get("/ready")
+def ready():
+    chroma_dir = Path(__file__).resolve().parent.parent / "chroma_db"
+    rag_available = chroma_dir.exists() and any(chroma_dir.iterdir())
+    return {
+        "status": "ok",
+        "rag_available": rag_available,
+        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
     }
 
 

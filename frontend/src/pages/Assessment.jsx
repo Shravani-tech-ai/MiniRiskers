@@ -20,6 +20,7 @@ import DecisionOutcome from "../components/assessment/DecisionOutcome";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import IntakePanel from "../components/assessment/IntakePanel";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
+import SimilarCasesPanel from "../components/assessment/SimilarCasesPanel";
 import RiskMethodologyModal from "../components/assessment/RiskMethodologyModal";
 import AnalystOutcome, {
   AwaitingAnalystReview,
@@ -1422,7 +1423,8 @@ function Assessment() {
               />
             )}
           </div>
-          <div className="xl:col-span-5">
+          <div className="xl:col-span-5 space-y-8">
+            <SimilarCasesPanel changeRequestId={changeRequestId} />
             <RegulatoryEvidence
               regulatoryEvidence={regulatoryEvidence}
               riskFactors={riskFactors}
@@ -1472,6 +1474,8 @@ function Assessment() {
         {activeView === "ANALYST_REVIEW" && permissions.canViewAnalystReview && (
           <>
 
+<div className="mb-8 xl:grid xl:grid-cols-12 xl:gap-10">
+  <div className="xl:col-span-7">
 <AnalystReview
   changeRequestId={changeRequestId}
   deferral={activeDeferral?.deferred_to === "RISK_ANALYST" ? activeDeferral : null}
@@ -1487,6 +1491,11 @@ function Assessment() {
   submitAnalystReview={submitAnalystReview}
   canSubmit={permissions.canAnalystReview}
  />
+  </div>
+  <div className="mt-8 xl:col-span-5 xl:mt-0">
+    <SimilarCasesPanel changeRequestId={changeRequestId} />
+  </div>
+</div>
 
           </>
         )}

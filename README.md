@@ -1,212 +1,148 @@
 # MiniRiskers
 
-## AI-Assisted Financial Crime Risk Assessment Workbench
+**AI-assisted financial crime risk assessment workbench** for a large national bank operating in the Indian regulatory context.
 
-MiniRiskers is a hackathon project for automating and improving financial crime risk assessments for new banking products and changes in the Indian banking context.
+MiniRiskers helps FCRM teams assess new products and changes through a governed workflow: structured intake → deterministic scoring → regulatory evidence → AI-drafted assessment → human analyst review → committee decision — with a tamper-evident audit trail throughout.
 
-The system is designed to help FCRM analysts assess risks using regulatory evidence, structured product information, configurable risk scoring, and AI-assisted analysis while keeping the final decision with human reviewers.
-
----
-
-## Progress — September 4, 2026
-
-### Completed Today
-
-- Set up the MiniRiskers project structure.
-- Created Python virtual environment and installed required dependencies.
-- Added Indian banking regulatory documents under `documents/`.
-- Built PDF document processing pipeline using PyMuPDF.
-- Extracted text from 9 regulatory documents and stored processed text under `data/processed/`.
-- Built regulatory vector store using:
-  - ChromaDB
-  - Hugging Face `all-MiniLM-L6-v2` embeddings
-- Added regulatory document metadata including:
-  - Authority
-  - Document type
-  - Jurisdiction
-  - Status
-  - Page number
-- Built regulatory query engine.
-- Successfully tested regulatory searches and retrieved relevant document sections with source and page information.
-- Set up FastAPI backend with SQLAlchemy and SQLite.
-- Created initial `ChangeRequest` database model.
-- Created and tested the first Change Request API.
-- Successfully created test request `CR-2026-001` for a Digital International Remittance Product.
-
-### Current Architecture
-
-```text
-Regulatory PDFs
-      ↓
-PDF Processing
-      ↓
-Text Extraction
-      ↓
-Chunking + Embeddings
-      ↓
-ChromaDB
-      ↓
-Regulatory Query Engine
-
-Product Owner
-      ↓
-FastAPI Backend
-      ↓
-SQLite Database
-      ↓
-Change Request
-
-## Progress — September 5, 2026
-
-### Completed Today
-
-- Expanded the database schema to support structured financial crime risk assessment data.
-
-- Added database models for:
-  - Products
-  - Customer Profiles
-  - Geographies
-  - Transaction Profiles
-  - Channels
-  - Third-Party Vendors
-  - Controls
-  - Control Effectiveness
-  - Risk Factors
-  - Risk Assessments
-  - Risk Model Configuration
-  - Risk Model Weights
-  - Regulatory Sources
-  - Regulatory Evidence
-
-- Added APIs for creating and retrieving structured change request information across product, customer, geography, transaction, channel, vendor, control, and risk-factor components.
-
-- Implemented automatic risk-factor generation based on change request characteristics.
-
-- Generated risk factors across multiple financial crime risk categories:
-  - Customer Risk
-  - Product Risk
-  - Geography Risk
-  - Transaction Risk
-  - Channel Risk
-  - Third-Party Risk
-  - Fraud Risk
-
-- Implemented configurable risk scoring methodology using weighted risk categories.
-
-- Added inherent risk calculation using category-level risk scores and configurable weights.
-
-- Added risk rating bands:
-  - LOW
-  - MEDIUM
-  - HIGH
-  - CRITICAL
-
-- Implemented control effectiveness scoring using:
-  - Design Effectiveness
-  - Operating Effectiveness
-  - Coverage
-  - Automation Level
-  - Evidence Quality
-
-- Implemented residual risk calculation based on inherent risk and control effectiveness.
-
-- Added risk concentration and risk-floor rules for scenarios such as:
-  - Cross-border activity involving high-risk jurisdictions and high transaction velocity
-  - Third-party processing without completed vendor due diligence
-  - Missing sanctions screening
-
-- Added separation between:
-  - System-generated risk assessment
-  - AI recommendation
-  - Analyst assessment
-  - Final human decision
-
-- Added regulatory evidence retrieval using the existing Indian regulatory RAG pipeline.
-
-- Created regulatory query mappings for individual risk factors so that each risk factor can be associated with a relevant Indian regulatory question.
-
-- Implemented automated regulatory evidence generation for all risk factors associated with a Change Request.
-
-- Integrated the regulatory query engine with the FastAPI backend.
-
-- Regulatory evidence now stores:
-  - Change Request
-  - Risk Factor
-  - Regulatory Query
-  - Evidence Text
-  - Regulatory Authority
-  - Document Name
-  - Page Number
-  - Source Reference
-  - Relevance/Distance Score
-  - Creation Timestamp
-
-- Added API endpoint to generate regulatory evidence for a Change Request.
-
-- Added API endpoint to retrieve regulatory evidence associated with a Change Request.
-
-- Successfully tested regulatory evidence generation for `CR-2026-001`.
-
-- Successfully generated regulatory evidence for the automatically generated risk factors using the Indian regulatory document collection.
-
-- Fixed SQLAlchemy response serialization so regulatory evidence is returned as structured JSON instead of raw ORM objects.
-
-- Fixed risk-factor generation issues related to transaction velocity data types.
-
-- Fixed the regulatory evidence generation variable-name error and verified successful evidence generation.
-
-- Added project-level ChromaDB path handling so the vector store can be accessed reliably from the project structure.
-
-- Improved the regulatory query engine by caching the embedding/vector-store instance to avoid repeatedly loading the Hugging Face embedding model for every query.
-
-### Current Risk Assessment Flow
-
-```text
-Change Request
-      ↓
-Structured Product / Customer / Geography / Transaction Data
-      ↓
-Automatic Risk Factor Generation
-      ↓
-Risk Category Scoring
-      ↓
-Inherent Risk Calculation
-      ↓
-Control Effectiveness Assessment
-      ↓
-Residual Risk Calculation
-      ↓
-Regulatory Evidence Retrieval
-      ↓
-Risk Assessment + Regulatory Evidence
-      ↓
-AI-Assisted FCRM Assessment
-      ↓
-Human Analyst Review
-      ↓
-Risk Committee Decision
+**Client:** Single-tenant deployment for one national bank (~USD 500B assets). Synthetic data only.
 
 ---
 
-## Authentication (local development)
+## Quick start
 
-The API uses JWT bearer tokens. On first startup, if the `users` table is empty, development accounts are seeded automatically.
+### Prerequisites
 
-| Username | Role | Default password (dev only) |
-|----------|------|-----------------------------|
+- Python 3.11+
+- Node.js 18+
+- `GEMINI_API_KEY` in `.env` (optional for scoring/RAG; required for AI extraction and assessment draft)
+
+### Backend
+
+```bash
+pip install -r requirements.txt
+cp .env.example .env   # set JWT_SECRET and GEMINI_API_KEY
+uvicorn backend.main:app --reload
+```
+
+API docs: `http://localhost:8000/docs`
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173/`
+
+### Development accounts (seeded on first startup)
+
+| Username | Role | Password (dev only) |
+|---|---|---|
 | `business_owner` | BUSINESS_OWNER | `dev-business-owner` |
 | `risk_analyst` | RISK_ANALYST | `dev-risk-analyst` |
 | `risk_committee` | RISK_COMMITTEE | `dev-risk-committee` |
 | `auditor` | AUDITOR | `dev-auditor` |
 | `admin` | ADMIN | `dev-admin` |
 
-1. Copy `.env.example` to `.env` and set `JWT_SECRET` for non-local use.
-2. Install backend dependencies: `pip install -r requirements.txt`
-3. Start API: `uvicorn backend.main:app --reload`
-4. Start frontend: `cd frontend && npm run dev`
-5. Open `http://localhost:5173/` (landing page) → **Create account** or **Sign in**
-6. After login you are redirected to `/dashboard` with role-based access
+---
 
-**Self-registration:** `POST /auth/register` with username, email, password, full_name, and role (`BUSINESS_OWNER`, `RISK_ANALYST`, `RISK_COMMITTEE`, `AUDITOR`). Admin self-signup is disabled by default (`ALLOW_ADMIN_SELF_SIGNUP=false`).
+## Demo walkthrough (~10 minutes)
 
-Existing change requests and assessment data are preserved. New requests record `requested_by` from the signed-in user (`full_name`).
+Use `brds/brd-03-high-cross-border-remittance.txt` or any file in `brds/`.
+
+| Step | Role | Action |
+|---|---|---|
+| 1 | Business Owner | New Request → upload BRD → **Extract** → review → **Apply** → complete intake → **Submit** |
+| 2 | Risk Analyst | Open request → **Run risk pipeline** (factors → score → evidence → AI draft) → note **Similar past cases** |
+| 3 | Risk Analyst | **Continue to analyst review** → accept or override rating (reason required on downgrade) |
+| 4 | Risk Committee | Approve / approve with conditions / defer / reject; acknowledge escalated overrides |
+| 5 | Auditor | Export **examiner pack** → verify audit hash chain |
+| 6 | Risk Analyst | **Analytics** → Override learning loop → consider methodology suggestion on `/methodology` |
+
+**Headline metrics to show judges:** 48-hour SLA dashboard, deterministic same-input-same-score, separated system/AI/human ratings.
+
+---
+
+## Architecture
+
+```text
+frontend/          React (Vite) — role-based UI
+backend/           FastAPI — workflow, auth, governance APIs
+risk_engine/       Deterministic scoring (versioned methodology)
+rag/               ChromaDB + embeddings over 9 Indian regulatory docs
+ai/                Prompt templates + agent pipeline documentation
+brds/              17 synthetic BRDs for demo and evals
+evals/             Golden dataset + scoring eval runner
+tests/             Pytest suite
+Architecture/      Detailed architecture and roadmap
+docs/              Requirements, governance, changelog
+```
+
+See [Architecture/ARCHITECTURE.md](Architecture/ARCHITECTURE.md) for the full system design.
+
+---
+
+## Decision log
+
+Key engineering decisions and rationale:
+
+| Decision | Choice | Why |
+|---|---|---|
+| **Client model** | Single-tenant (one bank) | Matches exam/supervisory context; avoids multi-bank scope creep |
+| **Jurisdiction** | Indian regs primary (RBI, PMLA, FIU-IND) | Corpus already ingested; client supervised by RBI |
+| **Risk scoring** | Deterministic weighted model | Reproducible, explainable, examinable — core brief requirement |
+| **AI role** | Advisory only (BRD extract + assessment draft) | Humans decide; `REQUIRES_FCRM_REVIEW` fixed in prompt |
+| **BRD extraction** | LLM + mandatory human apply (G1) | Prevents silent intake corruption from hallucinations |
+| **Methodology changes** | Versioned maker-checker | Weight changes affect whole portfolio — model governance |
+| **Audit trail** | Hash-chained append-only events | Tamper-evident for examiner handoff |
+| **Learning** | Similar cases + override analytics → suggest methodology drafts | Data-informed tuning without auto-changing scores |
+| **Database** | SQLite (demo) | SQLAlchemy abstracts to Postgres for production |
+| **Synthetic data** | BRDs in `brds/` only | No real customer PII in hackathon submission |
+
+Expanded requirements: [docs/requirements/expanded-spec.md](docs/requirements/expanded-spec.md)  
+Review gates: [docs/governance/review-gates.md](docs/governance/review-gates.md)  
+AI pipeline: [ai/agents.md](ai/agents.md)
+
+---
+
+## Evaluation
+
+```bash
+python evals/run_evals.py
+pytest tests/
+```
+
+Golden BRD labels: `evals/datasets/golden.jsonl`  
+Latest results: `evals/results/`
+
+---
+
+## Repository layout (submission mapping)
+
+| Brief path | Actual location |
+|---|---|
+| `/src` | `backend/`, `frontend/`, `rag/`, `risk_engine/` |
+| `/ai` | `ai/` |
+| `/docs/requirements` | `docs/requirements/` |
+| `/docs/architecture` | `Architecture/` + `docs/` |
+| `/docs/governance` | `docs/governance/` |
+| `/evals` | `evals/` |
+| `/tests` | `tests/` |
+| `/ops` | `ops/` — Docker demo stack |
+
+## Docker demo (judges)
+
+```bash
+docker compose -f ops/docker-compose.yml up --build
+```
+
+Open **http://localhost:8080** (UI) and **http://localhost:8000/docs** (API).  
+Full instructions: [ops/README.md](ops/README.md)
+
+---
+
+## Changelog
+
+See [docs/CHANGELOG.md](docs/CHANGELOG.md) for day-by-day development history.

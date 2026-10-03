@@ -62,7 +62,9 @@ from backend.permissions import (
     filter_change_requests_for_user,
     get_change_request_or_404,
 )
+from backend.override_insights import build_override_insights
 from backend.serializers import serialize_condition
+from backend.similar_cases import find_similar_cases
 from risk_engine.methodology import (
     CATEGORIES,
     framework_coverage_gaps,
@@ -781,3 +783,31 @@ def get_portfolio_cycle_time(
             "escalated": sum(1 for r in reviews if (r.escalation_level or "") == "ESCALATED"),
         },
     }
+
+
+@router.get("/change-requests/{change_request_id}/similar-cases")
+def get_similar_cases(
+    change_request_id: int,
+    limit: int = 3,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    get_change_request_or_404(db, change_request_id, current_user)
+    try:
+        return find_similar_cases(
+            db,
+            change_request_id,
+            current_user,
+            limit=max(1, min(limit, 10)),
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from error
+
+
+@router.get("/analytics/override-insights")
+def get_override_insights(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_role(current_user, METHODOLOGY_READERS)
+    return build_override_insights(db, current_user)
