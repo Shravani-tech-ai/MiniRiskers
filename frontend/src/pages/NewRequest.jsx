@@ -339,7 +339,7 @@ function NewRequest() {
                           className={[
                             "rounded-full border px-4 py-2 text-sm font-medium transition",
                             isSelected
-                              ? "border-slate-900 bg-slate-900 text-white"
+                              ? "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400"
                               : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800",
                           ].join(" ")}
                         >
@@ -550,7 +550,7 @@ function NewRequest() {
                 type="button"
                 onClick={goNext}
                 disabled={navLocked}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40"
               >
                 Continue
                 <ArrowRight size={16} />
@@ -560,7 +560,7 @@ function NewRequest() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={loading || navLocked}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60 border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40"
               >
                 {loading ? (
                   <>

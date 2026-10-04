@@ -460,7 +460,7 @@ function RiskMethodologyModal({ changeRequestId, onClose }) {
             type="button"
             onClick={downloadPdf}
             disabled={!report || downloading}
-            className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60 border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40"
           >
             {downloading ? (
               <Loader2 size={16} className="animate-spin" />

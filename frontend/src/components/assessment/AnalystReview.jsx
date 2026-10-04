@@ -297,7 +297,7 @@ function AnalystReview({
             <p className="text-xs text-slate-400 dark:text-slate-500">Final committee decision remains separate from analyst review.</p>
           )}
           {!analystReviewed && canSubmit && !residualPending && (
-            <button onClick={submitAnalystReview} className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800">
+            <button onClick={submitAnalystReview} className="rounded-lg px-5 py-2.5 text-sm font-semibold transition border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40">
               Submit Analyst Review
             </button>
           )}

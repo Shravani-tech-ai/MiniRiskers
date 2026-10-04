@@ -18,7 +18,7 @@ function ResultDialog({ success, title, message, onClose }) {
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
+          className="mt-6 w-full rounded-lg px-4 py-2.5 text-sm font-semibold border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40"
         >
           OK
         </button>

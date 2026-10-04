@@ -1358,7 +1358,7 @@ function Assessment() {
               type="button"
               onClick={completeRequestStage}
               disabled={advancingStage || runningRiskAssessment}
-              className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+              className="rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-60 border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40"
             >
               {advancingStage || runningRiskAssessment
                 ? "Calculating risk..."
@@ -1458,7 +1458,7 @@ function Assessment() {
               !riskAssessment ||
               isResidualPending(riskAssessment)
             }
-            className="rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+            className="rounded-xl px-5 py-3 text-sm font-semibold disabled:opacity-60 border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40"
           >
             {advancingStage || generatingAI
               ? "Preparing analyst step..."
