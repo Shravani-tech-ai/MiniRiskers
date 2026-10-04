@@ -127,8 +127,8 @@ function AnalystReview({
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
       <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-slate-200 p-2.5">
-            <ShieldAlert size={22} className="text-slate-700 dark:text-slate-300" />
+          <div className="rounded-lg bg-indigo-50 p-2.5 dark:bg-indigo-950/50">
+            <ShieldAlert size={22} className="text-indigo-600 dark:text-indigo-300" />
           </div>
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-slate-100">FCRM Analyst Review</h3>

@@ -217,8 +217,8 @@ function CommitteeDecision({
     <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
       <div className="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-6">
         <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-purple-100 p-2.5">
-            <ShieldCheck size={22} className="text-purple-600" />
+          <div className="rounded-lg bg-purple-100 p-2.5 dark:bg-purple-950/50">
+            <ShieldCheck size={22} className="text-purple-600 dark:text-purple-300" />
           </div>
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-slate-100">Risk Committee Decision</h3>
