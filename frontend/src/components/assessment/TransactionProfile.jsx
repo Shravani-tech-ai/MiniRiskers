@@ -54,7 +54,7 @@ function TransactionProfile({
                 transaction_type: e.target.value,
               })
             }
-            placeholder="International Transfer"
+            placeholder="e.g. International Transfer"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -74,7 +74,7 @@ function TransactionProfile({
                 expected_frequency: e.target.value,
               })
             }
-            placeholder="Daily / Weekly / Monthly"
+            placeholder="e.g. Daily / Weekly / Monthly"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -94,7 +94,7 @@ function TransactionProfile({
                 average_transaction_amount: e.target.value,
               })
             }
-            placeholder="25000"
+            placeholder="e.g. 25000"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -114,7 +114,7 @@ function TransactionProfile({
                 maximum_transaction_amount: e.target.value,
               })
             }
-            placeholder="100000"
+            placeholder="e.g. 100000"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -134,7 +134,7 @@ function TransactionProfile({
                 expected_daily_volume: e.target.value,
               })
             }
-            placeholder="50000"
+            placeholder="e.g. 50000"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -154,7 +154,7 @@ function TransactionProfile({
                 expected_monthly_volume: e.target.value,
               })
             }
-            placeholder="1500000"
+            placeholder="e.g. 1500000"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -174,7 +174,7 @@ function TransactionProfile({
                 number_of_countries: e.target.value,
               })
             }
-            placeholder="4"
+            placeholder="e.g. 4"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -194,7 +194,7 @@ function TransactionProfile({
                 transaction_velocity: e.target.value,
               })
             }
-            placeholder="8"
+            placeholder="e.g. 8"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>

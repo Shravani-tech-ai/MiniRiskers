@@ -101,23 +101,23 @@ function RiskOverview({
       {/* ======================================================= */}
 
       {canRun && (
-      <div className="mb-8 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40/40 p-6">
+      <div className="mb-8 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 p-6">
 
         <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
 
           <div>
 
-            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 lg:text-2xl">
+            <h3 className="text-xl font-bold text-slate-900 lg:text-2xl">
               Run Financial Crime Risk Assessment
             </h3>
 
-            <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-400">
+            <p className="mt-2 max-w-2xl text-base leading-relaxed text-slate-600 dark:text-slate-800">
               Generate risk factors, calculate inherent risk, and retrieve
               relevant regulatory evidence. Document controls below to
               calculate residual risk.
             </p>
 
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-800">
               AI assessment and final FCRM decision are completed separately.
             </p>
 

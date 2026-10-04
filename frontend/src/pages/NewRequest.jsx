@@ -296,7 +296,7 @@ function NewRequest() {
                     name="title"
                     value={formData.title}
                     onChange={handleChange}
-                    placeholder="Example: Digital international remittance launch"
+                    placeholder="e.g. Digital international remittance launch"
                     className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3.5 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
                   />
                 </div>
@@ -385,7 +385,7 @@ function NewRequest() {
                     name="product_type"
                     value={formData.product_type}
                     onChange={handleChange}
-                    placeholder="DIGITAL_REMITTANCE"
+                    placeholder="e.g. DIGITAL_REMITTANCE"
                     className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm uppercase outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
                   />
                 </div>

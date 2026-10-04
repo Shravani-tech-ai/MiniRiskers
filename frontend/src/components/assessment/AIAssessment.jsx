@@ -24,7 +24,7 @@ function getRiskClass(rating) {
       return "bg-green-100 text-green-900 dark:text-green-900 border-green-200";
 
     default:
-      return "bg-slate-100 text-slate-900 dark:text-slate-900 border-slate-200 dark:border-slate-700";
+      return "bg-slate-100 text-slate-900 border-slate-200 dark:border-slate-700";
   }
 }
 
@@ -68,7 +68,7 @@ function AIAssessment({
       {/* HEADER */}
       {/* ===================================================== */}
 
-      <div className="border-b border-indigo-100 bg-indigo-50 dark:bg-indigo-950/40/40 p-6">
+      <div className="border-b border-indigo-100 bg-indigo-50 p-6">
 
         <div className="flex items-start justify-between gap-4">
 
@@ -83,11 +83,11 @@ function AIAssessment({
 
             <div>
 
-              <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+              <h3 className="font-semibold text-slate-900">
                 AI-Assisted FCRM Assessment
               </h3>
 
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-800">
                 AI prepares the assessment using the calculated risk
                 and regulatory evidence. FCRM retains the final decision.
               </p>
@@ -169,13 +169,13 @@ function AIAssessment({
           <div className="flex flex-wrap items-center gap-3">
 
             {aiAssessment.model && (
-              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900 dark:text-slate-900">
+              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900">
                 Model: {aiAssessment.model}
               </span>
             )}
 
             {aiAssessment.model_version && (
-              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900 dark:text-slate-900">
+              <span className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-900">
                 Version: {aiAssessment.model_version}
               </span>
             )}

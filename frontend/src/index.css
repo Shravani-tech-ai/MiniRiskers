@@ -45,6 +45,35 @@ fieldset:disabled label {
   cursor: default;
 }
 
+/* Read-only checkboxes: browsers grey these out, hiding which are ticked. */
+input[type="checkbox"]:disabled {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  border: 1.5px solid #94a3b8;
+  border-radius: 0.25rem;
+  background-color: #f1f5f9;
+  cursor: default;
+}
+
+.dark input[type="checkbox"]:disabled {
+  border-color: #475569;
+  background-color: #1e293b;
+}
+
+input[type="checkbox"]:disabled:checked,
+.dark input[type="checkbox"]:disabled:checked {
+  border-color: #15803d;
+  background-color: #15803d;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E");
+  background-size: 100% 100%;
+}
+
 /* Prevent low-contrast disabled buttons (light bg + white text). */
 button:disabled {
   cursor: not-allowed;

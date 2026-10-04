@@ -55,7 +55,7 @@ function VendorInformation({
                 vendor_name: e.target.value,
               })
             }
-            placeholder="Example: Global Payments Partner"
+            placeholder="e.g. Global Payments Partner"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
@@ -77,7 +77,7 @@ function VendorInformation({
                 vendor_type: e.target.value,
               })
             }
-            placeholder="Payment Processor / Technology Provider"
+            placeholder="e.g. Payment Processor / Technology Provider"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
@@ -99,7 +99,7 @@ function VendorInformation({
                 country: e.target.value,
               })
             }
-            placeholder="India"
+            placeholder="e.g. India"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 
@@ -158,7 +158,7 @@ function VendorInformation({
                 outsourcing_type: e.target.value,
               })
             }
-            placeholder="Technology / Payment Processing"
+            placeholder="e.g. Technology / Payment Processing"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
 

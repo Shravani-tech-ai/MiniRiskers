@@ -77,7 +77,7 @@ function CustomerProfile({
                 customer_segment: e.target.value,
               })
             }
-            placeholder="Retail / SME / Corporate / HNI"
+            placeholder="e.g. Retail / SME / Corporate / HNI"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -97,7 +97,7 @@ function CustomerProfile({
                 onboarding_method: e.target.value,
               })
             }
-            placeholder="Digital / Branch / Agent"
+            placeholder="e.g. Digital / Branch / Agent"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -117,7 +117,7 @@ function CustomerProfile({
                 kyc_method: e.target.value,
               })
             }
-            placeholder="Aadhaar / Video KYC / Branch KYC"
+            placeholder="e.g. Aadhaar / Video KYC / Branch KYC"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -137,7 +137,7 @@ function CustomerProfile({
                 expected_customer_count: e.target.value,
               })
             }
-            placeholder="10000"
+            placeholder="e.g. 10000"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -157,7 +157,7 @@ function CustomerProfile({
                 customer_geographic_distribution: e.target.value,
               })
             }
-            placeholder="India / UAE / UK / USA"
+            placeholder="e.g. India / UAE / UK / USA"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>

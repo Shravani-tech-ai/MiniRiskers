@@ -341,26 +341,26 @@ function IntakePanel({
           )}
 
           {extractionResult && (
-            <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40/40 p-4">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 p-4">
+              <p className="text-sm font-semibold text-slate-900">
                 Review extracted values
               </p>
 
               {(extractionResult.extraction_method === "rules" ||
                 extractionResult.extraction_method === "heuristic") && (
-                <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">
+                <p className="mt-1 text-xs text-amber-800 dark:text-amber-900">
                   AI was unavailable; rule-based parsing was used. Review
                   fields carefully.
                 </p>
               )}
 
               {extractionResult.extraction_method === "ai+rules" && (
-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-800">
                   Combined AI extraction and rule-based field mapping.
                 </p>
               )}
 
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-1 text-sm text-slate-600 dark:text-slate-800">
                 {extractionResult.diff_from_saved?.length || 0} fields
                 differ from saved data. Apply to populate the forms
                 below.

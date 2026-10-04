@@ -54,7 +54,7 @@ function ProductInformation({
                 product_name: e.target.value,
               })
             }
-            placeholder="Digital International Remittance"
+            placeholder="e.g. Digital International Remittance"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -74,7 +74,7 @@ function ProductInformation({
                 product_category: e.target.value,
               })
             }
-            placeholder="Remittance / Payments / Lending"
+            placeholder="e.g. Remittance / Payments / Lending"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -114,7 +114,7 @@ function ProductInformation({
                 transaction_type: e.target.value,
               })
             }
-            placeholder="International Transfer"
+            placeholder="e.g. International Transfer"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -134,7 +134,7 @@ function ProductInformation({
                 currency: e.target.value,
               })
             }
-            placeholder="INR"
+            placeholder="e.g. INR"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -154,7 +154,7 @@ function ProductInformation({
                 transaction_limit: e.target.value,
               })
             }
-            placeholder="100000"
+            placeholder="e.g. 100000"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -174,7 +174,7 @@ function ProductInformation({
                 expected_transaction_volume: e.target.value,
               })
             }
-            placeholder="50000"
+            placeholder="e.g. 50000"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -194,7 +194,7 @@ function ProductInformation({
                 expected_transaction_frequency: e.target.value,
               })
             }
-            placeholder="Daily / Weekly / Monthly"
+            placeholder="e.g. Daily / Weekly / Monthly"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -214,7 +214,7 @@ function ProductInformation({
                 countries_supported: e.target.value,
               })
             }
-            placeholder="India, UAE, UK, USA"
+            placeholder="e.g. India, UAE, UK, USA"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>

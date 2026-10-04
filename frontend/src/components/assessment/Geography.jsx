@@ -52,7 +52,7 @@ function Geography({
                 country: e.target.value,
               })
             }
-            placeholder="India"
+            placeholder="e.g. India"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -72,7 +72,7 @@ function Geography({
                 country_code: e.target.value,
               })
             }
-            placeholder="IN"
+            placeholder="e.g. IN"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm uppercase outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -114,7 +114,7 @@ function Geography({
                 customer_country: e.target.value,
               })
             }
-            placeholder="India"
+            placeholder="e.g. India"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -134,7 +134,7 @@ function Geography({
                 transaction_country: e.target.value,
               })
             }
-            placeholder="India"
+            placeholder="e.g. India"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
@@ -154,7 +154,7 @@ function Geography({
                 beneficiary_country: e.target.value,
               })
             }
-            placeholder="UAE"
+            placeholder="e.g. UAE"
             className="mt-2 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
           />
         </div>
