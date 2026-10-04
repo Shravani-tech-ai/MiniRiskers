@@ -105,6 +105,12 @@ export function getRequestPermissions(role, changeRequest) {
     // Business Owners follow their request's progress but do not see the
     // analyst's internal review notes.
     canViewAnalystReview: role !== ROLES.BUSINESS_OWNER,
+    // The committee's deliberation workspace (decision options, override
+    // acknowledgement, rationale drafting) is for the deciding body only.
+    // Other roles see the request's committee status and, once decided, the
+    // recorded outcome.
+    canViewCommitteeWorkspace:
+      role === ROLES.RISK_COMMITTEE || role === ROLES.ADMIN,
   };
 }
 

@@ -18,6 +18,7 @@ import AuditTrail from "../components/assessment/AuditTrail";
 import ConditionsTracker from "../components/assessment/ConditionsTracker";
 import DecisionOutcome from "../components/assessment/DecisionOutcome";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
+import CommitteeStatusPanel from "../components/assessment/CommitteeStatusPanel";
 import IntakePanel from "../components/assessment/IntakePanel";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
 import SimilarCasesPanel from "../components/assessment/SimilarCasesPanel";
@@ -56,6 +57,7 @@ import {
   getDefaultView,
   getLockedStages,
   getRequestPermissions,
+  isDecided,
 } from "../utils/rolePermissions";
 import { isResidualPending } from "../utils/riskDisplay";
 
@@ -1163,6 +1165,12 @@ function Assessment() {
   // (generating it is what moves the request on to analyst review).
   const aiAssessmentStale = riskEditable && Boolean(aiAssessment);
 
+  // The AI draft is an internal working paper: Business Owners see it only
+  // after the committee records a final decision (enforced by the API too).
+  const canViewAIAssessment =
+    permissions.canViewAnalystReview ||
+    (isBusinessOwner && isDecided(changeRequest) && Boolean(aiAssessment));
+
   // Previous/next stage views this user can open, so completed steps stay
   // reachable after the request has moved forward.
   const canOpenView = (view) =>
@@ -1483,7 +1491,7 @@ function Assessment() {
                 reopensRiskStage={currentStage === "ANALYST_REVIEW"}
               />
             )}
-            {permissions.canViewAnalystReview && (
+            {canViewAIAssessment && (
               <AIAssessment
                 aiAssessment={aiAssessment}
                 generatingAI={generatingAI}
@@ -1597,6 +1605,7 @@ function Assessment() {
         {activeView === "COMMITTEE_REVIEW" && (
           <>
 
+{permissions.canViewCommitteeWorkspace ? (
 <CommitteeDecision
   riskAssessment={riskAssessment}
   analystRating={analystRating}
@@ -1616,6 +1625,15 @@ function Assessment() {
   submitCommitteeDecision={submitCommitteeDecision}
   canSubmit={permissions.canCommitteeDecide}
  />
+) : (
+  <CommitteeStatusPanel
+    changeRequest={changeRequest}
+    auditEvents={auditEvents}
+    onViewOutcome={
+      canOpenView("COMPLETED") ? () => openView("COMPLETED") : undefined
+    }
+  />
+)}
 
         <AssessmentStageFooter>
           {renderStageNavButton(
@@ -1656,7 +1674,7 @@ function Assessment() {
           </>
         )}
 
-        {(activeView === "COMPLETED" || user?.role === ROLES.AUDITOR) && (
+        {canExportAudit && (activeView === "COMPLETED" || user?.role === ROLES.AUDITOR) && (
           <AuditTrail
             changeRequestId={changeRequestId}
             requestNumber={changeRequest?.request_number}

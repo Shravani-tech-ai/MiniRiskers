@@ -338,6 +338,41 @@ def assert_risk_results_visible(
         )
 
 
+# Final committee outcomes (APPROVE* / REJECT and their status aliases).
+COMMITTEE_FINAL_STATUSES = {
+    "APPROVE",
+    "APPROVED",
+    "APPROVE_WITH_CONDITIONS",
+    "CONDITIONS_MET",
+    "REJECT",
+    "REJECTED",
+}
+
+
+def assert_ai_assessment_visible(
+    db: Session,
+    current_user: User,
+    change_request: ChangeRequest,
+) -> None:
+    """The AI draft is an internal working paper until the committee decides.
+
+    Business Owners see it only once a final committee decision is recorded;
+    every other role that can read the request sees it as before.
+    """
+    assert_risk_results_visible(db, current_user, change_request)
+    if current_user.role != ROLE_BUSINESS_OWNER:
+        return
+    status_value = (change_request.status or "").strip().upper()
+    if status_value not in COMMITTEE_FINAL_STATUSES:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "The AI assessment will be shared once the Risk Committee "
+                "records its decision."
+            ),
+        )
+
+
 @app.on_event("startup")
 def on_startup():
     apply_sqlite_schema_patches()
@@ -2354,7 +2389,7 @@ def get_ai_assessment(
     change_request = get_change_request_or_404(
         db, change_request_id, current_user
     )
-    assert_risk_results_visible(db, current_user, change_request)
+    assert_ai_assessment_visible(db, current_user, change_request)
 
     recommendation = _latest_ai_recommendation_or_404(db, change_request_id)
     return build_ai_assessment_payload(recommendation)
@@ -2369,7 +2404,7 @@ def download_ai_assessment_pdf(
     change_request = get_change_request_or_404(
         db, change_request_id, current_user
     )
-    assert_risk_results_visible(db, current_user, change_request)
+    assert_ai_assessment_visible(db, current_user, change_request)
 
     recommendation = _latest_ai_recommendation_or_404(db, change_request_id)
     pdf_bytes = ai_assessment_to_pdf_bytes(
@@ -2406,6 +2441,11 @@ def export_assessment(
         export_data = build_assessment_export(db, change_request_id)
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error))
+
+    try:
+        assert_ai_assessment_visible(db, current_user, change_request)
+    except HTTPException:
+        export_data["ai_assessment"] = None
 
     request_number = (
         export_data.get("change_request", {}).get(
