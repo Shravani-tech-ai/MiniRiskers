@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
   Download,
+  Eye,
   FileText,
   Loader2,
   Sparkles,
   ShieldAlert,
   ShieldCheck,
+  X,
 } from "lucide-react";
 
 import api from "../../services/api";
@@ -225,12 +227,17 @@ function AIAssessment({
   changeRequestId,
   requestNumber,
   stale = false,
+  className = "",
 }) {
   const [openSections, setOpenSections] = useState({});
+  const [showDetails, setShowDetails] = useState(false);
+  const [summaryExpanded, setSummaryExpanded] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
 
   const assessment = aiAssessment?.assessment || {};
+  const summaryText = toDisplayText(assessment.executive_summary);
+  const summaryIsLong = summaryText.length > 420;
   const riskByCategory = assessment.risk_assessment || {};
   const riskCategoryCount =
     riskByCategory && typeof riskByCategory === "object"
@@ -411,7 +418,9 @@ function AIAssessment({
   };
 
   return (
-    <div className="mt-6 overflow-hidden rounded-xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-900/60 dark:bg-slate-900">
+    <div
+      className={`mt-6 flex flex-col overflow-hidden rounded-xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-900/60 dark:bg-slate-900 ${className}`}
+    >
 
       {/* ===================================================== */}
       {/* HEADER */}
@@ -487,7 +496,7 @@ function AIAssessment({
 
       {!aiAssessment && (
 
-        <div className="p-8 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
 
           <Sparkles
             size={32}
@@ -534,7 +543,7 @@ function AIAssessment({
 
       {aiAssessment && (
 
-        <div className="space-y-6 p-6">
+        <div className="flex flex-1 flex-col gap-6 p-6">
 
           {stale && (
             <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
@@ -588,9 +597,28 @@ function AIAssessment({
               <h4 className={sectionLabelClass}>Executive Summary</h4>
 
               <div className={`mt-3 p-5 ${panelClass}`}>
-                <p className={bodyTextClass}>
-                  {toDisplayText(assessment.executive_summary)}
+                <p
+                  className={`${bodyTextClass} ${
+                    summaryIsLong && !summaryExpanded ? "line-clamp-5" : ""
+                  }`}
+                >
+                  {summaryText}
                 </p>
+                {summaryIsLong && (
+                  <button
+                    type="button"
+                    onClick={() => setSummaryExpanded((value) => !value)}
+                    className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    {summaryExpanded ? "Show less" : "Read more"}
+                    <ChevronDown
+                      size={14}
+                      className={`transition-transform ${
+                        summaryExpanded ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                )}
               </div>
 
             </section>
@@ -599,38 +627,31 @@ function AIAssessment({
 
 
           {/* ================================================= */}
-          {/* DETAIL SECTIONS (collapsed by default) */}
+          {/* DETAILS (opened in a modal) */}
           {/* ================================================= */}
 
           {sections.length > 0 && (
 
-            <section>
+            <section className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
 
-              <div className="flex items-center justify-between gap-3">
+              <div>
                 <h4 className={sectionLabelClass}>Assessment details</h4>
-                <button
-                  type="button"
-                  onClick={toggleAll}
-                  className="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-                >
-                  {allOpen ? "Collapse all" : "Expand all"}
-                </button>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  {sections.map((section) => section.title).join(" · ")}
+                </p>
               </div>
 
-              <div className="mt-3 space-y-3">
-                {sections.map((section) => (
-                  <CollapsibleSection
-                    key={section.id}
-                    id={section.id}
-                    title={section.title}
-                    meta={section.meta}
-                    open={Boolean(openSections[section.id])}
-                    onToggle={toggleSection}
-                  >
-                    {section.content}
-                  </CollapsibleSection>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowDetails(true)}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/50"
+              >
+                <Eye size={16} />
+                View details
+                <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs dark:bg-indigo-900/60">
+                  {sections.length}
+                </span>
+              </button>
 
             </section>
 
@@ -638,12 +659,12 @@ function AIAssessment({
 
 
           {/* ================================================= */}
-          {/* RECOMMENDATION */}
+          {/* RECOMMENDATION (pinned to the bottom of the card) */}
           {/* ================================================= */}
 
           {aiAssessment.recommendation && (
 
-            <section>
+            <section className="mt-auto">
 
               <h4 className={sectionLabelClass}>AI Recommendation</h4>
 
@@ -681,6 +702,106 @@ function AIAssessment({
 
       )}
 
+      {showDetails && (
+        <AssessmentDetailsModal
+          requestNumber={requestNumber}
+          sections={sections}
+          openSections={openSections}
+          allOpen={allOpen}
+          onToggle={toggleSection}
+          onToggleAll={toggleAll}
+          onClose={() => setShowDetails(false)}
+        />
+      )}
+
+    </div>
+  );
+}
+
+
+function AssessmentDetailsModal({
+  requestNumber,
+  sections,
+  openSections,
+  allOpen,
+  onToggle,
+  onToggleAll,
+  onClose,
+}) {
+  useEffect(() => {
+    const handleKey = (event) => event.key === "Escape" && onClose();
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-assessment-details-title"
+        className="flex max-h-full w-full max-w-3xl flex-col rounded-xl bg-white shadow-xl dark:bg-slate-900"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-slate-200 p-5 dark:border-slate-700">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
+              AI-Assisted FCRM Assessment{requestNumber ? ` · ${requestNumber}` : ""}
+            </p>
+            <h3
+              id="ai-assessment-details-title"
+              className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100"
+            >
+              Assessment details
+            </h3>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={onToggleAll}
+              className="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+            >
+              {allOpen ? "Collapse all" : "Expand all"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close assessment details"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-5">
+          {sections.map((section) => (
+            <CollapsibleSection
+              key={section.id}
+              id={section.id}
+              title={section.title}
+              meta={section.meta}
+              open={Boolean(openSections[section.id])}
+              onToggle={onToggle}
+            >
+              {section.content}
+            </CollapsibleSection>
+          ))}
+        </div>
+
+        <div className="flex justify-end border-t border-slate-200 p-4 dark:border-slate-700">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400 dark:hover:bg-green-900/40"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -10,8 +10,12 @@ def extract_text_from_bytes(file_bytes: bytes, filename: str) -> str:
         document = fitz.open(stream=file_bytes, filetype="pdf")
         pages = []
 
+        # Expand ligatures ("ﬁ" -> "fi") so labels such as "Beneficiary
+        # Country:" match; PyMuPDF preserves them by default.
+        text_flags = fitz.TEXTFLAGS_TEXT & ~fitz.TEXT_PRESERVE_LIGATURES
+
         for page in document:
-            text = page.get_text("text")
+            text = page.get_text("text", flags=text_flags)
 
             if text and text.strip():
                 pages.append(text.strip())

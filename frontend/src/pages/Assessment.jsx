@@ -1454,8 +1454,10 @@ function Assessment() {
             riskCalculated={!isIntakeStage}
           />
         ) : (
-        <div className="space-y-8 xl:grid xl:grid-cols-12 xl:items-start xl:gap-10 xl:space-y-0">
-          <div className="space-y-8 xl:col-span-7">
+        <div className="space-y-8 xl:grid xl:grid-cols-12 xl:items-stretch xl:gap-10 xl:space-y-0">
+          {/* Both columns stretch to the same height: the last card in each
+              column fills the remaining space so their bottoms line up. */}
+          <div className="space-y-8 xl:col-span-7 xl:flex xl:flex-col">
             {isBusinessOwner && (
               <div className="mt-8">
                 <AnalystOutcome review={analystReviewRecord} />
@@ -1490,14 +1492,16 @@ function Assessment() {
                 changeRequestId={changeRequestId}
                 requestNumber={changeRequest?.request_number}
                 stale={aiAssessmentStale}
+                className="xl:flex-1"
               />
             )}
           </div>
-          <div className="xl:col-span-5 space-y-8">
+          <div className="space-y-8 xl:col-span-5 xl:flex xl:flex-col">
             <SimilarCasesPanel changeRequestId={changeRequestId} />
             <RegulatoryEvidence
               regulatoryEvidence={regulatoryEvidence}
               riskFactors={riskFactors}
+              fillHeight
             />
           </div>
         </div>
@@ -1557,13 +1561,12 @@ function Assessment() {
         {activeView === "ANALYST_REVIEW" && permissions.canViewAnalystReview && (
           <>
 
-<div className="mb-8 xl:grid xl:grid-cols-12 xl:gap-10">
-  <div className="xl:col-span-7">
+<div className="mb-8">
+  <div>
 <AnalystReview
   changeRequestId={changeRequestId}
   deferral={activeDeferral?.deferred_to === "RISK_ANALYST" ? activeDeferral : null}
   riskAssessment={riskAssessment}
-  aiAssessment={aiAssessment}
   analystRating={analystRating}
   setAnalystRating={setAnalystRating}
   overrideReason={overrideReason}
@@ -1574,9 +1577,6 @@ function Assessment() {
   submitAnalystReview={submitAnalystReview}
   canSubmit={permissions.canAnalystReview}
  />
-  </div>
-  <div className="mt-8 xl:col-span-5 xl:mt-0">
-    <SimilarCasesPanel changeRequestId={changeRequestId} />
   </div>
 </div>
 

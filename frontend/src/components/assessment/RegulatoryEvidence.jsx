@@ -5,14 +5,25 @@ import EvidencePreviewModal from "./EvidencePreviewModal";
 
 const PAGE_SIZE = 5;
 
-function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
+// fillHeight: the card takes the remaining height of its (flex) column and
+// scrolls its list, so it lines up with the neighbouring column instead of
+// leaving blank space. It is absolutely positioned on xl so its content does
+// not stretch the row.
+function RegulatoryEvidence({
+  regulatoryEvidence,
+  riskFactors = [],
+  fillHeight = false,
+}) {
   const [page, setPage] = useState(0);
   const [openIndex, setOpenIndex] = useState(null);
 
   const total = regulatoryEvidence.length;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const start = page * PAGE_SIZE;
-  const pageItems = regulatoryEvidence.slice(start, start + PAGE_SIZE);
+  const pageItems = fillHeight
+    ? regulatoryEvidence
+    : regulatoryEvidence.slice(start, start + PAGE_SIZE);
+  const listStart = fillHeight ? 0 : start;
 
   const factorNames = Object.fromEntries(
     riskFactors.map((factor) => [factor.id, factor.risk_factor])
@@ -29,13 +40,25 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
 
   const showEvidence = (index) => {
     setOpenIndex(index);
-    setPage(Math.floor(index / PAGE_SIZE));
+    if (!fillHeight) {
+      setPage(Math.floor(index / PAGE_SIZE));
+    }
   };
 
   return (
-    <div className="mt-8 xl:mt-0">
-      <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
-        <div className="border-b border-slate-200 dark:border-slate-700 p-6">
+    <div
+      className={
+        fillHeight
+          ? "mt-8 xl:relative xl:mt-0 xl:min-h-[26rem] xl:flex-1"
+          : "mt-8 xl:mt-0"
+      }
+    >
+      <div
+        className={`flex flex-col rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm ${
+          fillHeight ? "xl:absolute xl:inset-0" : ""
+        }`}
+      >
+        <div className="shrink-0 border-b border-slate-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-blue-50 dark:bg-blue-950/40 p-2">
@@ -65,9 +88,15 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
           </div>
         ) : (
           <>
-            <ol className="divide-y divide-slate-100 dark:divide-slate-800">
+            <ol
+              className={`divide-y divide-slate-100 dark:divide-slate-800 ${
+                fillHeight
+                  ? "max-h-[32rem] overflow-y-auto xl:max-h-none xl:min-h-0 xl:flex-1"
+                  : ""
+              }`}
+            >
               {pageItems.map((evidence, offset) => {
-                const index = start + offset;
+                const index = listStart + offset;
 
                 return (
                   <li
@@ -93,6 +122,7 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
               })}
             </ol>
 
+            {!fillHeight && (
             <div className="flex items-center justify-between gap-3 border-t border-slate-200 dark:border-slate-700 px-6 py-4">
               <span className="text-sm font-semibold tabular-nums text-slate-500 dark:text-slate-400">
                 {page + 1}/{pageCount}
@@ -119,6 +149,7 @@ function RegulatoryEvidence({ regulatoryEvidence, riskFactors = [] }) {
                 )}
               </div>
             </div>
+            )}
           </>
         )}
       </div>
