@@ -118,6 +118,7 @@ from backend.request_numbers import (
     allocate_request_number,
     peek_next_request_number,
 )
+from backend.brd_heuristic import extract_request_header
 from backend.intake_service import (
     completeness_percent,
     extract_intake_from_brd,
@@ -525,6 +526,41 @@ def get_risk_assessment(
         "created_at": risk_assessment.created_at,
         "updated_at": risk_assessment.updated_at
     }
+
+@app.post("/change-requests/brd-prefill")
+async def prefill_change_request_from_brd(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Read a BRD before the request exists and suggest its header fields.
+
+    Nothing is stored: the file is attached to the request (through the
+    normal intake upload) only once the request is created.
+    """
+    assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
+    assert_not_auditor_write(current_user)
+
+    file_bytes = await file.read()
+    filename = file.filename or "brd-upload.pdf"
+
+    try:
+        text = extract_text_from_bytes(file_bytes, filename)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+
+    if not text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="No readable text found in this BRD. Upload a text-based PDF, DOCX or TXT file.",
+        )
+
+    header = extract_request_header(text)
+    return {
+        "filename": filename,
+        "character_count": len(text),
+        **header,
+    }
+
 
 @app.post("/change-requests")
 def create_change_request(

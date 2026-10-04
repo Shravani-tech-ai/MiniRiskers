@@ -14,7 +14,37 @@ import { useAuth } from "./AuthContext";
 
 const NotificationContext = createContext(null);
 
-const POLL_INTERVAL_MS = 60_000;
+const POLL_INTERVAL_MS = 30_000;
+
+// Pop-ups shown next to the bell for newly arrived notifications.
+export const TOAST_DURATION_MS = 10_000;
+const MAX_TOASTS = 3;
+
+function poppedStorageKey(user) {
+  return `notifications:popped:${user?.id ?? user?.username ?? "anon"}`;
+}
+
+// IDs already popped up in this browser session, so a reload or the next poll
+// does not show the same notification again.
+function loadPopped(user) {
+  try {
+    const raw = sessionStorage.getItem(poppedStorageKey(user));
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function savePopped(user, ids) {
+  try {
+    sessionStorage.setItem(
+      poppedStorageKey(user),
+      JSON.stringify([...ids].slice(-200))
+    );
+  } catch {
+    // Storage unavailable: pop-ups may repeat after a reload.
+  }
+}
 
 function formatRelativeTime(isoString) {
   if (!isoString) return "";
@@ -37,7 +67,41 @@ export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [toasts, setToasts] = useState([]);
   const pollRef = useRef(null);
+  const poppedRef = useRef(null);
+
+  useEffect(() => {
+    poppedRef.current = user ? loadPopped(user) : null;
+    setToasts([]);
+  }, [user]);
+
+  const queueToasts = useCallback(
+    (items) => {
+      if (!user || !poppedRef.current) {
+        return;
+      }
+      const fresh = items.filter(
+        (item) => !item.read && !poppedRef.current.has(item.id)
+      );
+      if (fresh.length === 0) {
+        return;
+      }
+      fresh.forEach((item) => poppedRef.current.add(item.id));
+      savePopped(user, poppedRef.current);
+      setToasts((current) =>
+        [...fresh, ...current.filter((toast) => !fresh.some((item) => item.id === toast.id))]
+          .slice(0, MAX_TOASTS)
+      );
+    },
+    [user]
+  );
+
+  const dismissToast = useCallback((notificationId) => {
+    setToasts((current) =>
+      current.filter((toast) => toast.id !== notificationId)
+    );
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -49,28 +113,16 @@ export function NotificationProvider({ children }) {
     setLoading(true);
     try {
       const response = await api.get("/notifications", { params: { limit: 30 } });
-      setNotifications(response.data.notifications || []);
+      const items = response.data.notifications || [];
+      setNotifications(items);
       setUnreadCount(response.data.unread_count || 0);
+      queueToasts(items);
     } catch {
       // Keep existing state on transient errors.
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  const refreshUnreadCount = useCallback(async () => {
-    if (!user) {
-      setUnreadCount(0);
-      return;
-    }
-
-    try {
-      const response = await api.get("/notifications/unread-count");
-      setUnreadCount(response.data.unread_count || 0);
-    } catch {
-      // Ignore polling errors.
-    }
-  }, [user]);
+  }, [user, queueToasts]);
 
   useEffect(() => {
     refresh();
@@ -85,14 +137,15 @@ export function NotificationProvider({ children }) {
       return undefined;
     }
 
-    pollRef.current = setInterval(refreshUnreadCount, POLL_INTERVAL_MS);
+    // Poll the list (not just the count) so new notifications can pop up.
+    pollRef.current = setInterval(refresh, POLL_INTERVAL_MS);
     return () => {
       if (pollRef.current) {
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
     };
-  }, [user, refreshUnreadCount]);
+  }, [user, refresh]);
 
   const markRead = useCallback(async (notificationId) => {
     await api.patch(`/notifications/${notificationId}/read`);
@@ -104,7 +157,8 @@ export function NotificationProvider({ children }) {
       )
     );
     setUnreadCount((count) => Math.max(count - 1, 0));
-  }, []);
+    dismissToast(notificationId);
+  }, [dismissToast]);
 
   const markAllRead = useCallback(async () => {
     await api.post("/notifications/read-all");
@@ -116,6 +170,7 @@ export function NotificationProvider({ children }) {
       }))
     );
     setUnreadCount(0);
+    setToasts([]);
   }, []);
 
   const value = useMemo(
@@ -127,8 +182,19 @@ export function NotificationProvider({ children }) {
       markRead,
       markAllRead,
       formatRelativeTime,
+      toasts,
+      dismissToast,
     }),
-    [notifications, unreadCount, loading, refresh, markRead, markAllRead]
+    [
+      notifications,
+      unreadCount,
+      loading,
+      refresh,
+      markRead,
+      markAllRead,
+      toasts,
+      dismissToast,
+    ]
   );
 
   return (

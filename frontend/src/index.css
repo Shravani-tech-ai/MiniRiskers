@@ -95,3 +95,40 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: #f1f5f9;
   caret-color: #f1f5f9;
 }
+
+/* Notification pop-ups next to the bell */
+@keyframes notification-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes notification-toast-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.notification-toast {
+  animation: notification-toast-in 180ms ease-out;
+}
+
+.notification-toast-progress {
+  animation-name: notification-toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-toast {
+    animation: none;
+  }
+}

@@ -1217,21 +1217,79 @@ function Assessment() {
       : null;
   const canExportAudit = canExportAuditPack(user?.role);
 
+  // Informational footer for the request step: the status in bold, then a
+  // plain sentence. Moving on is an inline text link, not a button.
+  const riskStepLink = canOpenView("RISK_ASSESSMENT") ? (
+    <>
+      {" "}
+      <button
+        type="button"
+        onClick={() => openView("RISK_ASSESSMENT")}
+        className="font-semibold text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-400"
+      >
+        View the risk assessment →
+      </button>
+    </>
+  ) : null;
+
   let requestStageHint = null;
   if (permissions.canRunRiskPipeline && !isIntakeStage) {
-    requestStageHint =
-      "Risk has already been calculated for this request. Intake details are shown for reference.";
+    requestStageHint = (
+      <>
+        <strong className="text-slate-900 dark:text-slate-100">
+          Risk has already been calculated.
+        </strong>{" "}
+        Intake details are shown for reference.{riskStepLink}
+      </>
+    );
   } else if (permissions.canRunRiskPipeline) {
-    requestStageHint =
-      "Syncs intake, generates risk factors, calculates scores, and retrieves regulatory evidence.";
+    requestStageHint = (
+      <>
+        <strong className="text-slate-900 dark:text-slate-100">
+          Ready for risk assessment.
+        </strong>{" "}
+        Running it syncs the intake, generates risk factors, calculates scores
+        and retrieves regulatory evidence.
+      </>
+    );
   } else if (permissions.canSubmit) {
     requestStageHint =
-      missingFields.length > 0
-        ? "Complete all required fields, then preview and submit for Risk Analyst review."
-        : "All required fields are complete. Preview and submit for Risk Analyst review.";
+      missingFields.length > 0 ? (
+        <>
+          <strong className="text-slate-900 dark:text-slate-100">
+            Required fields are incomplete.
+          </strong>{" "}
+          Complete and save each section, then use the Preview tab to submit
+          for Risk Analyst review.
+        </>
+      ) : (
+        <>
+          <strong className="text-slate-900 dark:text-slate-100">
+            All required fields are complete.
+          </strong>{" "}
+          Open the Preview tab above to review the intake and submit it for
+          Risk Analyst review.
+        </>
+      );
   } else if (permissions.ownsIntake && permissions.submitted && isIntakeStage) {
-    requestStageHint =
-      "This request is in the Risk Analyst queue and will move forward once they run the risk assessment.";
+    requestStageHint = (
+      <>
+        <strong className="text-slate-900 dark:text-slate-100">
+          Awaiting Risk Analyst.
+        </strong>{" "}
+        This request is in the Risk Analyst queue and will move forward once
+        they run the risk assessment.
+      </>
+    );
+  } else if (!isIntakeStage) {
+    requestStageHint = (
+      <>
+        <strong className="text-slate-900 dark:text-slate-100">
+          Intake submitted.
+        </strong>{" "}
+        These details are read-only.{riskStepLink}
+      </>
+    );
   }
 
   if (loading) {
@@ -1413,20 +1471,8 @@ function Assessment() {
         </div>
 
         <AssessmentStageFooter hint={requestStageHint}>
-          <button
-            type="button"
-            onClick={() => openView("RISK_ASSESSMENT")}
-            disabled={
-              !canNavigateToWorkflowStage(
-                "RISK_ASSESSMENT",
-                changeRequest?.current_stage
-              )
-            }
-            className="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            View risk step
-          </button>
-          {permissions.canRunRiskPipeline && isIntakeStage ? (
+          {/* The analyst's only entry point for running the risk pipeline. */}
+          {permissions.canRunRiskPipeline && isIntakeStage && (
             <button
               type="button"
               onClick={completeRequestStage}
@@ -1437,20 +1483,7 @@ function Assessment() {
                 ? "Calculating risk..."
                 : "Run risk assessment →"}
             </button>
-          ) : permissions.canSubmit ? (
-            <button
-              type="button"
-              onClick={() => changeInputTab("preview")}
-              disabled={!isTabEnabled("preview")}
-              className="rounded-xl bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
-            >
-              Preview & submit →
-            </button>
-          ) : permissions.submitted && isIntakeStage ? (
-            <span className="rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 px-5 py-3 text-sm font-semibold text-amber-800">
-              Awaiting Risk Analyst
-            </span>
-          ) : null}
+          )}
         </AssessmentStageFooter>
           </>
         )}

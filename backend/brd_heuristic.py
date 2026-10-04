@@ -786,3 +786,176 @@ def extract_intake_heuristic(document_text: str) -> dict:
     }
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Change-request header (the "New change request" form) from a BRD.
+# ---------------------------------------------------------------------------
+
+HEADER_LABELS = {
+    "title": "title",
+    "request title": "title",
+    "change title": "title",
+    "change type": "change_type",
+    "type of change": "change_type",
+    "business unit": "business_unit",
+    "summary": "description",
+    "change summary": "description",
+    "executive summary": "description",
+    "product category": "product_type",
+    "customer segment": "customer_segment",
+}
+
+# Ordered: the first matching keyword wins.
+CHANGE_TYPE_KEYWORDS = (
+    ("customer segment", "CUSTOMER_SEGMENT_CHANGE"),
+    ("vendor", "VENDOR_CHANGE"),
+    ("third party", "VENDOR_CHANGE"),
+    ("third-party", "VENDOR_CHANGE"),
+    ("outsourc", "VENDOR_CHANGE"),
+    ("geograph", "GEOGRAPHY_CHANGE"),
+    ("jurisdiction", "GEOGRAPHY_CHANGE"),
+    ("corridor", "GEOGRAPHY_CHANGE"),
+    ("process", "PROCESS_CHANGE"),
+    ("new product", "NEW_PRODUCT"),
+    ("existing product", "PRODUCT_CHANGE"),
+    ("product change", "PRODUCT_CHANGE"),
+    ("enhancement", "PRODUCT_CHANGE"),
+    ("product", "PRODUCT_CHANGE"),
+)
+
+BUSINESS_UNIT_KEYWORDS = (
+    ("wealth", "Wealth Management"),
+    ("private bank", "Wealth Management"),
+    ("payment", "Payments"),
+    ("remittance", "Payments"),
+    ("cbdc", "Payments"),
+    ("commercial", "Commercial Banking"),
+    ("wholesale", "Commercial Banking"),
+    ("corporate", "Commercial Banking"),
+    ("trade", "Commercial Banking"),
+    ("msme", "Commercial Banking"),
+    ("sme", "Commercial Banking"),
+    ("correspondent", "Commercial Banking"),
+    ("institutional", "Commercial Banking"),
+    ("merchant", "Commercial Banking"),
+    ("retail", "Retail Banking"),
+    ("lending", "Retail Banking"),
+    ("deposit", "Retail Banking"),
+    ("nri", "Retail Banking"),
+)
+
+BUSINESS_SEGMENT_WORDS = (
+    "business", "msme", "sme", "enterprise", "corporate", "company",
+    "companies", "merchant", "ngo", "bank", "jeweller", "dealer",
+    "institution", "trust",
+)
+RETAIL_SEGMENT_WORDS = (
+    "retail", "individual", "salaried", "self-employed", "resident",
+    "nri", "parent", "student", "consumer", "personal",
+)
+HNW_SEGMENT_WORDS = ("high net worth", "hni", "hnw", "affluent", "wealth")
+
+
+def _header_placeholder(value: str) -> bool:
+    text = value.strip().lower()
+    return not text or text.startswith("[blank") or _is_not_applicable(text)
+
+
+def _map_keywords(value: str, keywords) -> str | None:
+    text = value.lower()
+    for keyword, mapped in keywords:
+        if keyword in text:
+            return mapped
+    return None
+
+
+def _map_customer_segment(value: str) -> str | None:
+    text = value.lower()
+    if any(word in text for word in HNW_SEGMENT_WORDS):
+        return "High Net Worth Customers"
+    business = any(word in text for word in BUSINESS_SEGMENT_WORDS)
+    retail = any(word in text for word in RETAIL_SEGMENT_WORDS)
+    if business and retail:
+        return "Retail and Business Customers"
+    if business:
+        return "Business Customers"
+    if retail:
+        return "Retail Customers"
+    return None
+
+
+def _to_product_type(value: str) -> str:
+    primary = re.split(r"[/(]", value)[0]
+    return re.sub(r"[^A-Z0-9]+", "_", primary.upper()).strip("_")
+
+
+def extract_request_header(document_text: str) -> dict:
+    """Pre-fill values for the New change request form.
+
+    Returns {"fields": {...}, "source_values": {...}}: `fields` holds values
+    already mapped to the form's options; `source_values` keeps the BRD's own
+    wording so the UI can show it when a value could not be mapped.
+    """
+    raw: dict[str, str] = {}
+    current: str | None = None
+
+    for line in document_text.splitlines():
+        stripped = line.strip()
+        # Numbered section heading ("2. Product Description"); a wrapped line
+        # that merely starts with a year ("2024. The pilot ...") is longer.
+        is_heading = bool(re.match(r"^\d+\.\s+\S", stripped)) and (
+            len(stripped.split()) <= 6
+        )
+        if not stripped or is_heading:
+            current = None
+            continue
+
+        # Inside a wrapped value, prose such as "...two new corridors: Iran"
+        # or "Currency (CBDC) — the Digital Rupee" must not start a new field;
+        # only a short "Label: value" line does.
+        looks_like_label = current is None or re.match(
+            r"^[\-\*•]?\s*\**[A-Z][A-Za-z0-9 /()&\-]{0,40}\**\s*:\s", stripped
+        )
+        key_value = _parse_key_value_line(stripped) if looks_like_label else None
+        if key_value:
+            field = HEADER_LABELS.get(_clean_label(key_value[0]))
+            current = None
+            if field and field not in raw:
+                raw[field] = key_value[1].strip()
+                current = field
+            continue
+
+        # Wrapped continuation of a multi-line value (e.g. Summary).
+        if current is not None:
+            joiner = "" if raw[current].endswith("-") else " "
+            raw[current] = f"{raw[current]}{joiner}{stripped}".strip()
+
+    source_values = {
+        field: value for field, value in raw.items()
+        if not _header_placeholder(value)
+    }
+
+    fields: dict[str, str] = {}
+    if "title" in source_values:
+        fields["title"] = source_values["title"][:200]
+    if "description" in source_values:
+        fields["description"] = source_values["description"]
+    if "change_type" in source_values:
+        mapped = _map_keywords(source_values["change_type"], CHANGE_TYPE_KEYWORDS)
+        if mapped:
+            fields["change_type"] = mapped
+    if "business_unit" in source_values:
+        mapped = _map_keywords(source_values["business_unit"], BUSINESS_UNIT_KEYWORDS)
+        if mapped:
+            fields["business_unit"] = mapped
+    if "customer_segment" in source_values:
+        mapped = _map_customer_segment(source_values["customer_segment"])
+        if mapped:
+            fields["customer_segment"] = mapped
+    if "product_type" in source_values:
+        product_type = _to_product_type(source_values["product_type"])
+        if product_type:
+            fields["product_type"] = product_type
+
+    return {"fields": fields, "source_values": source_values}

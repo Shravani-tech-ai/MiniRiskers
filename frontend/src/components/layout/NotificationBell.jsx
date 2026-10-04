@@ -3,11 +3,33 @@ import { Bell, CheckCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useNotifications } from "../../context/NotificationContext";
+import NotificationToast from "./NotificationToast";
+
+// Two bells are mounted (compact top bar below lg, full header from lg up) and
+// one is hidden with CSS. Only the visible one renders pop-ups, so a hidden
+// copy's timer cannot close a pop-up the user is hovering.
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(DESKTOP_QUERY).matches
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia(DESKTOP_QUERY);
+    const update = () => setIsDesktop(media.matches);
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  return isDesktop;
+}
 
 function NotificationBell({ compact = false }) {
   const navigate = useNavigate();
   const panelRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const isDesktop = useIsDesktop();
   const {
     notifications,
     unreadCount,
@@ -16,6 +38,8 @@ function NotificationBell({ compact = false }) {
     markRead,
     markAllRead,
     formatRelativeTime,
+    toasts,
+    dismissToast,
   } = useNotifications();
 
   useEffect(() => {
@@ -42,12 +66,15 @@ function NotificationBell({ compact = false }) {
     : "absolute -right-1 -top-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white";
 
   const badgeLabel = unreadCount > 99 ? "99+" : String(unreadCount);
+  const isVisibleBell = compact ? !isDesktop : isDesktop;
+  const showToasts = isVisibleBell && !open && toasts.length > 0;
 
   async function handleNotificationClick(notification) {
     if (!notification.read) {
       await markRead(notification.id);
     }
     setOpen(false);
+    dismissToast(notification.id);
     if (notification.link_path) {
       navigate(notification.link_path);
     }
@@ -57,7 +84,9 @@ function NotificationBell({ compact = false }) {
     <div className="relative" ref={panelRef}>
       <button
         type="button"
-        className={buttonClass}
+        className={`${buttonClass} ${
+          showToasts ? "ring-2 ring-violet-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900" : ""
+        }`}
         aria-label={
           unreadCount > 0
             ? `Notifications, ${unreadCount} unread`
@@ -73,6 +102,20 @@ function NotificationBell({ compact = false }) {
           </span>
         ) : null}
       </button>
+
+      {showToasts ? (
+        <div className="pointer-events-none absolute right-0 top-full z-50 mt-2 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2">
+          {toasts.map((notification) => (
+            <NotificationToast
+              key={notification.id}
+              notification={notification}
+              timeLabel={formatRelativeTime(notification.created_at)}
+              onOpen={() => handleNotificationClick(notification)}
+              onClose={() => dismissToast(notification.id)}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {open ? (
         <div
