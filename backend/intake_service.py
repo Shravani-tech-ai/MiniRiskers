@@ -2,7 +2,11 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-from backend.brd_heuristic import extract_intake_heuristic
+from backend.brd_heuristic import (
+    derive_implied_fields,
+    extract_intake_heuristic,
+    normalize_extraction_values,
+)
 from backend.brd_text import extract_text_from_bytes
 
 from sqlalchemy.orm import Session
@@ -165,11 +169,15 @@ def extract_intake_from_brd(document_text: str) -> tuple[dict, str]:
 
     try:
         parsed = call_gemini_json(prompt)
-        ai_extracted = _normalize_extraction(parsed)
+        ai_extracted = normalize_extraction_values(
+            _normalize_extraction(parsed)
+        )
         merged = merge_extraction_layers(ai_extracted, heuristic)
 
         if _count_filled_required(merged) < _count_filled_required(heuristic):
             merged = merge_extraction_layers(heuristic, ai_extracted)
+
+        derive_implied_fields(merged, document_text)
 
         method = "ai+rules"
 

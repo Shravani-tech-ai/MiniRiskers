@@ -1,397 +1,788 @@
 import re
 
+SECTIONS = (
+    "product",
+    "customer",
+    "geography",
+    "transaction",
+    "channel",
+    "vendor",
+)
+
+# Header text (after numbering / markdown is stripped) that opens a section.
 SECTION_HEADERS = {
     "product": (
         "product description",
         "product information",
         "product overview",
-        "2. product",
+        "product details",
+        "product",
     ),
     "customer": (
         "customer profile",
         "customer information",
-        "3. customer",
+        "customer details",
+        "customer",
     ),
     "geography": (
         "geography",
+        "geographic",
         "jurisdiction",
-        "4. geography",
     ),
     "transaction": (
         "transaction profile",
         "transaction information",
-        "5. transaction",
+        "transaction details",
+        "transaction",
     ),
     "channel": (
         "channel information",
+        "channel details",
+        "delivery channel",
         "channel",
-        "6. channel",
     ),
     "vendor": (
+        "vendor / third-party information",
+        "vendor information",
+        "third-party information",
+        "third party information",
+        "vendor",
         "third-party",
         "third party",
-        "vendor information",
-        "vendor",
-        "7. vendor",
+        "outsourcing",
     ),
 }
 
-FIELD_ALIASES = {
-    "product name": ("product", "product_name"),
-    "name of product": ("product", "product_name"),
-    "product category": ("product", "product_category"),
-    "category": ("product", "product_category"),
-    "description": ("product", "product_description"),
-    "product description": ("product", "product_description"),
-    "transaction type": ("product", "transaction_type"),
-    "currency": ("product", "currency"),
-    "countries supported": ("product", "countries_supported"),
-    "supported countries": ("product", "countries_supported"),
-    "per-transaction limit": ("product", "transaction_limit"),
-    "transaction limit": ("product", "transaction_limit"),
-    "expected monthly volume": ("product", "expected_transaction_volume"),
-    "customer type": ("customer", "customer_type"),
-    "type of customer": ("customer", "customer_type"),
-    "customer segment": ("customer", "customer_segment"),
-    "segment": ("customer", "customer_segment"),
-    "onboarding method": ("customer", "onboarding_method"),
-    "onboarding": ("customer", "onboarding_method"),
-    "kyc method": ("customer", "kyc_method"),
-    "expected customer count": ("customer", "expected_customer_count"),
-    "country": ("geography", "country"),
-    "primary country": ("geography", "country"),
-    "primary country (bank operations)": ("geography", "country"),
-    "bank country": ("geography", "country"),
-    "country code": ("geography", "country_code"),
-    "customer country": ("geography", "customer_country"),
-    "transaction country": ("geography", "transaction_country"),
-    "beneficiary country": ("geography", "beneficiary_country"),
-    "domestic or cross-border": ("geography", "domestic_or_cross_border"),
-    "cross border type": ("geography", "domestic_or_cross_border"),
-    "average transaction amount": ("transaction", "average_transaction_amount"),
-    "maximum transaction amount": ("transaction", "maximum_transaction_amount"),
-    "max transaction amount": ("transaction", "maximum_transaction_amount"),
-    "expected daily volume": ("transaction", "expected_daily_volume"),
-    "expected monthly volume (transaction)": (
-        "transaction",
-        "expected_monthly_volume",
-    ),
-    "expected frequency": ("transaction", "expected_frequency"),
-    "number of countries": ("transaction", "number_of_countries"),
-    "transaction velocity": ("transaction", "transaction_velocity"),
-    "channel type": ("channel", "channel_type"),
-    "delivery channel": ("channel", "channel_type"),
-    "vendor name": ("vendor", "vendor_name"),
-    "third party name": ("vendor", "vendor_name"),
-    "third-party name": ("vendor", "vendor_name"),
-    "vendor type": ("vendor", "vendor_type"),
-    "third party type": ("vendor", "vendor_type"),
-    "vendor country": ("vendor", "country"),
-    "service description": ("vendor", "service_description"),
-    "criticality": ("vendor", "criticality"),
-    "outsourcing type": ("vendor", "outsourcing_type"),
+# Labels are matched per section first, so "Transaction Type" or "Country"
+# land in whichever section the BRD lists them under.
+SECTION_FIELDS = {
+    "product": {
+        "product name": "product_name",
+        "name of product": "product_name",
+        "product category": "product_category",
+        "category": "product_category",
+        "description": "product_description",
+        "product description": "product_description",
+        "transaction type": "transaction_type",
+        "currency": "currency",
+        "currencies": "currency",
+        "countries supported": "countries_supported",
+        "supported countries": "countries_supported",
+        "per-transaction limit": "transaction_limit",
+        "per transaction limit": "transaction_limit",
+        "transaction limit": "transaction_limit",
+        "expected monthly volume": "expected_transaction_volume",
+        "expected transaction volume": "expected_transaction_volume",
+        "expected transaction frequency": "expected_transaction_frequency",
+        "new product flag": "new_product_flag",
+        "new product": "new_product_flag",
+        "digital channel": "digital_channel",
+        "branch channel": "branch_channel",
+        "agent channel": "agent_channel",
+        "cross border": "cross_border",
+        "cross-border": "cross_border",
+        "cash involved": "cash_involved",
+    },
+    "customer": {
+        "customer type": "customer_type",
+        "type of customer": "customer_type",
+        "customer segment": "customer_segment",
+        "segment": "customer_segment",
+        "onboarding method": "onboarding_method",
+        "onboarding": "onboarding_method",
+        "kyc method": "kyc_method",
+        "kyc required": "kyc_required",
+        "expected customer count": "expected_customer_count",
+        "customer count": "expected_customer_count",
+        "pep exposure": "pep_exposure",
+        "high risk customer exposure": "high_risk_customer_exposure",
+        "individual customer": "individual_customer",
+        "business customer": "business_customer",
+        "foreign customer": "foreign_customer",
+        "beneficial owner required": "beneficial_owner_required",
+        "customer geographic distribution": "customer_geographic_distribution",
+    },
+    "geography": {
+        "primary country": "country",
+        "primary country (bank operations)": "country",
+        "bank country": "country",
+        "country of operations": "country",
+        "country": "country",
+        "country code": "country_code",
+        "customer country": "customer_country",
+        "transaction country": "transaction_country",
+        "beneficiary country": "beneficiary_country",
+        "domestic or cross-border": "domestic_or_cross_border",
+        "domestic or cross border": "domestic_or_cross_border",
+        "cross border type": "domestic_or_cross_border",
+        "high risk jurisdiction flag": "high_risk_jurisdiction_flag",
+        "high risk jurisdiction": "high_risk_jurisdiction_flag",
+        "sanctions exposure": "sanctions_exposure",
+    },
+    "transaction": {
+        "transaction type": "transaction_type",
+        "average transaction amount": "average_transaction_amount",
+        "maximum transaction amount": "maximum_transaction_amount",
+        "max transaction amount": "maximum_transaction_amount",
+        "expected daily volume": "expected_daily_volume",
+        "expected monthly volume (transaction)": "expected_monthly_volume",
+        "expected monthly volume": "expected_monthly_volume",
+        "expected frequency": "expected_frequency",
+        "number of countries": "number_of_countries",
+        "transaction velocity": "transaction_velocity",
+        "round amount risk": "round_amount_risk",
+        "rapid movement possible": "rapid_movement_possible",
+        "cash involved": "cash_involved",
+        "cross border": "cross_border",
+        "cross-border": "cross_border",
+    },
+    "channel": {
+        "channel type": "channel_type",
+        "delivery channel": "_delivery_channel",
+        "mobile banking": "mobile_banking",
+        "internet banking": "internet_banking",
+        "branch": "branch",
+        "agent": "agent",
+        "api": "api",
+        "third party channel": "third_party_channel",
+        "third-party channel": "third_party_channel",
+        "remote onboarding": "remote_onboarding",
+    },
+    "vendor": {
+        "vendor name": "vendor_name",
+        "third party name": "vendor_name",
+        "third-party name": "vendor_name",
+        "vendor type": "vendor_type",
+        "third party type": "vendor_type",
+        "third-party type": "vendor_type",
+        "vendor country": "country",
+        "country": "country",
+        "india based": "india_based",
+        "service description": "service_description",
+        "description": "service_description",
+        "criticality": "criticality",
+        "outsourcing type": "outsourcing_type",
+        "due diligence completed": "due_diligence_completed",
+        "contract completed": "contract_completed",
+        "audit rights": "audit_rights",
+        "business continuity plan": "business_continuity_plan",
+        "cross border processing": "cross_border_processing",
+        "cross-border processing": "cross_border_processing",
+        "handles customer data": "handles_customer_data",
+        "handles transactions": "handles_transactions",
+        "handles payment data": "handles_payment_data",
+    },
 }
+
+# Fallback for labels outside any recognised section: the first section that
+# defines a label owns it, except where overridden below.
+GLOBAL_FIELDS: dict[str, tuple[str, str]] = {}
+for _section in SECTIONS:
+    for _label, _field in SECTION_FIELDS[_section].items():
+        GLOBAL_FIELDS.setdefault(_label, (_section, _field))
+GLOBAL_FIELDS["expected monthly volume (transaction)"] = (
+    "transaction",
+    "expected_monthly_volume",
+)
+GLOBAL_FIELDS["expected frequency"] = ("transaction", "expected_frequency")
+GLOBAL_FIELDS["vendor country"] = ("vendor", "country")
+
+BOOL_FIELDS = {
+    "digital_channel",
+    "branch_channel",
+    "agent_channel",
+    "cross_border",
+    "cash_involved",
+    "new_product_flag",
+    "individual_customer",
+    "business_customer",
+    "foreign_customer",
+    "kyc_required",
+    "beneficial_owner_required",
+    "pep_exposure",
+    "high_risk_customer_exposure",
+    "high_risk_jurisdiction_flag",
+    "sanctions_exposure",
+    "round_amount_risk",
+    "rapid_movement_possible",
+    "mobile_banking",
+    "internet_banking",
+    "branch",
+    "agent",
+    "api",
+    "third_party_channel",
+    "remote_onboarding",
+    "india_based",
+    "handles_customer_data",
+    "handles_transactions",
+    "handles_payment_data",
+    "due_diligence_completed",
+    "contract_completed",
+    "audit_rights",
+    "business_continuity_plan",
+    "cross_border_processing",
+}
+
+NUMERIC_FIELDS = {
+    "transaction_limit",
+    "expected_transaction_volume",
+    "expected_customer_count",
+    "average_transaction_amount",
+    "maximum_transaction_amount",
+    "expected_daily_volume",
+    "expected_monthly_volume",
+    "expected_frequency",
+    "number_of_countries",
+    "transaction_velocity",
+}
+
+BLANK_VALUES = {"", "[blank]", "blank", "-", "--", "tbd", "null"}
+NOT_APPLICABLE = {"n/a", "na", "not applicable", "not available", "unknown"}
 
 
 def _clean_label(label: str) -> str:
     cleaned = re.sub(r"[*_`#]", "", label)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip().lower()
-    cleaned = re.sub(r"\s*\([^)]*\)", "", cleaned).strip()
-    return cleaned
+    cleaned = re.sub(r"^[\-•]\s*", "", cleaned)
+    return re.sub(r"\s+", " ", cleaned).strip().lower()
 
 
-def _parse_bool(value: str) -> bool | None:
-    lower = value.strip().lower()
-    if lower in {"yes", "true", "y", "enabled"}:
+def _is_blank(value) -> bool:
+    if value is None:
         return True
-    if lower in {"no", "false", "n", "disabled"}:
+    if isinstance(value, str):
+        lower = value.strip().lower()
+        return lower in BLANK_VALUES or lower.startswith("[blank")
+    return False
+
+
+def _is_not_applicable(value: str) -> bool:
+    lower = value.strip().lower()
+    return lower in NOT_APPLICABLE or lower.startswith("not applicable")
+
+
+def _parse_bool(value) -> bool | None:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+
+    match = re.match(r"\s*([a-z]+)", str(value).lower())
+    if not match:
+        return None
+
+    word = match.group(1)
+    if word in {"yes", "true", "y", "enabled", "required", "applicable"}:
+        return True
+    if word in {"no", "false", "n", "disabled", "none"}:
         return False
     return None
 
 
-def _parse_number(value: str):
-    digits = re.sub(r"[^\d.]", "", value.replace(",", ""))
-    if not digits:
+def _parse_number(value):
+    if isinstance(value, bool):
         return None
-    try:
-        if "." in digits:
-            return float(digits)
-        return int(digits)
-    except ValueError:
+    if isinstance(value, (int, float)):
+        return value
+    if value is None:
         return None
 
+    text = str(value).lower()
+    match = re.search(r"\d[\d,]*(?:\.\d+)?", text)
+    if not match:
+        return None
 
-def _normalize_customer_type(value: str) -> str:
-    lower = value.strip().lower()
-    if "individual" in lower or "retail" in lower:
-        return "INDIVIDUAL"
-    if "business" in lower or "corporate" in lower:
-        return "BUSINESS"
-    return value.strip()
+    raw = match.group(0).replace(",", "")
+    number = float(raw) if "." in raw else int(raw)
+
+    tail = text[match.end():match.end() + 8]
+    if re.match(r"\s*(lakh|lac)", tail):
+        number *= 100_000
+    elif re.match(r"\s*crore", tail):
+        number *= 10_000_000
+    elif re.match(r"\s*(million|mn)\b", tail):
+        number *= 1_000_000
+
+    if isinstance(number, float) and number.is_integer():
+        number = int(number)
+    return number
 
 
-def _normalize_cross_border(value: str) -> str:
-    lower = value.strip().lower()
-    if "cross" in lower:
-        return "CROSS_BORDER"
-    if "domestic" in lower:
-        return "DOMESTIC"
-    return value.strip()
+def _first_keyword(value: str, keywords: dict[str, str]) -> str | None:
+    """Return the mapped value of the keyword that appears earliest."""
+    lower = value.lower()
+    best = None
+    best_pos = len(lower) + 1
+
+    for keyword, mapped in keywords.items():
+        match = re.search(rf"\b{re.escape(keyword)}", lower)
+        if match and match.start() < best_pos:
+            best_pos = match.start()
+            best = mapped
+
+    return best
 
 
-def _set_field(result: dict, section: str, field: str, value):
-    if value is None or value == "":
-        return
+def normalize_customer_type(value) -> str | None:
+    if _is_blank(value):
+        return None
+    return _first_keyword(
+        str(value),
+        {
+            "individual": "INDIVIDUAL",
+            "retail": "INDIVIDUAL",
+            "personal": "INDIVIDUAL",
+            "consumer": "INDIVIDUAL",
+            "nri": "INDIVIDUAL",
+            "business": "BUSINESS",
+            "corporate": "BUSINESS",
+            "sme": "BUSINESS",
+            "msme": "BUSINESS",
+            "entity": "BUSINESS",
+            "ngo": "BUSINESS",
+            "trust": "BUSINESS",
+            "institution": "BUSINESS",
+            "merchant": "BUSINESS",
+            "bank": "BUSINESS",
+        },
+    )
 
-    if section not in result:
-        result[section] = {}
 
-    if field == "customer_type" and isinstance(value, str):
-        value = _normalize_customer_type(value)
+def normalize_cross_border(value) -> str | None:
+    if _is_blank(value):
+        return None
+    return _first_keyword(
+        str(value),
+        {
+            "cross": "CROSS_BORDER",
+            "international": "CROSS_BORDER",
+            "domestic": "DOMESTIC",
+        },
+    )
 
-    if field == "domestic_or_cross_border" and isinstance(value, str):
-        value = _normalize_cross_border(value)
 
-    bool_fields = {
-        "digital_channel",
-        "branch_channel",
-        "agent_channel",
-        "cross_border",
-        "cash_involved",
-        "new_product_flag",
-        "individual_customer",
-        "business_customer",
-        "foreign_customer",
-        "kyc_required",
-        "beneficial_owner_required",
-        "pep_exposure",
-        "high_risk_customer_exposure",
-        "high_risk_jurisdiction_flag",
-        "sanctions_exposure",
-        "round_amount_risk",
-        "rapid_movement_possible",
-        "mobile_banking",
-        "internet_banking",
-        "branch",
-        "agent",
-        "api",
-        "third_party_channel",
-        "remote_onboarding",
-        "india_based",
-        "handles_customer_data",
-        "handles_transactions",
-        "handles_payment_data",
-        "due_diligence_completed",
-        "contract_completed",
-        "audit_rights",
-        "business_continuity_plan",
-        "cross_border_processing",
-    }
+def normalize_channel_type(value) -> str | None:
+    if _is_blank(value):
+        return None
+    return _first_keyword(
+        str(value),
+        {
+            "digital": "DIGITAL",
+            "mobile": "DIGITAL",
+            "internet": "DIGITAL",
+            "online": "DIGITAL",
+            "app": "DIGITAL",
+            "upi": "DIGITAL",
+            "branch": "BRANCH",
+            "agent": "AGENT",
+            "api": "API",
+            "swift": "API",
+            "third party": "THIRD_PARTY",
+            "third-party": "THIRD_PARTY",
+            "partner": "THIRD_PARTY",
+        },
+    )
 
-    if field in bool_fields:
-        parsed_bool = _parse_bool(str(value))
-        if parsed_bool is not None:
-            result[section][field] = parsed_bool
-        return
 
-    numeric_fields = {
-        "transaction_limit",
-        "expected_transaction_volume",
-        "expected_customer_count",
-        "average_transaction_amount",
-        "maximum_transaction_amount",
-        "expected_daily_volume",
-        "expected_monthly_volume",
-        "expected_frequency",
-        "number_of_countries",
-        "transaction_velocity",
-    }
+def normalize_criticality(value) -> str | None:
+    if _is_blank(value):
+        return None
+    return _first_keyword(
+        str(value),
+        {
+            "critical": "CRITICAL",
+            "high": "HIGH",
+            "medium": "MEDIUM",
+            "moderate": "MEDIUM",
+            "low": "LOW",
+        },
+    )
 
-    if field in numeric_fields:
-        parsed_number = _parse_number(str(value))
-        if parsed_number is not None:
-            result[section][field] = parsed_number
-        return
 
-    cleaned = str(value).strip().strip("|").strip()
-    result[section][field] = cleaned
+ENUM_NORMALIZERS = {
+    ("customer", "customer_type"): normalize_customer_type,
+    ("geography", "domestic_or_cross_border"): normalize_cross_border,
+    ("channel", "channel_type"): normalize_channel_type,
+    ("vendor", "criticality"): normalize_criticality,
+}
+
+
+def _coerce_value(section: str, field: str, value):
+    """Convert a raw extracted value to the type the intake forms expect."""
+    if _is_blank(value):
+        return None
+
+    normalizer = ENUM_NORMALIZERS.get((section, field))
+    if normalizer:
+        return normalizer(value)
+
+    if field in BOOL_FIELDS:
+        return _parse_bool(value)
+
+    if field in NUMERIC_FIELDS:
+        return _parse_number(value)
+
+    if isinstance(value, str):
+        cleaned = re.sub(r"\s+", " ", value).strip().strip("|").strip()
+        return cleaned or None
+
+    return value
+
+
+def normalize_extraction_values(extracted: dict) -> dict:
+    """Coerce every section value (from rules or AI) into form-ready types."""
+    for section in SECTIONS:
+        data = extracted.get(section)
+        if not isinstance(data, dict):
+            extracted[section] = {}
+            continue
+
+        for field in list(data):
+            coerced = _coerce_value(section, field, data[field])
+            if coerced is None:
+                data.pop(field)
+            else:
+                data[field] = coerced
+
+    return extracted
 
 
 def _detect_section(line: str) -> str | None:
-    lower = _clean_label(line)
+    """Return a section for header lines, "other" for unrelated headers."""
+    stripped = line.strip()
+    if not stripped:
+        return None
+
+    numbered = re.match(r"^(#+\s*|\d+(\.\d+)*[.)]\s+)", stripped)
+    text = _clean_label(re.sub(r"^(#+\s*|\d+(\.\d+)*[.)]\s+)", "", stripped))
+    text = text.rstrip(":").strip()
+
+    # Key/value lines are fields, not headers.
+    if ":" in text or "|" in text:
+        return None
 
     for section, hints in SECTION_HEADERS.items():
         for hint in hints:
-            if hint in lower and len(lower) < 80:
+            if text == hint:
+                return section
+            # Numbered / markdown headings may add words ("2. Product Description").
+            if (
+                numbered
+                and text.startswith(hint)
+                and len(text) <= len(hint) + 25
+                and not re.search(r"[,.;]", text)
+            ):
                 return section
 
-    return None
+    return "other" if numbered and len(text) < 60 else None
 
 
 def _resolve_label(label: str, active_section: str | None) -> tuple[str, str] | None:
     normalized = _clean_label(label)
+    candidates = [normalized]
+    without_parens = re.sub(r"\s*\([^)]*\)", "", normalized).strip()
+    if without_parens != normalized:
+        candidates.append(without_parens)
 
-    if not normalized or normalized in {"attribute", "detail", "field", "value"}:
-        return None
+    for candidate in candidates:
+        if active_section in SECTION_FIELDS:
+            field = SECTION_FIELDS[active_section].get(candidate)
+            if field:
+                return active_section, field
 
-    if normalized in FIELD_ALIASES:
-        return FIELD_ALIASES[normalized]
-
-    if active_section == "transaction" and "transaction type" in normalized:
-        return ("transaction", "transaction_type")
-
-    if active_section == "product" and "transaction type" in normalized:
-        return ("product", "transaction_type")
-
-    best_match = None
-    best_length = 0
-
-    for alias, mapping in FIELD_ALIASES.items():
-        if normalized == alias or alias in normalized or normalized in alias:
-            if len(alias) > best_length:
-                best_length = len(alias)
-                best_match = mapping
-
-    if best_match:
-        return best_match
-
-    if "product name" in normalized or normalized.endswith(" product"):
-        return ("product", "product_name")
-
-    if "vendor name" in normalized:
-        return ("vendor", "vendor_name")
-
-    if "primary country" in normalized or normalized == "country of operations":
-        return ("geography", "country")
+        if candidate in GLOBAL_FIELDS:
+            return GLOBAL_FIELDS[candidate]
 
     return None
 
 
 def _parse_key_value_line(line: str) -> tuple[str, str] | None:
-    patterns = [
-        r"^[\-\*•]\s*(.+?)\s*[:\|]\s*(.+)$",
-        r"^(.+?)\s*[:\|]\s*(.+)$",
-        r"^(.+?)\s+[-–—]\s+(.+)$",
-        r"^\*\*(.+?)\*\*\s*[:\|]?\s*(.+)$",
-    ]
-
     stripped = line.strip()
 
     if not stripped or stripped.startswith("#"):
         return None
 
+    patterns = [
+        r"^\*\*(.+?)\*\*\s*[:\|]?\s*(.*)$",
+        r"^[\-\*•]?\s*([^:|]+?)\s*[:\|]\s*(.*)$",
+        r"^(.+?)\s+[–—]\s+(.+)$",
+    ]
+
     for pattern in patterns:
-        match = re.match(pattern, stripped, re.IGNORECASE)
+        match = re.match(pattern, stripped)
 
         if match:
             label = match.group(1).strip()
             value = match.group(2).strip()
 
-            if label and value and len(label) < 120:
+            if label and len(label) < 80:
                 return label, value
 
     return None
 
 
-def extract_intake_heuristic(document_text: str) -> dict:
-    result = {
-        "product": {},
-        "customer": {},
-        "geography": {},
-        "transaction": {},
-        "channel": {},
-        "vendor": {},
-        "provenance_notes": {
-            "summary": "Heuristic extraction from BRD structure and labels.",
-            "low_confidence_fields": [],
-        },
-    }
-
+def _collect_fields(document_text: str) -> list[list]:
+    """Return [section, field, value] entries, joining wrapped lines."""
+    entries: list[list] = []
     active_section: str | None = None
+    current: list | None = None
 
     for line in document_text.splitlines():
-        section_hint = _detect_section(line)
+        stripped = line.strip()
 
+        if not stripped:
+            current = None
+            continue
+
+        section_hint = _detect_section(stripped)
         if section_hint:
-            active_section = section_hint
+            active_section = None if section_hint == "other" else section_hint
+            current = None
+            continue
 
-        if "|" in line:
+        if "|" in stripped:
             cells = [
                 cell.strip()
-                for cell in line.split("|")
-                if cell.strip() and not set(cell.strip()) <= {"-"}
+                for cell in stripped.split("|")
+                if cell.strip() and not set(cell.strip()) <= {"-", ":"}
             ]
-
             if len(cells) >= 2:
-                label = cells[0].strip("|").strip()
-                value = cells[1].strip("|").strip()
-                mapping = _resolve_label(label, active_section)
-
+                mapping = _resolve_label(cells[0], active_section)
                 if mapping:
-                    section, field = mapping
-                    _set_field(result, section, field, value)
+                    current = [mapping[0], mapping[1], cells[1]]
+                    entries.append(current)
+                    continue
 
-        key_value = _parse_key_value_line(line)
-
+        key_value = _parse_key_value_line(stripped)
         if key_value:
-            label, value = key_value
-            mapping = _resolve_label(label, active_section)
-
+            mapping = _resolve_label(key_value[0], active_section)
             if mapping:
-                section, field = mapping
-                _set_field(result, section, field, value)
+                current = [mapping[0], mapping[1], key_value[1]]
+                entries.append(current)
+                continue
 
+        # Anything else continues the previous field's wrapped value.
+        if current is not None:
+            joiner = "" if current[2].endswith("-") else " "
+            current[2] = f"{current[2]}{joiner}{stripped}".strip()
+
+    return entries
+
+
+def _set_if_missing(result: dict, section: str, field: str, value) -> None:
+    if value is None:
+        return
+    if result[section].get(field) is None:
+        result[section][field] = value
+
+
+def _mentions_cash(*values) -> bool:
+    text = " ".join(str(value) for value in values if value).lower()
+    return bool(re.search(r"\bcash\b(?![- ]flow)", text))
+
+
+def derive_implied_fields(result: dict, document_text: str = "") -> dict:
+    """Fill fields the BRD implies but does not state, never overriding."""
+    product = result["product"]
+    customer = result["customer"]
+    geography = result["geography"]
+    transaction = result["transaction"]
+    channel = result["channel"]
+    vendor = result["vendor"]
     lower_text = document_text.lower()
 
-    if "cross-border" in lower_text or "cross border" in lower_text:
-        _set_field(result, "product", "cross_border", "yes")
-        _set_field(result, "transaction", "cross_border", "yes")
-        _set_field(
-            result,
-            "geography",
-            "domestic_or_cross_border",
-            "CROSS_BORDER",
+    delivery = channel.pop("_delivery_channel", None)
+
+    # Channel
+    if delivery:
+        if channel.get("channel_type") is None:
+            channel_type = normalize_channel_type(delivery)
+            if channel_type:
+                channel["channel_type"] = channel_type
+        delivery_lower = delivery.lower()
+        for keyword, field in (
+            ("mobile", "mobile_banking"),
+            ("internet banking", "internet_banking"),
+            ("branch", "branch"),
+            ("agent", "agent"),
+        ):
+            if keyword in delivery_lower:
+                _set_if_missing(result, "channel", field, True)
+
+    if channel.get("channel_type") is None:
+        if channel.get("mobile_banking") or channel.get("internet_banking"):
+            channel["channel_type"] = "DIGITAL"
+        elif channel.get("branch"):
+            channel["channel_type"] = "BRANCH"
+        elif channel.get("agent"):
+            channel["channel_type"] = "AGENT"
+        elif channel.get("api"):
+            channel["channel_type"] = "API"
+        elif "mobile banking" in lower_text or "internet banking" in lower_text:
+            channel["channel_type"] = "DIGITAL"
+
+    if channel.get("mobile_banking") is None and "mobile banking" in lower_text:
+        channel["mobile_banking"] = True
+    if channel.get("internet_banking") is None and "internet banking" in lower_text:
+        channel["internet_banking"] = True
+
+    if channel:
+        digital = bool(
+            channel.get("mobile_banking")
+            or channel.get("internet_banking")
+            or channel.get("api")
+            or channel.get("channel_type") == "DIGITAL"
         )
+        _set_if_missing(result, "product", "digital_channel", digital)
+        if channel.get("branch") is not None:
+            _set_if_missing(result, "product", "branch_channel", channel["branch"])
+        if channel.get("agent") is not None:
+            _set_if_missing(result, "product", "agent_channel", channel["agent"])
+        if channel.get("remote_onboarding") is None and str(
+            customer.get("onboarding_method", "")
+        ).lower().startswith(("digital", "mobile", "online", "remote", "video")):
+            channel["remote_onboarding"] = True
 
-    if "mobile banking" in lower_text:
-        _set_field(result, "channel", "mobile_banking", "yes")
-        _set_field(result, "product", "digital_channel", "yes")
+    # Geography / cross-border
+    if geography.get("domestic_or_cross_border") is None:
+        if re.search(r"(?<!no )cross[- ]border", lower_text):
+            geography["domestic_or_cross_border"] = "CROSS_BORDER"
+        elif geography.get("country"):
+            geography["domestic_or_cross_border"] = "DOMESTIC"
 
-    if "internet banking" in lower_text:
-        _set_field(result, "channel", "internet_banking", "yes")
+    exposure = geography.get("domestic_or_cross_border")
+    if exposure:
+        is_cross_border = exposure == "CROSS_BORDER"
+        _set_if_missing(result, "product", "cross_border", is_cross_border)
+        _set_if_missing(result, "transaction", "cross_border", is_cross_border)
 
-    if "new product" in lower_text:
-        _set_field(result, "product", "new_product_flag", "yes")
+    if not geography.get("country") and "india" in lower_text:
+        geography["country"] = "India"
+    if geography.get("country"):
+        _set_if_missing(result, "geography", "customer_country", geography["country"])
 
-    if not result["product"].get("transaction_type") and "remittance" in lower_text:
-        _set_field(
+    # Transaction type is required in both product and transaction sections.
+    if not product.get("transaction_type"):
+        if transaction.get("transaction_type"):
+            product["transaction_type"] = transaction["transaction_type"]
+        elif "remittance" in lower_text:
+            product["transaction_type"] = "Cross-border remittance"
+    if not transaction.get("transaction_type") and product.get("transaction_type"):
+        transaction["transaction_type"] = product["transaction_type"]
+
+    if product.get("transaction_limit") is None:
+        _set_if_missing(
             result,
             "product",
-            "transaction_type",
-            "Cross-border remittance",
+            "transaction_limit",
+            transaction.get("maximum_transaction_amount"),
+        )
+    if transaction.get("maximum_transaction_amount") is None:
+        _set_if_missing(
+            result,
+            "transaction",
+            "maximum_transaction_amount",
+            product.get("transaction_limit"),
+        )
+    _set_if_missing(
+        result,
+        "transaction",
+        "expected_monthly_volume",
+        product.get("expected_transaction_volume"),
+    )
+    _set_if_missing(
+        result,
+        "product",
+        "expected_transaction_volume",
+        transaction.get("expected_monthly_volume"),
+    )
+
+    # Cash
+    has_cash = _mentions_cash(
+        product.get("transaction_type"),
+        product.get("product_description"),
+        transaction.get("transaction_type"),
+        delivery,
+    )
+    _set_if_missing(result, "product", "cash_involved", has_cash)
+    _set_if_missing(
+        result,
+        "transaction",
+        "cash_involved",
+        product.get("cash_involved"),
+    )
+
+    if product.get("new_product_flag") is None and "new product" in lower_text:
+        product["new_product_flag"] = True
+
+    # Customer
+    customer_type = customer.get("customer_type")
+    if customer_type:
+        _set_if_missing(
+            result, "customer", "individual_customer", customer_type == "INDIVIDUAL"
+        )
+        _set_if_missing(
+            result, "customer", "business_customer", customer_type == "BUSINESS"
+        )
+        _set_if_missing(
+            result,
+            "customer",
+            "beneficial_owner_required",
+            customer_type == "BUSINESS",
         )
 
-    if not result["transaction"].get("transaction_type"):
-        if result["product"].get("transaction_type"):
-            _set_field(
-                result,
-                "transaction",
-                "transaction_type",
-                result["product"]["transaction_type"],
-            )
-        elif "remittance" in lower_text:
-            _set_field(
-                result,
-                "transaction",
-                "transaction_type",
-                "Outbound cross-border remittance",
-            )
+    kyc_method = customer.get("kyc_method")
+    if kyc_method:
+        _set_if_missing(
+            result,
+            "customer",
+            "kyc_required",
+            not _is_not_applicable(str(kyc_method)),
+        )
 
-    if not result["channel"].get("channel_type"):
-        _set_field(result, "channel", "channel_type", "DIGITAL")
+    customer_country = str(geography.get("customer_country") or "")
+    segment_text = f"{customer.get('customer_segment', '')} {customer_country}".lower()
+    if customer_country or customer.get("customer_segment"):
+        foreign = bool(
+            re.search(r"\b(nri|non-resident|foreign|overseas)\b", segment_text)
+            or (customer_country and "india" not in customer_country.lower())
+        )
+        _set_if_missing(result, "customer", "foreign_customer", foreign)
 
-    if not result["geography"].get("country") and "india" in lower_text:
-        _set_field(result, "geography", "country", "India")
-        _set_field(result, "geography", "customer_country", "India")
+    if customer.get("customer_geographic_distribution") is None:
+        distribution = customer_country or product.get("countries_supported")
+        if distribution:
+            customer["customer_geographic_distribution"] = distribution
+
+    # Vendor
+    vendor_country = vendor.get("country")
+    if (
+        vendor.get("india_based") is None
+        and vendor_country
+        and not _is_not_applicable(str(vendor_country))
+    ):
+        vendor["india_based"] = "india" in str(vendor_country).lower()
+
+    return result
+
+
+def extract_intake_heuristic(document_text: str) -> dict:
+    result = {section: {} for section in SECTIONS}
+
+    for section, field, value in _collect_fields(document_text):
+        if field == "_delivery_channel":
+            if value.strip():
+                result[section][field] = value.strip()
+            continue
+
+        coerced = _coerce_value(section, field, value)
+        if coerced is not None:
+            result[section][field] = coerced
+
+    derive_implied_fields(result, document_text)
+
+    result["provenance_notes"] = {
+        "summary": "Heuristic extraction from BRD structure and labels.",
+        "low_confidence_fields": [],
+    }
 
     return result
