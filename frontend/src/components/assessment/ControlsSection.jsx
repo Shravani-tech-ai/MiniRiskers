@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, Pencil, ShieldCheck } from "lucide-react";
 
 import api from "../../services/api";
 
@@ -9,9 +9,15 @@ function ControlsSection({
   riskAssessment,
   onControlsChanged,
   setError,
+  readOnly = false,
+  reopensRiskStage = false,
 }) {
   const [saving, setSaving] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  // Coming back from analyst review, show the documented controls first and
+  // only open the form when the analyst chooses to edit them.
+  const [editing, setEditing] = useState(!reopensRiskStage);
+  const showForm = !readOnly && editing;
   const [form, setForm] = useState({
     control_name: "",
     control_category: "AML",
@@ -106,26 +112,46 @@ function ControlsSection({
                 Controls & residual risk
               </h3>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                Document mitigating controls before residual risk can be
-                calculated. Residual uses average control effectiveness
-                against the inherent score.
+                {!showForm
+                  ? "Mitigating controls documented for this assessment. Residual uses average control effectiveness against the inherent score."
+                  : "Document mitigating controls before residual risk can be calculated. Residual uses average control effectiveness against the inherent score."}
               </p>
             </div>
           </div>
 
-          {riskAssessment && (
-            <div className="text-right text-sm">
-              <p className="text-slate-500 dark:text-slate-400">Control adjustment</p>
-              <p className="font-semibold text-slate-900 dark:text-slate-100">
-                {riskAssessment.control_adjustment ?? "—"}
-              </p>
-            </div>
-          )}
+          <div className="flex shrink-0 flex-col items-end gap-3">
+            {riskAssessment && (
+              <div className="text-right text-sm">
+                <p className="text-slate-500 dark:text-slate-400">Control adjustment</p>
+                <p className="font-semibold text-slate-900 dark:text-slate-100">
+                  {riskAssessment.control_adjustment ?? "—"}
+                </p>
+              </div>
+            )}
+            {!readOnly && !editing && (
+              <button
+                type="button"
+                onClick={() => setEditing(true)}
+                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950/60"
+              >
+                <Pencil size={15} />
+                Edit controls
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-6 p-6 lg:grid-cols-2">
+      <div className={`grid gap-6 p-6 ${showForm ? "lg:grid-cols-2" : ""}`}>
+        {showForm && (
         <form onSubmit={handleSubmit} className="space-y-4">
+          {reopensRiskStage && (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+              Adding a control recalculates residual risk and returns this
+              request to the risk step. Continue to analyst review afterwards
+              to regenerate the AI assessment.
+            </p>
+          )}
           <div>
             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Control name *
@@ -198,7 +224,18 @@ function ControlsSection({
           >
             {saving ? "Saving..." : "Add control"}
           </button>
+          {reopensRiskStage && (
+            <button
+              type="button"
+              onClick={() => setEditing(false)}
+              disabled={saving}
+              className="ml-3 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+          )}
         </form>
+        )}
 
         <div>
           <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">

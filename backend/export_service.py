@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime
 
 from sqlalchemy.orm import Session
@@ -301,3 +302,189 @@ def export_to_pdf_bytes(export_data: dict) -> bytes:
         pdf.multi_cell(0, 3.5, line)
 
     return pdf.output()
+
+
+def build_ai_assessment_payload(recommendation: AIRecommendation) -> dict:
+    """API shape of a stored AI recommendation (shared by the JSON and PDF views)."""
+
+    def _load(raw, default):
+        try:
+            return json.loads(raw) if raw else default
+        except json.JSONDecodeError:
+            return default
+
+    return {
+        "id": recommendation.id,
+        "change_request_id": recommendation.change_request_id,
+        "model": recommendation.model_name,
+        "model_version": recommendation.model_version,
+        "status": recommendation.status,
+        "recommendation": recommendation.recommendation,
+        "created_at": getattr(recommendation, "created_at", None),
+        "assessment": {
+            "executive_summary": recommendation.assessment_summary,
+            "risk_assessment": _load(recommendation.risk_analysis, {}),
+            "regulatory_considerations": _load(
+                recommendation.regulatory_considerations, []
+            ),
+            "analyst_review_questions": _load(
+                recommendation.analyst_review_questions, []
+            ),
+            "rationale": recommendation.rationale,
+        },
+    }
+
+
+def _humanize(value) -> str:
+    text = str(value or "").replace("_", " ").strip().capitalize()
+    return re.sub(r"\b(fcrm|aml|kyc|edd|pep)\b", lambda m: m.group(1).upper(), text)
+
+
+def _to_text(value) -> str:
+    """Reduce model output (string, list or object) to display text."""
+    if value is None:
+        return ""
+    if isinstance(value, (str, int, float)):
+        return str(value)
+    if isinstance(value, list):
+        return "; ".join(filter(None, (_to_text(item) for item in value)))
+    if isinstance(value, dict):
+        for key in ("statement", "analysis", "description", "factor", "text", "summary"):
+            if value.get(key):
+                return _to_text(value[key])
+        return " · ".join(
+            f"{_humanize(key)}: {_to_text(item)}" for key, item in value.items()
+        )
+    return str(value)
+
+
+def _source_label(item) -> str:
+    if not isinstance(item, dict):
+        return ""
+    parts = [
+        item.get("authority"),
+        item.get("document"),
+        f"p. {item['page_number']}" if item.get("page_number") else None,
+    ]
+    return " · ".join(str(part) for part in parts if part)
+
+
+def ai_assessment_to_pdf_bytes(
+    change_request: ChangeRequest,
+    risk_assessment: RiskAssessment | None,
+    ai_payload: dict,
+) -> bytes:
+    import io
+    from html import escape
+
+    import pymupdf
+
+    assessment = ai_payload.get("assessment") or {}
+    sections = []
+
+    def section(title, body_html):
+        if body_html:
+            sections.append(f"<h2>{escape(title)}</h2>{body_html}")
+
+    meta = [
+        f"Model: {ai_payload.get('model') or '—'} "
+        f"({ai_payload.get('model_version') or '—'})",
+        f"Status: {ai_payload.get('status') or '—'}",
+        f"Recommendation: {_humanize(ai_payload.get('recommendation')) or '—'}",
+        f"Generated: {datetime.now().strftime('%d %b %Y, %H:%M')}",
+    ]
+
+    if risk_assessment:
+        residual = (
+            f"{risk_assessment.residual_score:.1f} ({risk_assessment.residual_rating})"
+            if risk_assessment.residual_score is not None
+            else "Pending controls"
+        )
+        section(
+            "Calculated risk",
+            "<table><tr><th>Inherent risk</th><th>Residual risk</th>"
+            "<th>Model version</th></tr>"
+            f"<tr><td>{risk_assessment.inherent_score:.1f} "
+            f"({escape(str(risk_assessment.inherent_rating))})</td>"
+            f"<td>{escape(residual)}</td>"
+            f"<td>v{escape(str(risk_assessment.risk_model_version))}</td></tr></table>",
+        )
+
+    if assessment.get("executive_summary"):
+        section(
+            "Executive summary",
+            f"<p>{escape(_to_text(assessment['executive_summary']))}</p>",
+        )
+
+    risk_by_category = assessment.get("risk_assessment") or {}
+    if isinstance(risk_by_category, dict) and risk_by_category:
+        section(
+            "Risk assessment by category",
+            "".join(
+                f"<h3>{escape(_humanize(category))}</h3>"
+                f"<p>{escape(_to_text(analysis))}</p>"
+                for category, analysis in risk_by_category.items()
+            ),
+        )
+
+    considerations = assessment.get("regulatory_considerations") or []
+    if considerations:
+        items = []
+        for item in considerations:
+            source = _source_label(item)
+            items.append(
+                f"<li>{escape(_to_text(item))}"
+                + (f"<br/><span class='source'>{escape(source)}</span>" if source else "")
+                + "</li>"
+            )
+        section("Regulatory considerations", f"<ul>{''.join(items)}</ul>")
+
+    questions = assessment.get("analyst_review_questions") or []
+    if questions:
+        section(
+            "Analyst review questions",
+            "<ul>" + "".join(f"<li>{escape(_to_text(q))}</li>" for q in questions) + "</ul>",
+        )
+
+    if assessment.get("rationale"):
+        section("Rationale", f"<p>{escape(_to_text(assessment['rationale']))}</p>")
+
+    html = (
+        "<h1>AI-Assisted FCRM Assessment</h1>"
+        f"<p class='subtitle'>{escape(change_request.request_number or str(change_request.id))}"
+        f" · {escape(change_request.title or '')}</p>"
+        f"<p class='meta'>{'<br/>'.join(escape(line) for line in meta)}</p>"
+        + "".join(sections)
+        + "<p class='disclaimer'>This is an AI-generated draft prepared for FCRM "
+        "review. It does not constitute the final FCRM decision.</p>"
+    )
+    css = """
+        body { font-family: sans-serif; font-size: 10pt; color: #1e293b; }
+        h1 { font-size: 17pt; color: #312e81; margin-bottom: 2pt; }
+        h2 { font-size: 12pt; color: #312e81; margin-top: 14pt; margin-bottom: 4pt; }
+        h3 { font-size: 10pt; margin-top: 8pt; margin-bottom: 2pt; }
+        p, li { line-height: 1.4; }
+        .subtitle { font-size: 11pt; font-weight: bold; }
+        .meta { font-size: 9pt; color: #475569; }
+        .source { font-size: 8pt; color: #64748b; }
+        .disclaimer { margin-top: 18pt; font-size: 8pt; color: #64748b; font-style: italic; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #cbd5e1; padding: 4pt; text-align: left; }
+        th { background-color: #eef2ff; }
+    """
+
+    story = pymupdf.Story(html=html, user_css=css)
+    buffer = io.BytesIO()
+    writer = pymupdf.DocumentWriter(buffer)
+    page_rect = pymupdf.paper_rect("a4")
+    content_rect = page_rect + (48, 48, -48, -48)
+
+    more = True
+    while more:
+        device = writer.begin_page(page_rect)
+        more, _ = story.place(content_rect)
+        story.draw(device)
+        writer.end_page()
+    writer.close()
+
+    return buffer.getvalue()

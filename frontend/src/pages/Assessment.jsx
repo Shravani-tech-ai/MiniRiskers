@@ -34,6 +34,7 @@ import ResultDialog from "../components/assessment/ResultDialog";
 import AssessmentStageFooter from "../components/assessment/AssessmentStageFooter";
 import SubmissionBanner from "../components/assessment/SubmissionBanner";
 import {
+  WORKFLOW_STAGES,
   canNavigateToWorkflowStage,
   normalizeWorkflowStage,
 } from "../components/assessment/workflowStages";
@@ -57,6 +58,14 @@ import {
   getRequestPermissions,
 } from "../utils/rolePermissions";
 import { isResidualPending } from "../utils/riskDisplay";
+
+const STAGE_VIEW_LABELS = {
+  REQUEST_CREATED: "Request details",
+  RISK_ASSESSMENT: "Risk assessment",
+  ANALYST_REVIEW: "Analyst review",
+  COMMITTEE_REVIEW: "Committee review",
+  COMPLETED: "Outcome",
+};
 
 function Assessment() {
   const { changeRequestId } = useParams();
@@ -1135,8 +1144,61 @@ function Assessment() {
         )}.`
       : "";
 
-  const isIntakeStage =
-    normalizeWorkflowStage(changeRequest?.current_stage) === "REQUEST_CREATED";
+  const currentStage = normalizeWorkflowStage(changeRequest?.current_stage);
+  const isIntakeStage = currentStage === "REQUEST_CREATED";
+
+  // Risk inputs (controls, AI draft) are only editable while the request sits
+  // in the risk stage; once it moves on, the risk view is a read-only record.
+  const riskEditable =
+    permissions.canRunRiskPipeline && currentStage === "RISK_ASSESSMENT";
+
+  // A missed control can still be added until the analyst submits the final
+  // review. Doing so from analyst review recalculates residual risk and moves
+  // the request back to the risk step, where the AI draft is regenerated.
+  const controlsEditable =
+    permissions.canRunRiskPipeline &&
+    (currentStage === "RISK_ASSESSMENT" || currentStage === "ANALYST_REVIEW");
+
+  // In the risk stage an existing AI draft predates the current risk numbers
+  // (generating it is what moves the request on to analyst review).
+  const aiAssessmentStale = riskEditable && Boolean(aiAssessment);
+
+  // Previous/next stage views this user can open, so completed steps stay
+  // reachable after the request has moved forward.
+  const canOpenView = (view) =>
+    canNavigateToWorkflowStage(view, changeRequest?.current_stage) &&
+    !lockedStages.includes(view);
+
+  const getAdjacentViews = (view) => {
+    const order = WORKFLOW_STAGES.map((stage) => stage.key);
+    const index = order.indexOf(view);
+    return {
+      previous: order.slice(0, index).reverse().find(canOpenView),
+      next: order.slice(index + 1).find(canOpenView),
+    };
+  };
+
+  const openView = (view) => {
+    setActiveView(view);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const renderStageNavButton = (view, direction) =>
+    view ? (
+      <button
+        type="button"
+        onClick={() => openView(view)}
+        className={
+          direction === "previous"
+            ? "rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 sm:mr-auto"
+            : "rounded-xl border border-indigo-300 bg-indigo-50 px-5 py-3 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
+        }
+      >
+        {direction === "previous"
+          ? `← ${STAGE_VIEW_LABELS[view]}`
+          : `${STAGE_VIEW_LABELS[view]} →`}
+      </button>
+    ) : null;
 
   // The committee's most recent deferral, if it opened the current revision.
   const lastDecision = committeeHistory[committeeHistory.length - 1];
@@ -1148,7 +1210,10 @@ function Assessment() {
   const canExportAudit = canExportAuditPack(user?.role);
 
   let requestStageHint = null;
-  if (permissions.canRunRiskPipeline) {
+  if (permissions.canRunRiskPipeline && !isIntakeStage) {
+    requestStageHint =
+      "Risk has already been calculated for this request. Intake details are shown for reference.";
+  } else if (permissions.canRunRiskPipeline) {
     requestStageHint =
       "Syncs intake, generates risk factors, calculates scores, and retrieves regulatory evidence.";
   } else if (permissions.canSubmit) {
@@ -1342,7 +1407,7 @@ function Assessment() {
         <AssessmentStageFooter hint={requestStageHint}>
           <button
             type="button"
-            onClick={() => setActiveView("RISK_ASSESSMENT")}
+            onClick={() => openView("RISK_ASSESSMENT")}
             disabled={
               !canNavigateToWorkflowStage(
                 "RISK_ASSESSMENT",
@@ -1353,7 +1418,7 @@ function Assessment() {
           >
             View risk step
           </button>
-          {permissions.canRunRiskPipeline ? (
+          {permissions.canRunRiskPipeline && isIntakeStage ? (
             <button
               type="button"
               onClick={completeRequestStage}
@@ -1400,7 +1465,7 @@ function Assessment() {
               riskAssessment={riskAssessment}
               runningRiskAssessment={runningRiskAssessment}
               runRiskAssessment={runRiskAssessment}
-              canRun={permissions.canRunRiskPipeline}
+              canRun={riskEditable && !riskAssessment}
               onViewMethodology={
                 isBusinessOwner ? undefined : () => setShowMethodology(true)
               }
@@ -1412,6 +1477,8 @@ function Assessment() {
                 riskAssessment={riskAssessment}
                 onControlsChanged={loadAssessment}
                 setError={setError}
+                readOnly={!controlsEditable}
+                reopensRiskStage={currentStage === "ANALYST_REVIEW"}
               />
             )}
             {permissions.canViewAnalystReview && (
@@ -1419,7 +1486,10 @@ function Assessment() {
                 aiAssessment={aiAssessment}
                 generatingAI={generatingAI}
                 generateAIAssessment={generateAIAssessment}
-                canGenerate={permissions.canRunRiskPipeline}
+                canGenerate={riskEditable}
+                changeRequestId={changeRequestId}
+                requestNumber={changeRequest?.request_number}
+                stale={aiAssessmentStale}
               />
             )}
           </div>
@@ -1433,22 +1503,18 @@ function Assessment() {
         </div>
         )}
 
-        {permissions.canRunRiskPipeline ? (
+        {riskEditable ? (
         <AssessmentStageFooter
           hint={
             riskAssessment && isResidualPending(riskAssessment)
               ? "Document controls above to calculate residual risk, then continue to analyst review."
-              : "Generate AI assessment to unlock analyst review (required by workflow)."
+              : "Continuing generates the AI assessment and moves the request to analyst review."
           }
         >
-          <button
-            type="button"
-            onClick={runRiskAssessment}
-            disabled={runningRiskAssessment}
-            className="rounded-xl border border-slate-300 dark:border-slate-600 px-5 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
-          >
-            Recalculate inherent risk
-          </button>
+          {renderStageNavButton(
+            getAdjacentViews("RISK_ASSESSMENT").previous,
+            "previous"
+          )}
           <button
             type="button"
             onClick={advanceToAnalystStage}
@@ -1466,7 +1532,24 @@ function Assessment() {
           </button>
         </AssessmentStageFooter>
         ) : (
-        <AssessmentStageFooter hint="Risk assessment is performed by the Risk Analyst. This view is read-only." />
+        <AssessmentStageFooter
+          hint={
+            controlsEditable
+              ? "Missed a control? Add it above before submitting your analyst review — residual risk is recalculated and the AI assessment is regenerated when you continue."
+              : permissions.canRunRiskPipeline
+              ? "Risk assessment is complete for this request. This view is a read-only record of how the risk was calculated."
+              : "Risk assessment is performed by the Risk Analyst. This view is read-only."
+          }
+        >
+          {renderStageNavButton(
+            getAdjacentViews("RISK_ASSESSMENT").previous,
+            "previous"
+          )}
+          {renderStageNavButton(
+            getAdjacentViews("RISK_ASSESSMENT").next,
+            "next"
+          )}
+        </AssessmentStageFooter>
         )}
           </>
         )}
@@ -1497,6 +1580,17 @@ function Assessment() {
   </div>
 </div>
 
+        <AssessmentStageFooter>
+          {renderStageNavButton(
+            getAdjacentViews("ANALYST_REVIEW").previous,
+            "previous"
+          )}
+          {renderStageNavButton(
+            getAdjacentViews("ANALYST_REVIEW").next,
+            "next"
+          )}
+        </AssessmentStageFooter>
+
           </>
         )}
 
@@ -1523,6 +1617,17 @@ function Assessment() {
   canSubmit={permissions.canCommitteeDecide}
  />
 
+        <AssessmentStageFooter>
+          {renderStageNavButton(
+            getAdjacentViews("COMMITTEE_REVIEW").previous,
+            "previous"
+          )}
+          {renderStageNavButton(
+            getAdjacentViews("COMMITTEE_REVIEW").next,
+            "next"
+          )}
+        </AssessmentStageFooter>
+
           </>
         )}
 
@@ -1541,6 +1646,13 @@ function Assessment() {
                 onChanged={loadAssessment}
               />
             )}
+
+            <AssessmentStageFooter>
+              {renderStageNavButton(
+                getAdjacentViews("COMPLETED").previous,
+                "previous"
+              )}
+            </AssessmentStageFooter>
           </>
         )}
 

@@ -256,6 +256,43 @@ def test_defer_to_analyst_and_reject(app_client, db_session, tokens):
     assert timeline["sla_status"] == "MET"
 
 
+def test_missed_control_can_be_added_until_analyst_review_is_submitted(app_client, db_session, tokens):
+    request_id = make_request(db_session, [("CHANNEL", "Mobile Banking")])
+    advance_to_analyst_review(app_client, db_session, tokens, request_id)
+
+    # Adding a missed control during analyst review recalculates residual risk
+    # and returns the request to the risk step for the AI draft to be redone.
+    add_test_control(app_client, tokens, request_id, effectiveness_score=90)
+    recalculated = app_client.post(
+        f"/change-requests/{request_id}/calculate-risk",
+        headers=tokens["RISK_ANALYST"],
+    )
+    assert recalculated.status_code == 200, recalculated.text
+    change_request = db_session.get(ChangeRequest, request_id)
+    db_session.refresh(change_request)
+    assert change_request.current_stage == "RISK_ASSESSMENT"
+
+    # Once the analyst review is submitted, controls are locked.
+    change_request.current_stage = "ANALYST_REVIEW"
+    db_session.commit()
+    assert analyst_review(app_client, tokens, request_id, "LOW").status_code == 200
+    locked = app_client.post(
+        f"/change-requests/{request_id}/control",
+        headers=tokens["RISK_ANALYST"],
+        params={
+            "control_name": "Late control",
+            "control_category": "AML",
+            "description": "",
+            "control_type": "PREVENTIVE",
+            "control_strength": "MEDIUM",
+            "implemented": True,
+            "implementation_status": "IMPLEMENTED",
+            "owner": "FCRM",
+        },
+    )
+    assert locked.status_code == 400
+
+
 def test_audit_chain_detects_tampering_and_is_append_only(app_client, db_session, tokens):
     from sqlalchemy import text
 

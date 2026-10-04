@@ -105,6 +105,8 @@ from backend.assessment_inputs import (
     merge_extraction_with_inputs,
 )
 from backend.export_service import (
+    ai_assessment_to_pdf_bytes,
+    build_ai_assessment_payload,
     build_assessment_export,
     export_to_pdf_bytes,
 )
@@ -815,6 +817,18 @@ def create_vendor(
 
     return vendor
 
+# Stages where the analyst may still document controls. ANALYST_REVIEW is
+# included because a missed control can be added before the final review is
+# submitted; recalculating then returns the request to the risk step so the
+# AI draft is regenerated against the new residual.
+CONTROL_EDITABLE_STAGES = {
+    "RISK_ASSESSMENT",
+    "REGULATORY_EVIDENCE",
+    "AI_ASSESSMENT",
+    "ANALYST_REVIEW",
+}
+
+
 @app.post("/change-requests/{change_request_id}/control")
 def create_control(
     change_request_id: int,
@@ -831,7 +845,15 @@ def create_control(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    authorize_analyst_action(db, change_request_id, current_user)
+    change_request = authorize_analyst_action(
+        db, change_request_id, current_user
+    )
+    # Controls can be added until the analyst submits the final review.
+    assert_workflow_stage(
+        change_request,
+        CONTROL_EDITABLE_STAGES,
+        "Controls can no longer be added at the current workflow stage.",
+    )
 
     control = Control(
         change_request_id=change_request_id,
@@ -936,11 +958,12 @@ def calculate_risk(
         change_request,
         {
             "REQUEST_CREATED",
-            "RISK_ASSESSMENT",
-            "REGULATORY_EVIDENCE",
-            "AI_ASSESSMENT",
+            *CONTROL_EDITABLE_STAGES,
         },
         "Risk calculation is not allowed at the current workflow stage.",
+    )
+    reopened_from_analyst_review = (
+        change_request.current_stage == "ANALYST_REVIEW"
     )
 
     assessment = generate_risk_assessment(
@@ -983,7 +1006,12 @@ def calculate_risk(
         entity_type="ChangeRequest",
         entity_id=change_request.id,
         new_value="RISK_ASSESSMENT",
-        reason="Risk assessment calculated successfully.",
+        reason=(
+            "Controls updated before analyst review was submitted; risk "
+            "recalculated and the AI assessment must be regenerated."
+            if reopened_from_analyst_review
+            else "Risk assessment calculated successfully."
+        ),
     )
     notify_stage_progress(
         db,
@@ -2298,17 +2326,7 @@ def get_risk_factors(
     }
 
 
-@app.get("/change-requests/{change_request_id}/ai-assessment")
-def get_ai_assessment(
-    change_request_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    change_request = get_change_request_or_404(
-        db, change_request_id, current_user
-    )
-    assert_risk_results_visible(db, current_user, change_request)
-
+def _latest_ai_recommendation_or_404(db: Session, change_request_id: int):
     recommendation = (
         db.query(AIRecommendation)
         .filter(
@@ -2324,31 +2342,52 @@ def get_ai_assessment(
             detail="AI assessment not found.",
         )
 
-    assessment_payload = {}
+    return recommendation
 
-    try:
-        assessment_payload = json.loads(
-            recommendation.risk_analysis or "{}"
-        )
-    except json.JSONDecodeError:
-        assessment_payload = {}
 
-    return {
-        "id": recommendation.id,
-        "change_request_id": recommendation.change_request_id,
-        "model": recommendation.model_name,
-        "model_version": recommendation.model_version,
-        "status": recommendation.status,
-        "recommendation": recommendation.recommendation,
-        "assessment": {
-            "executive_summary": recommendation.assessment_summary,
-            "risk_assessment": assessment_payload,
-            "regulatory_considerations": json.loads(
-                recommendation.regulatory_considerations or "[]"
-            ),
-            "rationale": recommendation.rationale,
+@app.get("/change-requests/{change_request_id}/ai-assessment")
+def get_ai_assessment(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
+
+    recommendation = _latest_ai_recommendation_or_404(db, change_request_id)
+    return build_ai_assessment_payload(recommendation)
+
+
+@app.get("/change-requests/{change_request_id}/ai-assessment/pdf")
+def download_ai_assessment_pdf(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    change_request = get_change_request_or_404(
+        db, change_request_id, current_user
+    )
+    assert_risk_results_visible(db, current_user, change_request)
+
+    recommendation = _latest_ai_recommendation_or_404(db, change_request_id)
+    pdf_bytes = ai_assessment_to_pdf_bytes(
+        change_request,
+        _latest_risk_assessment(db, change_request_id),
+        build_ai_assessment_payload(recommendation),
+    )
+    request_number = change_request.request_number or str(change_request_id)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{request_number}-ai-assessment.pdf"'
+            )
         },
-    }
+    )
 
 
 @app.get("/change-requests/{change_request_id}/export")
