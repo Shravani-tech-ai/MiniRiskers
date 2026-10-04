@@ -64,6 +64,7 @@ from backend.notifications import (
     notify_override_escalated,
     notify_request_created,
     notify_request_submitted,
+    notify_stage_progress,
 )
 from risk_engine.methodology import score_factors
 from risk_engine.risk_calculator import factor_rows_to_inputs
@@ -984,6 +985,12 @@ def calculate_risk(
         new_value="RISK_ASSESSMENT",
         reason="Risk assessment calculated successfully.",
     )
+    notify_stage_progress(
+        db,
+        change_request,
+        "RISK_ASSESSMENT",
+        f"inherent risk {assessment.inherent_rating}",
+    )
 
     db.commit()
     db.refresh(assessment)
@@ -1209,6 +1216,15 @@ def generate_ai_assessment_endpoint(
         entity_id=change_request.id,
         new_value="ANALYST_REVIEW",
         reason="AI assessment generated successfully and is ready for analyst review.",
+    )
+    notify_stage_progress(
+        db,
+        change_request,
+        "ANALYST_REVIEW",
+        "AI recommendation: "
+        + recommendation.recommendation.replace("_", " ").lower()[:60]
+        if recommendation.recommendation
+        else "",
     )
 
     db.commit()
@@ -1518,6 +1534,12 @@ def submit_analyst_review(
         reason="Analyst review submitted successfully and is ready for committee review."
     )
     notify_analyst_review_submitted(db, change_request, analyst_rating)
+    notify_stage_progress(
+        db,
+        change_request,
+        "COMMITTEE_REVIEW",
+        f"analyst rating {analyst_rating}",
+    )
 
     db.commit()
     db.refresh(analyst_override)
@@ -1945,6 +1967,7 @@ def submit_for_analyst(
         reason="Business owner submitted the request for Risk Analyst review.",
     )
     notify_request_submitted(db, change_request)
+    notify_stage_progress(db, change_request, "SUBMITTED")
     db.commit()
 
     return {

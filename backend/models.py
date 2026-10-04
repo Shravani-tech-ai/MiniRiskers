@@ -942,3 +942,25 @@ class Notification(Base):
         default=datetime.utcnow,
         index=True,
     )
+
+
+class SimilarCasesSnapshot(Base):
+    """Similar-case results saved the first time a user opens a request."""
+
+    __tablename__ = "similar_cases_snapshots"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(Integer, nullable=False, index=True)
+
+    # Results are filtered to what the viewer may read, so save per user.
+    user_id = Column(Integer, nullable=False, index=True)
+
+    result_limit = Column(Integer, nullable=False)
+
+    payload_json = Column(Text, nullable=False)
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+    )

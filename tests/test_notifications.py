@@ -1,12 +1,14 @@
 """Notification delivery and API tests."""
 
+import uuid
+
 from backend.audit import create_audit_event
 from backend.models import ChangeRequest, Notification
 
 
 def create_draft_request(db, title="Notification test request"):
     change_request = ChangeRequest(
-        request_number="CR-NOTIF-001",
+        request_number=f"CR-NOTIF-{uuid.uuid4().hex[:8]}",
         title=title,
         description="Synthetic notification test",
         change_type="NEW_PRODUCT",
@@ -113,3 +115,42 @@ def test_mark_notification_read(app_client, db_session, tokens):
         headers=tokens["BUSINESS_OWNER"],
     )
     assert unread_after.json()["unread_count"] == unread.json()["unread_count"] - 1
+
+
+def test_stage_progress_notifies_business_owner_once_per_revision(
+    app_client, db_session, tokens
+):
+    from backend.notifications import notify_stage_progress
+
+    change_request = create_draft_request(db_session, title="Stage progress request")
+
+    for stage in ("SUBMITTED", "RISK_ASSESSMENT", "ANALYST_REVIEW", "COMMITTEE_REVIEW"):
+        notify_stage_progress(db_session, change_request, stage, "detail")
+    # Re-running a stage in the same revision must not notify again.
+    notify_stage_progress(db_session, change_request, "RISK_ASSESSMENT", "detail")
+    db_session.commit()
+
+    def stage_types():
+        listed = app_client.get("/notifications", headers=tokens["BUSINESS_OWNER"])
+        assert listed.status_code == 200
+        return [
+            item["notification_type"]
+            for item in listed.json()["notifications"]
+            if item["change_request_id"] == change_request.id
+            and item["notification_type"].startswith("STAGE_")
+        ]
+
+    assert sorted(stage_types()) == sorted(
+        [
+            "STAGE_SUBMITTED_R1",
+            "STAGE_RISK_ASSESSMENT_R1",
+            "STAGE_ANALYST_REVIEW_R1",
+            "STAGE_COMMITTEE_REVIEW_R1",
+        ]
+    )
+
+    # A deferral opens a new revision, so progress is announced again.
+    change_request.revision = 2
+    notify_stage_progress(db_session, change_request, "RISK_ASSESSMENT")
+    db_session.commit()
+    assert "STAGE_RISK_ASSESSMENT_R2" in stage_types()

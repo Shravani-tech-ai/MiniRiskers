@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { GitCompare, Loader2 } from "lucide-react";
+import { GitCompare, Loader2, RefreshCw } from "lucide-react";
 
 import api from "../../services/api";
 import {
@@ -57,6 +57,7 @@ function SimilarCasesPanel({ changeRequestId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!changeRequestId) {
@@ -67,8 +68,11 @@ function SimilarCasesPanel({ changeRequestId }) {
     setLoading(true);
     setError("");
 
+    // The backend saves matches on the first visit; refresh recalculates them.
     api
-      .get(`/change-requests/${changeRequestId}/similar-cases`, { params: { limit: 3 } })
+      .get(`/change-requests/${changeRequestId}/similar-cases`, {
+        params: { limit: 3, refresh: refreshKey > 0 },
+      })
       .then((response) => {
         if (!cancelled) {
           setData(response.data);
@@ -88,11 +92,12 @@ function SimilarCasesPanel({ changeRequestId }) {
     return () => {
       cancelled = true;
     };
-  }, [changeRequestId]);
+  }, [changeRequestId, refreshKey]);
 
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm">
       <div className="border-b border-slate-200 dark:border-slate-700 p-6">
+        <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-violet-50 dark:bg-violet-950/40 p-2">
             <GitCompare size={20} className="text-violet-600 dark:text-violet-400" />
@@ -105,6 +110,17 @@ function SimilarCasesPanel({ changeRequestId }) {
               Learning from prior assessments to improve consistency across analysts
             </p>
           </div>
+        </div>
+          <button
+            type="button"
+            onClick={() => setRefreshKey((key) => key + 1)}
+            disabled={loading}
+            title="Recalculate similar cases"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
         </div>
       </div>
 
@@ -132,6 +148,16 @@ function SimilarCasesPanel({ changeRequestId }) {
             <p className="text-xs text-slate-400 dark:text-slate-500">
               Matched using {data.similarity_method === "embedding" ? "semantic embeddings" : "intake text overlap"}.
               Compare ratings before overriding the system score.
+              {data.calculated_at && (
+                <>
+                  {" "}Calculated{" "}
+                  {new Date(data.calculated_at).toLocaleString(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                  .
+                </>
+              )}
             </p>
           </div>
         )}

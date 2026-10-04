@@ -48,6 +48,7 @@ from backend.models import (
     MethodologyVersion,
     RiskAssessment,
     RiskFactor,
+    SimilarCasesSnapshot,
     User,
 )
 from backend.permissions import (
@@ -789,19 +790,58 @@ def get_portfolio_cycle_time(
 def get_similar_cases(
     change_request_id: int,
     limit: int = 3,
+    refresh: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     get_change_request_or_404(db, change_request_id, current_user)
+    limit = max(1, min(limit, 10))
+
+    # Matches are calculated on the first visit and reused afterwards;
+    # pass refresh=true to recalculate.
+    snapshot = (
+        db.query(SimilarCasesSnapshot)
+        .filter(
+            SimilarCasesSnapshot.change_request_id == change_request_id,
+            SimilarCasesSnapshot.user_id == current_user.id,
+            SimilarCasesSnapshot.result_limit == limit,
+        )
+        .first()
+    )
+    if snapshot and not refresh:
+        result = json.loads(snapshot.payload_json)
+        result["calculated_at"] = snapshot.created_at.isoformat() + "Z"
+        return result
+
     try:
-        return find_similar_cases(
+        result = find_similar_cases(
             db,
             change_request_id,
             current_user,
-            limit=max(1, min(limit, 10)),
+            limit=limit,
         )
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
+
+    # Only keep real matches, so a request with too little detail (or no
+    # assessed peers yet) is searched again on the next visit.
+    if result.get("cases"):
+        if snapshot is None:
+            snapshot = SimilarCasesSnapshot(
+                change_request_id=change_request_id,
+                user_id=current_user.id,
+                result_limit=limit,
+            )
+            db.add(snapshot)
+        snapshot.payload_json = json.dumps(result, default=str)
+        snapshot.created_at = datetime.utcnow()
+        db.commit()
+        result["calculated_at"] = snapshot.created_at.isoformat() + "Z"
+    elif snapshot is not None:
+        db.delete(snapshot)
+        db.commit()
+
+    return result
 
 
 @router.get("/analytics/override-insights")

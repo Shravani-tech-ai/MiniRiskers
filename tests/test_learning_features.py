@@ -96,6 +96,56 @@ def test_similar_cases_finds_related_request(app_client, db_session, tokens):
     assert payload["cases"][0]["system_rating"] in {"LOW", "MEDIUM", "HIGH", "CRITICAL"}
 
 
+
+def test_similar_cases_calculated_once_until_refreshed(
+    app_client, db_session, tokens, monkeypatch
+):
+    import backend.governance_routes as routes
+
+    source_id = make_request(
+        db_session,
+        [("GEOGRAPHY", "Cross Border")],
+        title="Cached cross border remittance product",
+    )
+    _add_assessment(db_session, source_id)
+    peer_id = make_request(
+        db_session,
+        [("GEOGRAPHY", "Cross Border")],
+        title="Cached cross border remittance corridor",
+    )
+    _add_assessment(db_session, peer_id)
+
+    calls = []
+    real_find = routes.find_similar_cases
+
+    def counting_find(*args, **kwargs):
+        calls.append(1)
+        return real_find(*args, **kwargs)
+
+    monkeypatch.setattr(routes, "find_similar_cases", counting_find)
+
+    def fetch(**params):
+        response = app_client.get(
+            f"/change-requests/{source_id}/similar-cases",
+            headers=tokens["RISK_ANALYST"],
+            params={"limit": 3, **params},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    first = fetch()
+    assert first["cases"]
+    assert len(calls) == 1
+
+    second = fetch()
+    assert len(calls) == 1
+    assert second["cases"] == first["cases"]
+    assert second["calculated_at"] == first["calculated_at"]
+
+    fetch(refresh=True)
+    assert len(calls) == 2
+
+
 def test_similar_cases_requires_readable_request(app_client, db_session, tokens):
     request_id = make_request(db_session, HIGH_RISK_FACTORS)
     _add_assessment(db_session, request_id)

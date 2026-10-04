@@ -95,6 +95,9 @@ def _already_notified(
     notification_type: str,
     change_request_id: int | None = None,
 ) -> bool:
+    # Sessions don't autoflush; make notifications added earlier in this
+    # transaction visible to the duplicate check.
+    db.flush()
     query = db.query(Notification.id).filter(
         Notification.user_id == user_id,
         Notification.notification_type == notification_type,
@@ -209,6 +212,59 @@ def notify_request_submitted(db: Session, change_request: ChangeRequest) -> None
         ),
         change_request_id=change_request.id,
         link_path=assessment_link(change_request),
+        dedupe=False,
+    )
+
+
+STAGE_PROGRESS_MESSAGES = {
+    "SUBMITTED": (
+        "Request {label} submitted for risk review",
+        '"{title}" is now in the Risk Analyst queue.',
+    ),
+    "RISK_ASSESSMENT": (
+        "Risk assessment run on {label}",
+        "The Risk Analyst calculated the risk assessment{detail}. "
+        "Controls are being reviewed next.",
+    ),
+    "ANALYST_REVIEW": (
+        "Request {label} in analyst review",
+        "The AI assessment draft is ready{detail} and the Risk Analyst is "
+        "reviewing it.",
+    ),
+    "COMMITTEE_REVIEW": (
+        "Request {label} sent to the Risk Committee",
+        "The Risk Analyst completed the review{detail}. "
+        "A committee decision is pending.",
+    ),
+}
+
+
+def notify_stage_progress(
+    db: Session,
+    change_request: ChangeRequest,
+    stage: str,
+    detail: str = "",
+) -> None:
+    """Tell the Business Owner each time their request moves forward."""
+    template = STAGE_PROGRESS_MESSAGES.get(stage)
+    if not template:
+        return
+
+    label = request_label(change_request)
+    title, body = template
+    notify_users(
+        db,
+        users_for_business_owner(db, change_request),
+        # One per stage per revision, so re-runs don't repeat it but a
+        # resubmission after a deferral does.
+        notification_type=f"STAGE_{stage}_R{change_request.revision or 1}",
+        title=title.format(label=label),
+        body=body.format(
+            title=change_request.title,
+            detail=f" ({detail})" if detail else "",
+        ),
+        change_request_id=change_request.id,
+        link_path=assessment_link(change_request),
     )
 
 
@@ -229,6 +285,7 @@ def notify_analyst_review_submitted(
         ),
         change_request_id=change_request.id,
         link_path=assessment_link(change_request),
+        dedupe=False,
     )
 
 
@@ -291,6 +348,7 @@ def notify_committee_decision(
         body=body,
         change_request_id=change_request.id,
         link_path=assessment_link(change_request),
+        dedupe=False,
     )
 
     if decision == "DEFER":
