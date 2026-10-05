@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { Eye, EyeOff, Loader2, Lock, UserRound } from "lucide-react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, Eye, EyeOff, Loader2, Lock, UserRound } from "lucide-react";
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 
 import AuthShell from "../components/marketing/AuthShell";
+import RolePicker from "../components/marketing/RolePicker";
 import { authInputClassName } from "../components/marketing/authFormStyles";
 import { useAuth } from "../context/AuthContext";
+import { ROLES, roleLabel } from "../utils/rolePermissions";
 
 function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
 
   const [username, setUsername] = useState(location.state?.username || "");
@@ -19,6 +28,15 @@ function Login() {
   const [notice, setNotice] = useState(location.state?.notice || "");
 
   const redirectPath = location.state?.from || "/dashboard";
+  const requestedRole = searchParams.get("role");
+  const role = Object.values(ROLES).includes(requestedRole) ? requestedRole : null;
+
+  const selectRole = (nextRole) => {
+    setError("");
+    setSearchParams(nextRole ? { role: nextRole } : {}, {
+      state: location.state,
+    });
+  };
 
   if (authLoading) {
     return (
@@ -44,9 +62,16 @@ function Login() {
 
     try {
       setLoading(true);
-      await login(username.trim(), password);
+      await login(username.trim(), password, role);
       navigate(redirectPath, { replace: true });
     } catch (err) {
+      if (err?.code === "ROLE_MISMATCH") {
+        setError(
+          `This account is not registered as ${roleLabel(role)}. ` +
+            "Change role and try again."
+        );
+        return;
+      }
       setError(
         err?.response?.data?.detail ||
           "Login failed. Check your credentials and try again."
@@ -56,10 +81,17 @@ function Login() {
     }
   };
 
+  if (!role) {
+    return <RolePicker onRoleSelect={selectRole} notice={notice} />;
+  }
+
   return (
     <AuthShell
-      title="Sign in"
+      title={`Sign in as ${roleLabel(role)}`}
       subtitle="Secure access to the FCRM risk assessment workbench."
+      mode="login"
+      selectedRole={role}
+      onRoleSelect={selectRole}
       footer={
         <p className="text-sm text-slate-600 dark:text-slate-400">
           New here?{" "}
@@ -73,6 +105,15 @@ function Login() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-3">
+        <button
+          type="button"
+          onClick={() => selectRole(null)}
+          className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline dark:text-blue-300"
+        >
+          <ArrowLeft size={14} />
+          Change role
+        </button>
+
         {notice ? (
           <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950/40 dark:text-green-300">
             {notice}
@@ -152,7 +193,7 @@ function Login() {
               Signing in...
             </>
           ) : (
-            "Sign in"
+            `Sign in as ${roleLabel(role)}`
           )}
         </button>
       </form>

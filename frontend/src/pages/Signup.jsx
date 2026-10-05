@@ -12,6 +12,7 @@ const SIGNUP_ROLES = [
   ROLES.RISK_ANALYST,
   ROLES.RISK_COMMITTEE,
   ROLES.AUDITOR,
+  ROLES.ADMIN,
 ];
 
 function Signup() {
@@ -65,7 +66,7 @@ function Signup() {
         password: form.password,
         role: form.role,
       });
-      navigate("/login", {
+      navigate(`/login?role=${form.role}`, {
         replace: true,
         state: {
           username: form.username.trim(),
@@ -85,6 +86,9 @@ function Signup() {
   return (
     <AuthShell
       wide
+      mode="signup"
+      selectedRole={form.role}
+      onRoleSelect={(role) => setForm((previous) => ({ ...previous, role }))}
       title="Create your account"
       subtitle="Pick your role to access the right workflow."
       footer={
@@ -226,10 +230,6 @@ function Signup() {
             />
           </div>
         </div>
-
-        <p className="text-[11px] leading-snug text-slate-500 dark:text-slate-400">
-          Admin accounts are provisioned separately for security.
-        </p>
 
         {error ? (
           <p className="rounded-lg bg-red-50 dark:bg-red-950/40 px-3 py-1.5 text-sm text-red-700 dark:text-red-300">

@@ -1,0 +1,61 @@
+import {
+  Briefcase,
+  ClipboardCheck,
+  Eye,
+  Shield,
+  UserCog,
+} from "lucide-react";
+
+import { ROLES } from "../../utils/rolePermissions";
+
+export const ROLE_CARDS = [
+  {
+    role: ROLES.BUSINESS_OWNER,
+    title: "Business Owner",
+    icon: Briefcase,
+    tone: "border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300",
+    description:
+      "Create and manage change requests, provide business inputs, and track requests through the workflow.",
+    tags: ["Create requests", "View own requests", "Manage inputs"],
+  },
+  {
+    role: ROLES.RISK_ANALYST,
+    title: "Risk Analyst",
+    icon: ClipboardCheck,
+    tone: "border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300",
+    description:
+      "Perform risk assessments, generate regulatory evidence, and complete analyst reviews.",
+    tags: ["Risk assessment", "Generate evidence", "Analyst review"],
+  },
+  {
+    role: ROLES.RISK_COMMITTEE,
+    title: "Risk Committee",
+    icon: Shield,
+    tone: "border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
+    description:
+      "Review assessments, evaluate findings, and make final decisions on change requests.",
+    tags: ["View & review", "Committee decision", "Approve / reject"],
+  },
+  {
+    role: ROLES.AUDITOR,
+    title: "Auditor",
+    icon: Eye,
+    tone: "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
+    description:
+      "Read-only access to records, assessments, evidence, and audit trails.",
+    tags: ["View only", "Audit trail", "Compliance view"],
+  },
+  {
+    role: ROLES.ADMIN,
+    title: "Admin",
+    icon: UserCog,
+    tone: "border-teal-200 dark:border-teal-900 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300",
+    description:
+      "Full access to workflow features and oversight across change requests.",
+    tags: ["All features", "Oversight", "System access"],
+  },
+];
+
+export function getRoleCard(role) {
+  return ROLE_CARDS.find((card) => card.role === role) ?? null;
+}

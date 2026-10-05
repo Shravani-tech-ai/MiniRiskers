@@ -1,62 +1,15 @@
-import {
-  Briefcase,
-  ClipboardCheck,
-  Eye,
-  Shield,
-  UserCog,
-} from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 
-import { ROLES } from "../../utils/rolePermissions";
+import { ROLE_CARDS } from "./roleCards";
 
-const ROLE_CARDS = [
-  {
-    role: ROLES.BUSINESS_OWNER,
-    title: "Business Owner",
-    icon: Briefcase,
-    tone: "border-sky-200 dark:border-sky-900 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300",
-    description:
-      "Create and manage change requests, provide business inputs, and track requests through the workflow.",
-    tags: ["Create requests", "View own requests", "Manage inputs"],
-  },
-  {
-    role: ROLES.RISK_ANALYST,
-    title: "Risk Analyst",
-    icon: ClipboardCheck,
-    tone: "border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300",
-    description:
-      "Perform risk assessments, generate regulatory evidence, and complete analyst reviews.",
-    tags: ["Risk assessment", "Generate evidence", "Analyst review"],
-  },
-  {
-    role: ROLES.RISK_COMMITTEE,
-    title: "Risk Committee",
-    icon: Shield,
-    tone: "border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300",
-    description:
-      "Review assessments, evaluate findings, and make final decisions on change requests.",
-    tags: ["View & review", "Committee decision", "Approve / reject"],
-  },
-  {
-    role: ROLES.AUDITOR,
-    title: "Auditor",
-    icon: Eye,
-    tone: "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
-    description:
-      "Read-only access to records, assessments, evidence, and audit trails.",
-    tags: ["View only", "Audit trail", "Compliance view"],
-  },
-  {
-    role: ROLES.ADMIN,
-    title: "Admin",
-    icon: UserCog,
-    tone: "border-teal-200 dark:border-teal-900 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300",
-    description:
-      "Full access to workflow features and oversight across change requests.",
-    tags: ["All features", "Oversight", "System access"],
-  },
-];
+function RoleOverviewPanel({
+  mode = "login",
+  selectedRole = null,
+  onRoleSelect,
+  disabledRoles = [],
+}) {
+  const actionVerb = mode === "signup" ? "Sign up as" : "Login as";
 
-function RoleOverviewPanel() {
   return (
     <div className="flex h-full flex-col justify-center px-6 py-6 lg:px-10 xl:px-12">
       <h2 className="text-xl font-bold leading-tight text-slate-900 dark:text-slate-100 lg:text-2xl xl:text-3xl">
@@ -66,10 +19,25 @@ function RoleOverviewPanel() {
       <div className="mt-6 grid gap-3 lg:grid-cols-2 lg:gap-4">
         {ROLE_CARDS.map((card) => {
           const Icon = card.icon;
+          const isSelected = selectedRole === card.role;
+          const isDisabled = disabledRoles.includes(card.role);
+
           return (
-            <div
+            <button
               key={card.role}
-              className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm"
+              type="button"
+              disabled={isDisabled || !onRoleSelect}
+              aria-pressed={isSelected}
+              onClick={() => onRoleSelect?.(card.role)}
+              className={`group rounded-xl border bg-white p-4 text-left shadow-sm transition dark:bg-slate-900 ${
+                isSelected
+                  ? "border-blue-500 ring-2 ring-blue-500/40 dark:border-blue-400"
+                  : "border-slate-200 dark:border-slate-700"
+              } ${
+                isDisabled
+                  ? "cursor-not-allowed opacity-60"
+                  : "hover:border-blue-400 hover:shadow-md dark:hover:border-blue-500"
+              }`}
             >
               <div className="flex items-start gap-3">
                 <div className={`shrink-0 rounded-lg border p-2 ${card.tone}`}>
@@ -82,9 +50,30 @@ function RoleOverviewPanel() {
                   <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600 dark:text-slate-400">
                     {card.description}
                   </p>
+                  <p
+                    className={`mt-2 inline-flex items-center gap-1 text-xs font-semibold ${
+                      isSelected
+                        ? "text-blue-700 dark:text-blue-300"
+                        : "text-slate-500 group-hover:text-blue-700 dark:text-slate-400 dark:group-hover:text-blue-300"
+                    }`}
+                  >
+                    {isDisabled ? (
+                      "Provisioned by administrators"
+                    ) : isSelected ? (
+                      <>
+                        <Check size={14} />
+                        {actionVerb} {card.title}
+                      </>
+                    ) : (
+                      <>
+                        {actionVerb} {card.title}
+                        <ArrowRight size={14} />
+                      </>
+                    )}
+                  </p>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
     };
   }, [logout, refreshUser]);
 
-  const login = useCallback(async (username, password) => {
+  const login = useCallback(async (username, password, expectedRole = null) => {
     const response = await api.post("/auth/login", {
       username,
       password,
@@ -76,16 +76,21 @@ export function AuthProvider({ children }) {
     }
 
     setAuthToken(accessToken);
-    setToken(accessToken);
 
-    if (response.data?.user) {
-      setUser(response.data.user);
-      return response.data.user;
+    const loggedInUser =
+      response.data?.user ?? (await api.get("/auth/me")).data;
+
+    if (expectedRole && loggedInUser?.role !== expectedRole) {
+      clearAuthToken();
+      const error = new Error("Role mismatch.");
+      error.code = "ROLE_MISMATCH";
+      error.actualRole = loggedInUser?.role;
+      throw error;
     }
 
-    const meResponse = await api.get("/auth/me");
-    setUser(meResponse.data);
-    return meResponse.data;
+    setToken(accessToken);
+    setUser(loggedInUser);
+    return loggedInUser;
   }, []);
 
   const register = useCallback(async (payload) => {

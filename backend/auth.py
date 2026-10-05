@@ -64,7 +64,7 @@ class RegisterRequest(BaseModel):
 
 USERNAME_PATTERN = re.compile(r"^[a-z0-9_]+$")
 ALLOW_ADMIN_SELF_SIGNUP = (
-    os.getenv("ALLOW_ADMIN_SELF_SIGNUP", "false").lower() == "true"
+    os.getenv("ALLOW_ADMIN_SELF_SIGNUP", "true").lower() == "true"
 )
 
 

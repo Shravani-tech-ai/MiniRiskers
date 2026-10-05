@@ -1,30 +1,20 @@
-import { Link } from "react-router-dom";
-import { Shield } from "lucide-react";
-
-import ThemeToggle from "../ThemeToggle";
+import AuthHeader from "./AuthHeader";
 import RoleOverviewPanel from "./RoleOverviewPanel";
 
-function AuthShell({ title, subtitle, children, footer, wide = false }) {
+function AuthShell({
+  title,
+  subtitle,
+  children,
+  footer,
+  wide = false,
+  mode = "login",
+  selectedRole = null,
+  onRoleSelect,
+  disabledRoles = [],
+}) {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
-      <header className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white">
-              <Shield size={18} />
-            </div>
-            <div>
-              <p className="text-base font-bold leading-tight text-slate-900 dark:text-slate-100">
-                MiniRiskers
-              </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Financial Crime Risk Management Workbench
-              </p>
-            </div>
-          </Link>
-          <ThemeToggle />
-        </div>
-      </header>
+      <AuthHeader />
 
       <div className="mx-auto grid min-h-0 w-full max-w-7xl flex-1 lg:grid-cols-2">
         <div
@@ -39,7 +29,12 @@ function AuthShell({ title, subtitle, children, footer, wide = false }) {
         </div>
 
         <div className="hidden min-h-0 overflow-hidden border-l border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 dark:from-slate-900 to-blue-50/40 dark:to-slate-800 lg:block">
-          <RoleOverviewPanel />
+          <RoleOverviewPanel
+            mode={mode}
+            selectedRole={selectedRole}
+            onRoleSelect={onRoleSelect}
+            disabledRoles={disabledRoles}
+          />
         </div>
       </div>
     </div>

@@ -83,6 +83,12 @@ const DEFAULT_DASHBOARD_CONFIG = {
   defaultFilter: "ALL",
   stats: [
     { label: "Total requests", icon: FileText, tone: "slate", match: () => true },
+    {
+      label: "Drafts",
+      icon: FilePen,
+      tone: "amber",
+      match: (r) => statusKey(r) === "DRAFT",
+    },
     { label: "In progress", icon: Clock3, tone: "blue", match: isAwaitingReview },
     { label: "Completed", icon: CheckCircle2, tone: "emerald", match: isDecided },
     { label: "High / critical", icon: ShieldAlert, tone: "red", match: isHighPriority },
@@ -187,6 +193,12 @@ const STAT_TONES = {
   emerald: "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400",
   red: "bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400",
   amber: "bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400",
+};
+
+// Static class names so Tailwind can detect them.
+const STAT_GRID_COLUMNS = {
+  4: "lg:grid-cols-4",
+  5: "sm:grid-cols-3 lg:grid-cols-5",
 };
 
 function formatChangeType(value) {
@@ -446,7 +458,11 @@ function Dashboard() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+        <div
+          className={`grid grid-cols-2 gap-4 lg:gap-5 ${
+            STAT_GRID_COLUMNS[config.stats.length] ?? "lg:grid-cols-4"
+          }`}
+        >
           {config.stats.map((stat, index) => {
             const Icon = stat.icon;
 
