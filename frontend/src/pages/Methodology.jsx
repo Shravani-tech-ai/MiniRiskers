@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   BookOpen,
+  BrainCircuit,
   CheckCircle2,
   GitBranch,
   History,
@@ -76,6 +77,39 @@ function NumberInput({ value, onChange, step = 1, min, max, disabled, label }) {
       className="w-24 rounded-md border border-slate-300 dark:border-slate-600 px-2 py-1 text-right text-sm tabular-nums disabled:border-transparent disabled:bg-transparent disabled:text-slate-900 dark:disabled:text-slate-100"
     />
   );
+}
+
+const CONTROL_RATING_LABELS = {
+  EFFECTIVE: "Effective",
+  PARTIALLY_EFFECTIVE: "Partially effective",
+  INEFFECTIVE: "Ineffective",
+  NOT_TESTED: "Not tested",
+};
+
+// Versions saved before control settings existed use the engine defaults.
+const DEFAULT_CONTROLS = {
+  residual_method: "AVERAGE",
+  effectiveness_scale: {
+    EFFECTIVE: 90,
+    PARTIALLY_EFFECTIVE: 50,
+    INEFFECTIVE: 0,
+    NOT_TESTED: 30,
+  },
+};
+
+function withControlDefaults(config) {
+  if (!config) return config;
+  return {
+    ...config,
+    controls: {
+      ...DEFAULT_CONTROLS,
+      ...(config.controls || {}),
+      effectiveness_scale: {
+        ...DEFAULT_CONTROLS.effectiveness_scale,
+        ...(config.controls?.effectiveness_scale || {}),
+      },
+    },
+  };
 }
 
 function setIn(object, path, value) {
@@ -226,6 +260,45 @@ function ConfigPanel({ config, editable, onChange }) {
             </tr>
           </tbody>
         </table>
+      </Card>
+
+      <Card title="Controls and residual risk" subtitle="How tested control ratings reduce inherent risk">
+        <label className="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <span>Residual method</span>
+          <select
+            aria-label="Residual method"
+            value={config.controls.residual_method}
+            disabled={!editable}
+            onChange={(e) => set(["controls", "residual_method"])(e.target.value)}
+            className="rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-sm disabled:border-transparent disabled:bg-transparent"
+          >
+            <option value="AVERAGE">Average of all controls</option>
+            <option value="PER_CATEGORY">Per risk category (mapped controls only)</option>
+          </select>
+        </label>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          {config.controls.residual_method === "PER_CATEGORY"
+            ? "Each category score is reduced only by the controls mapped to it, so a sanctions control does not lower fraud risk."
+            : "Residual = inherent × (1 − average effectiveness of all controls)."}
+        </p>
+        <table className="mt-4 w-full text-sm">
+          <thead className="text-xs uppercase text-slate-400 dark:text-slate-500">
+            <tr><th className="py-1 text-left">Tested rating</th><th className="py-1 text-right">Mitigation points</th></tr>
+          </thead>
+          <tbody>
+            {Object.entries(CONTROL_RATING_LABELS).map(([rating, label]) => (
+              <tr key={rating} className="border-t border-slate-100 dark:border-slate-800">
+                <td className="py-2">{label}</td>
+                <td className="py-2 text-right">
+                  <NumberInput label={`${label} points`} value={config.controls.effectiveness_scale[rating]} min={0} max={100} disabled={!editable} onChange={set(["controls", "effectiveness_scale", rating])} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+          A control is credited with the weaker of its design and operating ratings.
+        </p>
       </Card>
 
       <Card title="Factor thresholds" subtitle="Inputs above these values raise a risk factor">
@@ -446,7 +519,7 @@ function VersionDetail({ versionId, user, permissions, onChanged }) {
   const load = async () => {
     const response = await api.get(`/methodology/versions/${versionId}`);
     setDetail(response.data);
-    setDraftConfig(response.data.config);
+    setDraftConfig(withControlDefaults(response.data.config));
     setSummary(response.data.change_summary || "");
   };
 
@@ -536,8 +609,8 @@ function VersionDetail({ versionId, user, permissions, onChanged }) {
               </button>
             </>
           )}
-          {isPending && isProposer && permissions.canApprove && (
-            <p className="text-sm text-amber-700">Maker-checker: a different approver must review a change you proposed.</p>
+          {isPending && !permissions.canApprove && (
+            <p className="text-sm text-amber-700 dark:text-amber-300">Waiting for an Admin to approve this change before it is used.</p>
           )}
           {canReview && (
             <div className="flex w-full flex-col gap-2">
@@ -573,6 +646,107 @@ function VersionDetail({ versionId, user, permissions, onChanged }) {
           </ul>
         </Card>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Training suggestions (shared by an Admin, adopted by the committee)
+// ---------------------------------------------------------------------------
+
+function TrainingSuggestions({ canAdopt, openDraft, onAdopted }) {
+  const [runs, setRuns] = useState(null);
+  const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState(null);
+
+  useEffect(() => {
+    api
+      .get("/training-runs")
+      .then((r) => setRuns(r.data.runs.filter((run) => run.status === "COMPLETED")))
+      .catch(() => setRuns([]));
+  }, []);
+
+  const adopt = async (run) => {
+    try {
+      setBusyId(run.id);
+      setError("");
+      const response = await api.post(`/training-runs/${run.id}/adopt`);
+      await onAdopted(response.data.methodology_version_id);
+    } catch (err) {
+      setError(err?.response?.data?.detail || "Could not start a draft.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  if (!runs) return <p className="text-sm text-slate-500 dark:text-slate-400">Loading suggestions…</p>;
+  if (runs.length === 0) {
+    return (
+      <Card title="Training suggestions" subtitle="Weights suggested from decided cases">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          No suggestions have been shared yet. An Admin runs model training on decided cases and shares the results here.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {runs.map((run) => (
+        <Card
+          key={run.id}
+          title={`Training run #${run.id}`}
+          subtitle={`${run.cases_used} decided cases · shared by ${run.shared_by || "—"} on ${formatShortDate(run.shared_at || run.created_at)}`}
+          actions={
+            canAdopt && (
+              run.adopted_methodology_version_id ? (
+                <span className="text-sm text-slate-500 dark:text-slate-400">Draft already started</span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={Boolean(openDraft) || busyId === run.id}
+                  onClick={() => adopt(run)}
+                  title={openDraft ? "Finish the open draft first" : undefined}
+                  className="rounded-lg px-4 py-2 text-sm font-semibold border border-green-300 bg-green-50 text-green-800 hover:bg-green-100 disabled:opacity-50 dark:border-green-800 dark:bg-green-950/40 dark:text-green-400"
+                >
+                  {busyId === run.id ? "Starting…" : "Start a draft from this"}
+                </button>
+              )
+            )
+          }
+        >
+          <p className="text-sm text-slate-600 dark:text-slate-400">{run.message}</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[420px] text-sm">
+              <thead className="text-xs uppercase text-slate-400 dark:text-slate-500">
+                <tr>
+                  <th className="py-1 text-left">Category</th>
+                  <th className="py-1 text-right">Current</th>
+                  <th className="py-1 text-right">Suggested</th>
+                  <th className="py-1 text-right">Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.keys(run.current_weights).map((category) => {
+                  const delta = run.suggested_weights[category] - run.current_weights[category];
+                  return (
+                    <tr key={category} className="border-t border-slate-100 dark:border-slate-800">
+                      <td className="py-1.5">{CATEGORY_LABELS[category]}</td>
+                      <td className="py-1.5 text-right tabular-nums">{run.current_weights[category].toFixed(3)}</td>
+                      <td className="py-1.5 text-right font-semibold tabular-nums">{run.suggested_weights[category].toFixed(3)}</td>
+                      <td className={`py-1.5 text-right tabular-nums ${delta > 0 ? "text-red-600 dark:text-red-400" : delta < 0 ? "text-emerald-700 dark:text-emerald-300" : "text-slate-500"}`}>
+                        {delta > 0 ? "+" : ""}{delta.toFixed(3)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {run.metrics?.note && <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">{run.metrics.note}</p>}
+        </Card>
+      ))}
     </div>
   );
 }
@@ -622,6 +796,9 @@ function Methodology() {
     { key: "methodology", label: "Methodology", Icon: SlidersHorizontal },
     { key: "framework", label: "Framework basis", Icon: BookOpen },
     { key: "versions", label: "Versions", Icon: History },
+    ...(permissions.canPropose
+      ? [{ key: "training", label: "Training suggestions", Icon: BrainCircuit }]
+      : []),
   ];
 
   return (
@@ -630,8 +807,8 @@ function Methodology() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 lg:text-4xl">Risk methodology</h1>
           <p className="mt-2 text-base text-slate-600 dark:text-slate-400 lg:text-lg">
-            Versioned scoring parameters and workflow rules. Analysts propose changes, the committee approves them, and
-            every assessment records the version it was scored under.
+            Versioned scoring parameters and workflow rules. The Risk Committee proposes changes, an Admin approves them
+            before they are used, and every assessment records the version it was scored under.
           </p>
           {active && (
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -677,6 +854,18 @@ function Methodology() {
       )}
 
       {tab === "framework" && <FrameworkTab />}
+
+      {tab === "training" && (
+        <TrainingSuggestions
+          canAdopt={permissions.canPropose}
+          openDraft={openDraft}
+          onAdopted={async (versionId) => {
+            await loadVersions();
+            setSelectedId(versionId);
+            setTab("methodology");
+          }}
+        />
+      )}
 
       {tab === "versions" && (
         <Card title="Methodology versions" subtitle="Published versions are immutable">

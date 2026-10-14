@@ -50,6 +50,7 @@ import {
 import PageContainer from "../components/layout/PageContainer";
 
 import api from "../services/api";
+import { RequestFeedbackCard } from "../components/feedback/RequestFeedback";
 import { useAuth } from "../context/AuthContext";
 import {
   ROLES,
@@ -86,6 +87,7 @@ function Assessment() {
   const [runningRiskAssessment, setRunningRiskAssessment] = useState(false);
   const [analystRating, setAnalystRating] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
+  const [overrideReasonCode, setOverrideReasonCode] = useState("");
   const [consequences, setConsequences] = useState("");
   const [analystReviewed, setAnalystReviewed] = useState(false);
   const [committeeDecision, setCommitteeDecision] = useState("");
@@ -337,6 +339,7 @@ function Assessment() {
 
           setAnalystRating(review.analyst_rating || "");
           setOverrideReason(review.override_reason || "");
+          setOverrideReasonCode(review.override_reason_code || "");
           setConsequences(review.consequences || "");
         } else {
           // Nothing recorded for the current revision (new request, or the
@@ -922,6 +925,14 @@ function Assessment() {
       return;
     }
 
+    if (
+      analystRating !== riskAssessment?.residual_rating &&
+      !overrideReasonCode
+    ) {
+      setError("Please choose the main reason for the override.");
+      return;
+    }
+
     try {
       setError("");
 
@@ -932,6 +943,10 @@ function Assessment() {
           params: {
             analyst_rating: analystRating,
             override_reason: overrideReason,
+            override_reason_code:
+              analystRating !== riskAssessment?.residual_rating
+                ? overrideReasonCode
+                : "",
             consequences: consequences,
           },
         }
@@ -1334,6 +1349,11 @@ function Assessment() {
       />
 
       <PageContainer className="pb-12">
+        {isBusinessOwner && changeRequest?.current_stage === "COMPLETED" && (
+          <div className="mb-6">
+            <RequestFeedbackCard changeRequestId={changeRequestId} />
+          </div>
+        )}
         {error && (
           <div className="mb-6 rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
             {error}
@@ -1612,6 +1632,8 @@ function Assessment() {
   setAnalystRating={setAnalystRating}
   overrideReason={overrideReason}
   setOverrideReason={setOverrideReason}
+  overrideReasonCode={overrideReasonCode}
+  setOverrideReasonCode={setOverrideReasonCode}
   consequences={consequences}
   setConsequences={setConsequences}
   analystReviewed={analystReviewed}
@@ -1707,7 +1729,7 @@ function Assessment() {
           </>
         )}
 
-        {canExportAudit && (activeView === "COMPLETED" || user?.role === ROLES.AUDITOR) && (
+        {canExportAudit && (activeView === "COMPLETED" || user?.role === ROLES.ADMIN) && (
           <AuditTrail
             changeRequestId={changeRequestId}
             requestNumber={changeRequest?.request_number}

@@ -93,6 +93,8 @@ function AnalystReview({
   setAnalystRating,
   overrideReason,
   setOverrideReason,
+  overrideReasonCode = "",
+  setOverrideReasonCode = () => {},
   consequences,
   setConsequences,
   analystReviewed,
@@ -100,6 +102,14 @@ function AnalystReview({
   canSubmit = true,
 }) {
   const [preview, setPreview] = useState(null);
+  const [reasonCodes, setReasonCodes] = useState([]);
+
+  useEffect(() => {
+    api
+      .get("/override-reason-codes")
+      .then((response) => setReasonCodes(response.data.codes))
+      .catch(() => setReasonCodes([]));
+  }, []);
 
   useEffect(() => {
     if (!analystRating || !changeRequestId || analystReviewed) {
@@ -226,8 +236,20 @@ function AnalystReview({
 
         {analystRating && analystRating !== riskAssessment?.residual_rating && (
           <div>
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Reason for Override</label>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Required when the analyst rating differs from the system-calculated residual risk.</p>
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300" htmlFor="override-reason-code">Reason for Override</label>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Required when the analyst rating differs from the system-calculated residual risk. The main reason is used to improve the model.</p>
+            <select
+              id="override-reason-code"
+              value={overrideReasonCode}
+              onChange={(e) => setOverrideReasonCode(e.target.value)}
+              disabled={analystReviewed || !canSubmit}
+              className="mt-3 w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 disabled:bg-slate-50 dark:disabled:bg-slate-800/50 md:w-[28rem]"
+            >
+              <option value="">Main reason…</option>
+              {reasonCodes.map((item) => (
+                <option key={item.code} value={item.code}>{item.label}</option>
+              ))}
+            </select>
             <textarea
               value={overrideReason}
               onChange={(e) => setOverrideReason(e.target.value)}

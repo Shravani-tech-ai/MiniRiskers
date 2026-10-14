@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Shield } from "lucide-react";
 
-import { NAV_ITEMS } from "./navItems";
+import { navItemsFor } from "./navItems";
 import { useAuth } from "../../context/AuthContext";
 
 function AppSidebar() {
@@ -26,7 +26,7 @@ function AppSidebar() {
       </div>
 
       <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto p-4">
-        {NAV_ITEMS.filter((item) => !item.hiddenFor?.includes(user?.role)).map((item) => {
+        {navItemsFor(user?.role).map((item) => {
           const Icon = item.icon;
           const active = !item.disabled && item.matches(location.pathname);
 

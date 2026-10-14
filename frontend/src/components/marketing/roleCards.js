@@ -1,7 +1,6 @@
 import {
   Briefcase,
   ClipboardCheck,
-  Eye,
   Shield,
   UserCog,
 } from "lucide-react";
@@ -37,22 +36,13 @@ export const ROLE_CARDS = [
     tags: ["View & review", "Committee decision", "Approve / reject"],
   },
   {
-    role: ROLES.AUDITOR,
-    title: "Auditor",
-    icon: Eye,
-    tone: "border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300",
-    description:
-      "Read-only access to records, assessments, evidence, and audit trails.",
-    tags: ["View only", "Audit trail", "Compliance view"],
-  },
-  {
     role: ROLES.ADMIN,
     title: "Admin",
     icon: UserCog,
     tone: "border-teal-200 dark:border-teal-900 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300",
     description:
-      "Full access to workflow features and oversight across change requests.",
-    tags: ["All features", "Oversight", "System access"],
+      "Full oversight: approvals, audit trail, model training, control and regulatory libraries.",
+    tags: ["Approvals", "Audit", "Model training"],
   },
 ];
 
