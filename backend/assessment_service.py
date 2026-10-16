@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from backend.assessment_context import build_assessment_context
 from backend.assessment_prompt import build_assessment_prompt
-from backend.gemini_service import generate_json
+from backend.gemini_service import generate_json_with_model
+from backend.learning import learned_examples
 from backend.models import AIRecommendation
 
 def parse_gemini_json(response_text: str):
@@ -55,13 +56,17 @@ def generate_ai_assessment(
         change_request_id
     )
 
+    # Similar decided cases, so the draft reflects how the bank has
+    # actually judged comparable changes.
+    context["learned_examples"] = learned_examples(db, change_request_id)
+
     # 2. Build FCRM-specific prompt
     prompt = build_assessment_prompt(
         context
     )
 
     # 3. Call Gemini
-    response_text = generate_json(prompt)
+    response_text, model_used = generate_json_with_model(prompt)
 
     # 4. Try to parse Gemini JSON
     try:
@@ -87,7 +92,7 @@ def generate_ai_assessment(
 
         model_name="Gemini",
 
-        model_version="gemini-2.5-flash",
+        model_version=model_used,
 
         assessment_summary=(
             assessment.get(

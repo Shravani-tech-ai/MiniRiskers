@@ -6,7 +6,6 @@ from backend.auth import hash_password
 from backend.models import User
 from backend.permissions import (
     ROLE_ADMIN,
-    ROLE_AUDITOR,
     ROLE_BUSINESS_OWNER,
     ROLE_RISK_ANALYST,
     ROLE_RISK_COMMITTEE,
@@ -36,14 +35,6 @@ DEV_USERS = [
         "role": ROLE_RISK_COMMITTEE,
         "password_env": "DEV_PASSWORD_RISK_COMMITTEE",
         "default_password": "dev-risk-committee",
-    },
-    {
-        "username": "auditor",
-        "email": "auditor@miniriskers.local",
-        "full_name": "Auditor",
-        "role": ROLE_AUDITOR,
-        "password_env": "DEV_PASSWORD_AUDITOR",
-        "default_password": "dev-auditor",
     },
     {
         "username": "admin",

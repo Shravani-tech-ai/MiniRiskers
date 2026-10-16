@@ -28,12 +28,10 @@ from backend.auth_routes import router as auth_router
 from backend.database import SessionLocal, engine, get_db
 from backend.permissions import (
     ROLE_ADMIN,
-    ROLE_AUDITOR,
     ROLE_BUSINESS_OWNER,
     ROLE_RISK_ANALYST,
     ROLE_RISK_COMMITTEE,
     assert_intake_editable,
-    assert_not_auditor_write,
     assert_role,
     assert_submitted,
     assert_workflow_stage,
@@ -56,11 +54,26 @@ from backend.override_policy import evaluate_override
 from backend.serializers import serialize_condition
 from backend.governance_routes import router as governance_router
 from backend.notification_routes import router as notification_router
+from backend.admin_routes import router as admin_router
+from backend.control_library import (
+    ensure_control_library_seeded,
+    router as control_library_router,
+    serialize_control,
+)
+from backend.feedback_routes import router as feedback_router
+from backend.learning import OVERRIDE_REASON_CODES
+from backend.regulatory_library import (
+    activate_due_sources,
+    ensure_regulatory_library_seeded,
+    router as regulatory_library_router,
+)
+from backend.system_settings import get_setting
 from backend.notifications import (
     notify_analyst_review_submitted,
     notify_brd_extracted,
     notify_committee_decision,
     notify_condition_opened,
+    notify_feedback_requested,
     notify_override_escalated,
     notify_request_created,
     notify_request_submitted,
@@ -171,6 +184,10 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(governance_router)
 app.include_router(notification_router)
+app.include_router(admin_router)
+app.include_router(control_library_router)
+app.include_router(feedback_router)
+app.include_router(regulatory_library_router)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -187,6 +204,37 @@ SCHEMA_PATCHES = {
     "change_requests": {
         "current_stage": "VARCHAR NOT NULL DEFAULT 'REQUEST_CREATED'",
         "revision": "INTEGER NOT NULL DEFAULT 1",
+        "closed_at": "DATETIME",
+    },
+    "controls": {
+        "library_control_id": "INTEGER",
+        "design_effectiveness_rating": "VARCHAR",
+        "operating_effectiveness_rating": "VARCHAR",
+        "mapped_categories": "TEXT",
+        "control_nature": "VARCHAR",
+        "frequency": "VARCHAR",
+        "is_key_control": "BOOLEAN DEFAULT 0",
+        "created_at": "DATETIME",
+    },
+    "regulatory_sources": {
+        "title": "VARCHAR",
+        "reference_number": "VARCHAR",
+        "description": "TEXT",
+        "supersedes_id": "INTEGER",
+        "superseded_by_id": "INTEGER",
+        "uploaded_by": "VARCHAR",
+        "uploaded_by_user_id": "INTEGER",
+        "approved_by": "VARCHAR",
+        "approved_by_user_id": "INTEGER",
+        "approved_at": "DATETIME",
+        "review_note": "TEXT",
+        "index_status": "VARCHAR DEFAULT 'NOT_INDEXED'",
+        "index_error": "TEXT",
+        "page_count": "INTEGER",
+        "chunk_count": "INTEGER",
+    },
+    "regulatory_evidence": {
+        "is_current": "BOOLEAN NOT NULL DEFAULT 1",
     },
     "risk_assessments": {
         "methodology_version_id": "INTEGER",
@@ -203,6 +251,7 @@ SCHEMA_PATCHES = {
         "acknowledged_by": "VARCHAR",
         "acknowledged_at": "DATETIME",
         "acknowledgement_note": "TEXT",
+        "override_reason_code": "VARCHAR",
     },
     "committee_decisions": {
         "revision": "INTEGER DEFAULT 1",
@@ -258,7 +307,6 @@ def authorize_intake_write(
         current_user,
     )
     assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
-    assert_not_auditor_write(current_user)
     assert_intake_editable(current_user, change_request)
     return change_request
 
@@ -274,7 +322,6 @@ def authorize_analyst_action(
         current_user,
     )
     assert_role(current_user, ROLE_RISK_ANALYST, ROLE_ADMIN)
-    assert_not_auditor_write(current_user)
     assert_submitted(change_request)
     return change_request
 
@@ -298,7 +345,6 @@ def authorize_assessment_inputs_sync(
         ROLE_RISK_ANALYST,
         ROLE_ADMIN,
     )
-    assert_not_auditor_write(current_user)
     if current_user.role == ROLE_BUSINESS_OWNER:
         assert_intake_editable(current_user, change_request)
     elif current_user.role == ROLE_RISK_ANALYST:
@@ -381,6 +427,8 @@ def on_startup():
     try:
         seed_development_users(db)
         ensure_default_methodology(db)
+        ensure_control_library_seeded(db)
+        ensure_regulatory_library_seeded(db)
         seal_legacy_events(db)
     finally:
         db.close()
@@ -538,7 +586,6 @@ async def prefill_change_request_from_brd(
     normal intake upload) only once the request is created.
     """
     assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
-    assert_not_auditor_write(current_user)
 
     file_bytes = await file.read()
     filename = file.filename or "brd-upload.pdf"
@@ -569,7 +616,6 @@ def create_change_request(
     current_user: User = Depends(get_current_user),
 ):
     assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
-    assert_not_auditor_write(current_user)
 
     title = payload.title.strip()
     description = payload.description.strip()
@@ -1166,6 +1212,7 @@ def generate_regulatory_evidence(
         "Regulatory evidence generation is not allowed at the current workflow stage.",
     )
 
+    activate_due_sources(db)
     evidence = generate_evidence_for_change_request(
         db,
         change_request_id,
@@ -1221,7 +1268,8 @@ def get_regulatory_evidence(
     evidence = (
         db.query(RegulatoryEvidence)
         .filter(
-            RegulatoryEvidence.change_request_id == change_request_id
+            RegulatoryEvidence.change_request_id == change_request_id,
+            RegulatoryEvidence.is_current.is_(True),
         )
         .all()
     )
@@ -1428,6 +1476,10 @@ def serialize_analyst_review(review: AnalystOverride) -> dict:
         "system_rating": review.system_rating,
         "analyst_rating": review.analyst_rating,
         "override_reason": review.override_reason,
+        "override_reason_code": review.override_reason_code,
+        "override_reason_label": OVERRIDE_REASON_CODES.get(
+            review.override_reason_code or ""
+        ),
         "consequences": review.consequences,
         "override_direction": review.override_direction or "NONE",
         "band_delta": review.band_delta or 0,
@@ -1478,7 +1530,6 @@ def preview_override(
         current_user,
         ROLE_RISK_ANALYST,
         ROLE_RISK_COMMITTEE,
-        ROLE_AUDITOR,
         ROLE_ADMIN,
     )
     if analyst_rating not in RATING_VALUES:
@@ -1497,6 +1548,7 @@ def submit_analyst_review(
     analyst_rating: str,
     override_reason: str = "",
     consequences: str = "",
+    override_reason_code: str = "",
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -1539,6 +1591,11 @@ def submit_analyst_review(
             status_code=400,
             detail="Override reason is required when analyst rating differs from system rating."
         )
+    override_reason_code = override_reason_code.strip().upper()
+    if override_reason_code and override_reason_code not in OVERRIDE_REASON_CODES:
+        raise HTTPException(status_code=400, detail="Unknown override reason code.")
+    if analyst_rating == system_rating:
+        override_reason_code = ""
 
     evaluation = _evaluate_override_for(
         db, change_request_id, risk_assessment, analyst_rating
@@ -1560,6 +1617,7 @@ def submit_analyst_review(
         system_rating=system_rating,
         analyst_rating=analyst_rating,
         override_reason=override_reason,
+        override_reason_code=override_reason_code or None,
         consequences=consequences,
         override_direction=evaluation["direction"],
         band_delta=evaluation["band_delta"],
@@ -1715,7 +1773,6 @@ def submit_committee_decision(
         current_user,
     )
     assert_role(current_user, ROLE_RISK_COMMITTEE, ROLE_ADMIN)
-    assert_not_auditor_write(current_user)
     assert_workflow_stage(
         change_request,
         {"COMMITTEE_REVIEW"},
@@ -1888,6 +1945,12 @@ def submit_committee_decision(
         risk_assessment.assessment_status = "DECIDED"
         change_request.status = FINAL_DECISION_STATUS[decision]
         change_request.current_stage = "COMPLETED"
+        if decision != "APPROVE_WITH_CONDITIONS":
+            # Conditional approvals close once every condition is verified.
+            change_request.closed_at = datetime.utcnow()
+            notify_feedback_requested(
+                db, change_request, get_setting(db, "feedback_window_days")
+            )
 
         if decision == "APPROVE_WITH_CONDITIONS":
             default_days = get_active_methodology(db)[1]["workflow"].get(
@@ -2031,7 +2094,6 @@ def submit_for_analyst(
         current_user,
     )
     assert_role(current_user, ROLE_BUSINESS_OWNER, ROLE_ADMIN)
-    assert_not_auditor_write(current_user)
 
     if is_submitted(change_request):
         raise HTTPException(
@@ -2345,21 +2407,7 @@ def get_controls(
 
     return {
         "change_request_id": change_request_id,
-        "controls": [
-            {
-                "id": control.id,
-                "control_name": control.control_name,
-                "control_category": control.control_category,
-                "description": control.description,
-                "control_type": control.control_type,
-                "control_strength": control.control_strength,
-                "implemented": control.implemented,
-                "implementation_status": control.implementation_status,
-                "owner": control.owner,
-                "effectiveness_score": control.effectiveness_score,
-            }
-            for control in controls
-        ],
+        "controls": [serialize_control(control) for control in controls],
     }
 
 
@@ -2525,7 +2573,6 @@ def get_audit_events(
         ROLE_BUSINESS_OWNER,
         ROLE_RISK_ANALYST,
         ROLE_RISK_COMMITTEE,
-        ROLE_AUDITOR,
         ROLE_ADMIN,
     )
 
@@ -2792,7 +2839,6 @@ def _methodology_report_or_404(
         current_user,
         ROLE_RISK_ANALYST,
         ROLE_RISK_COMMITTEE,
-        ROLE_AUDITOR,
         ROLE_ADMIN,
     )
     try:

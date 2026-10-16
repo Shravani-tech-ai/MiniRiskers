@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 
 from backend.database import get_db
 from backend.models import User
-from backend.permissions import ALL_ROLES
+from backend.permissions import ALL_ROLES, RETIRED_ROLES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -232,6 +232,14 @@ def authenticate_user(db: Session, username: str, password: str) -> User | None:
         return None
     if not verify_password(password, user.password_hash):
         return None
+    if user.role in RETIRED_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "This account's role has been retired. Ask an Admin to "
+                "assign a current role."
+            ),
+        )
     return user
 
 

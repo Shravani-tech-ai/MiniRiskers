@@ -13,6 +13,7 @@ _DB_DIR = tempfile.mkdtemp(prefix="miniriskers-test-")
 os.environ["MINIRISKERS_DATABASE_URL"] = f"sqlite:///{_DB_DIR}/test.db"
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("MINIRISKERS_DISABLE_EMBEDDINGS", "1")
+os.environ["MINIRISKERS_REGULATION_UPLOAD_DIR"] = f"{_DB_DIR}/regulations"
 
 
 @pytest.fixture(scope="session")
@@ -66,6 +67,21 @@ def tokens(app_client):
             session.commit()
         headers["RISK_ANALYST_2"] = {
             "Authorization": f"Bearer {create_access_token(second)}"
+        }
+        # A second committee member for methodology maker-checker tests.
+        member = session.query(User).filter(User.username == "risk_committee_2").first()
+        if member is None:
+            member = User(
+                username="risk_committee_2",
+                email="risk_committee_2@miniriskers.local",
+                full_name="Second Committee Member",
+                role="RISK_COMMITTEE",
+                password_hash=hash_password("x-test-password"),
+            )
+            session.add(member)
+            session.commit()
+        headers["RISK_COMMITTEE_2"] = {
+            "Authorization": f"Bearer {create_access_token(member)}"
         }
         return headers
     finally:

@@ -89,6 +89,10 @@ class ChangeRequest(Base):
     # rework; reviews and decisions are recorded against a revision.
     revision = Column(Integer, default=1, nullable=False)
 
+    # When the request reached a final outcome (approved, conditions met or
+    # rejected); opens the Business Owner feedback window.
+    closed_at = Column(DateTime, nullable=True)
+
     created_at = Column(
         DateTime,
         default=datetime.utcnow
@@ -382,6 +386,26 @@ class Control(Base):
 
     effectiveness_score = Column(Float)
 
+    # Set when the control was picked from the control library.
+    library_control_id = Column(Integer, nullable=True, index=True)
+
+    # EFFECTIVE / PARTIALLY_EFFECTIVE / INEFFECTIVE / NOT_TESTED. When both
+    # are set, effectiveness_score is derived from them under the methodology.
+    design_effectiveness_rating = Column(String)
+
+    operating_effectiveness_rating = Column(String)
+
+    # JSON list of risk categories this control mitigates; empty means all.
+    mapped_categories = Column(Text)
+
+    control_nature = Column(String)
+
+    frequency = Column(String)
+
+    is_key_control = Column(Boolean, default=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class ControlEffectiveness(Base):
 
     __tablename__ = "control_effectiveness"
@@ -550,10 +574,18 @@ class RiskModelWeight(Base):
     maximum_score = Column(Float)
 
 class RegulatorySource(Base):
+    """A regulatory document in the library that RAG retrieves from.
+
+    Lifecycle: PENDING_APPROVAL -> ACTIVE -> SUPERSEDED / WITHDRAWN
+    (or PENDING_APPROVAL -> REJECTED). Admin uploads are approved on upload;
+    Risk Committee uploads wait for an Admin.
+    """
+
     __tablename__ = "regulatory_sources"
 
     id = Column(Integer, primary_key=True, index=True)
     authority = Column(String, nullable=False)
+    # Matches the `document` metadata on the source's vector-store chunks.
     document_name = Column(String, nullable=False)
     document_type = Column(String)
     status = Column(String)
@@ -562,6 +594,23 @@ class RegulatorySource(Base):
     effective_from = Column(DateTime)
     effective_to = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    title = Column(String)
+    reference_number = Column(String)
+    description = Column(Text)
+    supersedes_id = Column(Integer, nullable=True, index=True)
+    superseded_by_id = Column(Integer, nullable=True)
+    uploaded_by = Column(String)
+    uploaded_by_user_id = Column(Integer)
+    approved_by = Column(String)
+    approved_by_user_id = Column(Integer)
+    approved_at = Column(DateTime)
+    review_note = Column(Text)
+    # NOT_INDEXED / INDEXING / INDEXED / FAILED / SKIPPED
+    index_status = Column(String, default="NOT_INDEXED")
+    index_error = Column(Text)
+    page_count = Column(Integer)
+    chunk_count = Column(Integer)
 
 
 class RegulatoryEvidence(Base):
@@ -581,6 +630,10 @@ class RegulatoryEvidence(Base):
 
     source_reference = Column(String)
     relevance_score = Column(Float)
+
+    # Regenerating evidence keeps earlier rows as history instead of
+    # deleting them; only current rows feed the assessment.
+    is_current = Column(Boolean, default=True, nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -651,6 +704,10 @@ class AnalystOverride(Base):
     analyst_rating = Column(String)
 
     override_reason = Column(Text)
+
+    # Structured reason from OVERRIDE_REASON_CODES, so overrides can be
+    # analysed and learned from (the free-text reason stays alongside).
+    override_reason_code = Column(String)
 
     consequences = Column(Text)
 
@@ -964,3 +1021,143 @@ class SimilarCasesSnapshot(Base):
         DateTime,
         default=datetime.utcnow,
     )
+
+
+class SystemSetting(Base):
+    """Admin-configurable runtime setting stored as JSON."""
+
+    __tablename__ = "system_settings"
+
+    key = Column(String, primary_key=True)
+
+    value_json = Column(Text, nullable=False)
+
+    updated_by = Column(String)
+
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class LibraryControl(Base):
+    """A standard control in the Admin-maintained control library."""
+
+    __tablename__ = "control_library"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    code = Column(String, unique=True, index=True, nullable=False)
+
+    name = Column(String, nullable=False)
+
+    description = Column(Text)
+
+    # JSON list of risk categories the control mitigates.
+    risk_categories = Column(Text)
+
+    # PREVENTIVE / DETECTIVE / CORRECTIVE
+    control_type = Column(String, nullable=False, default="PREVENTIVE")
+
+    # MANUAL / AUTOMATED / HYBRID
+    control_nature = Column(String, nullable=False, default="MANUAL")
+
+    frequency = Column(String)
+
+    is_key_control = Column(Boolean, default=False)
+
+    owner = Column(String)
+
+    regulatory_references = Column(Text)
+
+    default_design_rating = Column(String, default="EFFECTIVE")
+
+    default_operating_rating = Column(String, default="NOT_TESTED")
+
+    active = Column(Boolean, default=True, nullable=False)
+
+    created_by = Column(String)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    updated_by = Column(String)
+
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class TrainingRun(Base):
+    """One calibration run of category weights against decided cases."""
+
+    __tablename__ = "training_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # COMPLETED / INSUFFICIENT_DATA
+    status = Column(String, nullable=False)
+
+    cases_used = Column(Integer, default=0)
+
+    parameters_json = Column(Text)
+
+    current_weights_json = Column(Text)
+
+    suggested_weights_json = Column(Text)
+
+    metrics_json = Column(Text)
+
+    message = Column(Text)
+
+    methodology_version = Column(String)
+
+    created_by = Column(String)
+
+    created_by_user_id = Column(Integer)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Shared with the Risk Committee as a starting point for a draft.
+    shared_at = Column(DateTime)
+
+    shared_by = Column(String)
+
+    adopted_methodology_version_id = Column(Integer)
+
+
+class RequestFeedback(Base):
+    """Business Owner rating of the process once a request closes."""
+
+    __tablename__ = "request_feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(Integer, nullable=False, index=True)
+
+    user_id = Column(Integer, nullable=False, index=True)
+
+    rating = Column(Integer, nullable=False)
+
+    # JSON list of quick tags, e.g. ["Accurate risk rating", "Too slow"].
+    tags_json = Column(Text)
+
+    comment = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AIFeedback(Base):
+    """Analyst / committee verdict on an AI assessment draft."""
+
+    __tablename__ = "ai_feedback"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(Integer, nullable=False, index=True)
+
+    ai_recommendation_id = Column(Integer, nullable=False, index=True)
+
+    user_id = Column(Integer, nullable=False, index=True)
+
+    helpful = Column(Boolean, nullable=False)
+
+    reason = Column(String)
+
+    comment = Column(Text)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
