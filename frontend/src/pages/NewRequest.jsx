@@ -22,7 +22,7 @@ import { useAuth } from "../context/AuthContext";
 const STEPS = [
   { id: 1, title: "Change details", subtitle: "Describe the proposed change" },
   { id: 2, title: "Classification", subtitle: "Business and customer context" },
-  { id: 3, title: "Review", subtitle: "Confirm and submit for intake" },
+  { id: 3, title: "Review", subtitle: "Confirm and create the draft" },
 ];
 
 const CHANGE_TYPES = [
@@ -258,7 +258,11 @@ function NewRequest() {
       }
 
       navigate(`/assessment/${newId}`, {
-        state: { from: "/dashboard", brdAttached },
+        state: {
+          from: "/dashboard",
+          brdAttached,
+          brdAttachFailed: Boolean(brdFile) && !brdAttached,
+        },
       });
     } catch (err) {
       console.error("Failed to create change request:", err);
@@ -673,8 +677,9 @@ function NewRequest() {
                         Intake summary
                       </h2>
                       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        Submitting creates the request and opens the assessment
-                        workbench for BRD intake and risk scoring.
+                        Creating saves the request as a draft and opens the
+                        assessment workbench, where you complete the intake and
+                        submit it for Risk Analyst review.
                       </p>
                     </div>
                   </div>
@@ -756,11 +761,11 @@ function NewRequest() {
                 {loading ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Submitting…
+                    Creating…
                   </>
                 ) : (
                   <>
-                    Submit & open assessment
+                    Create & open assessment
                     <ArrowRight size={16} />
                   </>
                 )}

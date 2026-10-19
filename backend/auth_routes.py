@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from backend.auth import (
+    ALLOW_ADMIN_SELF_SIGNUP,
     ChangePasswordRequest,
     LoginRequest,
     NotificationPreferencesUpdate,
@@ -20,7 +22,7 @@ from backend.auth import (
     verify_password,
 )
 from backend.database import get_db
-from backend.models import User
+from backend.models import ChangeRequest, User
 from backend.user_preferences import (
     NOTIFICATION_CATEGORIES,
     merge_notification_preferences,
@@ -61,6 +63,12 @@ def login(
     )
 
 
+@router.get("/signup-options")
+def signup_options():
+    """Public: which roles the signup page may offer."""
+    return {"allow_admin_signup": ALLOW_ADMIN_SELF_SIGNUP}
+
+
 @router.post(
     "/register",
     response_model=AuthTokenResponse,
@@ -83,6 +91,36 @@ def auth_me(current_user: User = Depends(get_current_user)):
     return user_to_public(current_user)
 
 
+def _carry_name_on_requests(
+    db: Session, user: User, old_name: str, new_name: str
+) -> None:
+    """Keep the user's requests linked to them after a name change.
+
+    Requests record the owner (and assigned analyst) by name, and access is
+    matched on username or current full name, so renaming would otherwise
+    hide the user's own requests. Skipped when another account shares the
+    old name, so a rename never takes over someone else's requests.
+    """
+    if not old_name or old_name.lower() == new_name.lower():
+        return
+    if old_name.lower() == user.username.lower():
+        return
+    shared = (
+        db.query(User)
+        .filter(
+            func.lower(User.full_name) == old_name.lower(),
+            User.id != user.id,
+        )
+        .first()
+    )
+    if shared:
+        return
+    for column in (ChangeRequest.requested_by, ChangeRequest.assigned_analyst):
+        db.query(ChangeRequest).filter(
+            func.lower(column) == old_name.lower()
+        ).update({column: new_name}, synchronize_session=False)
+
+
 @router.patch("/me", response_model=UserPublic)
 def update_profile(
     body: UpdateProfileRequest,
@@ -101,8 +139,11 @@ def update_profile(
             detail="Email is already registered.",
         )
 
-    current_user.full_name = body.full_name.strip()
+    old_name = (current_user.full_name or "").strip()
+    new_name = body.full_name.strip()
+    current_user.full_name = new_name
     current_user.email = email
+    _carry_name_on_requests(db, current_user, old_name, new_name)
 
     try:
         db.commit()

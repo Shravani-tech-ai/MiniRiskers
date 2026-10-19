@@ -223,13 +223,40 @@ function Assessment() {
     }
   };
 
-  const handleExtractionApplied = (mergedPreview) => {
-    const mapped = mapInputsToFormState(mergedPreview);
-    applyFormValues(mapped);
+  // Saves the reviewed BRD extraction to the intake, then reloads the forms
+  // from the server so each section shows as saved. If the server refuses
+  // (e.g. a required value such as product name is still missing), the
+  // values are still filled in locally for the user to finish and save.
+  const handleExtractionApplied = async (mergedPreview) => {
+    try {
+      await api.post(
+        `/change-requests/${changeRequestId}/intake/apply-extraction`,
+        { extracted: mergedPreview }
+      );
+      await hydrateAssessmentInputs();
+      return true;
+    } catch (applyError) {
+      applyFormValues(mapInputsToFormState(mergedPreview));
+      const detail = applyError.response?.data?.detail;
+      setError(
+        `${typeof detail === "string" ? detail : "Could not save the extracted values."} ` +
+          "The values were filled into the forms below; complete any missing fields and save each section."
+      );
+      return false;
+    }
   };
 
   useEffect(() => {
-    loadAssessment();
+    // Honour a stage picked elsewhere (e.g. the Track your Progress stepper)
+    // on the first load instead of always jumping to the current stage.
+    loadAssessment({ preferredView: location.state?.activeView }).then(() => {
+      if (location.state?.brdAttachFailed) {
+        setError(
+          "The request was created, but the BRD could not be attached. " +
+            "Upload it again in the Intake method panel."
+        );
+      }
+    });
   }, [changeRequestId]);
 
   useEffect(() => {
@@ -242,7 +269,7 @@ function Assessment() {
     sessionStorage.setItem("lastChangeRequestId", changeRequestId);
   }, [changeRequestId]);
 
-  const loadAssessment = async () => {
+  const loadAssessment = async ({ preferredView } = {}) => {
     try {
       setLoading(true);
       setError("");
@@ -268,7 +295,13 @@ function Assessment() {
       const stage = normalizeWorkflowStage(
         changeRequestResponse.data.current_stage
       );
-      setActiveView(getDefaultView(user?.role, stage));
+      const canOpenPreferred =
+        preferredView &&
+        canNavigateToWorkflowStage(preferredView, stage) &&
+        !getLockedStages(user?.role).includes(preferredView);
+      setActiveView(
+        canOpenPreferred ? preferredView : getDefaultView(user?.role, stage)
+      );
 
       await hydrateAssessmentInputs();
 
@@ -1548,8 +1581,10 @@ function Assessment() {
               <AIAssessment
                 aiAssessment={aiAssessment}
                 generatingAI={generatingAI}
-                generateAIAssessment={generateAIAssessment}
-                canGenerate={riskEditable}
+                generateAIAssessment={advanceToAnalystStage}
+                canGenerate={
+                  riskEditable && !!riskAssessment && !isResidualPending(riskAssessment)
+                }
                 changeRequestId={changeRequestId}
                 requestNumber={changeRequest?.request_number}
                 stale={aiAssessmentStale}

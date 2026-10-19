@@ -13,6 +13,8 @@ STATUS_PENDING = "PENDING_APPROVAL"
 STATUS_ACTIVE = "ACTIVE"
 STATUS_RETIRED = "RETIRED"
 STATUS_REJECTED = "REJECTED"
+# Draft or pending version taken back by its proposer before approval.
+STATUS_WITHDRAWN = "WITHDRAWN"
 
 
 def parse_config(row: MethodologyVersion) -> dict:

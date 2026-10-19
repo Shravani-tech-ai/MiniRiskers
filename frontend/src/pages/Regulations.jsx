@@ -277,7 +277,7 @@ function SourceRow({ source, sources, isAdmin, userId, onChanged, setNotice }) {
                 <Download size={14} /> Download
               </button>
             )}
-            {isAdmin && source.status === "ACTIVE" && source.index_status === "FAILED" && (
+            {isAdmin && source.status === "ACTIVE" && ["FAILED", "NOT_INDEXED"].includes(source.index_status) && (
               <button type="button" disabled={busy} onClick={() => act("reindex", undefined, "Re-indexing started.")} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-300">
                 <RefreshCw size={14} /> Retry indexing
               </button>

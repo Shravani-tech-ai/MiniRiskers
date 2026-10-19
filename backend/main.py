@@ -79,7 +79,7 @@ from backend.notifications import (
     notify_request_submitted,
     notify_stage_progress,
 )
-from risk_engine.methodology import score_factors
+from risk_engine.methodology import get_rating, score_factors
 from risk_engine.risk_calculator import factor_rows_to_inputs
 from risk_engine.risk_calculator import (
     generate_risk_assessment,
@@ -540,10 +540,29 @@ def get_risk_assessment(
             detail="Risk assessment not found"
         )
 
+    # Category pills use the rating bands of the methodology version the
+    # assessment was scored under, same as the inherent/residual ratings.
+    rating_config = get_config_for_version(
+        db, risk_assessment.risk_model_version
+    )
+    category_ratings = {
+        category: get_rating(float(score or 0), rating_config)
+        for category, score in {
+            "customer": risk_assessment.customer_risk_score,
+            "product": risk_assessment.product_risk_score,
+            "geography": risk_assessment.geography_risk_score,
+            "transaction": risk_assessment.transaction_risk_score,
+            "channel": risk_assessment.channel_risk_score,
+            "third_party": risk_assessment.third_party_risk_score,
+            "fraud": risk_assessment.fraud_risk_score,
+        }.items()
+    }
+
     return {
         "id": risk_assessment.id,
         "change_request_id": risk_assessment.change_request_id,
         "risk_model_version": risk_assessment.risk_model_version,
+        "category_ratings": category_ratings,
 
         "customer_risk_score": risk_assessment.customer_risk_score,
         "product_risk_score": risk_assessment.product_risk_score,
@@ -684,6 +703,29 @@ def create_change_request(
         detail="Could not assign a unique request number. Please retry.",
     )
 
+def upsert_intake_section(db: Session, model, change_request_id: int, values: dict):
+    """Create the intake section on first save, update it in place after.
+
+    Each section is one row per request; inputs are read back with
+    `.first()`, so inserting a second row on re-save would silently lose
+    the edit.
+    """
+    record = (
+        db.query(model)
+        .filter(model.change_request_id == change_request_id)
+        .first()
+    )
+    if record is None:
+        record = model(change_request_id=change_request_id, **values)
+        db.add(record)
+    else:
+        for key, value in values.items():
+            setattr(record, key, value)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 @app.post("/change-requests/{change_request_id}/product")
 def create_product(
     change_request_id: int,
@@ -707,28 +749,28 @@ def create_product(
 ):
     authorize_intake_write(db, change_request_id, current_user)
 
-    product = Product(
-        change_request_id=change_request_id,
-        product_name=product_name,
-        product_category=product_category,
-        product_description=product_description,
-        digital_channel=digital_channel,
-        branch_channel=branch_channel,
-        agent_channel=agent_channel,
-        cross_border=cross_border,
-        cash_involved=cash_involved,
-        transaction_type=transaction_type,
-        transaction_limit=transaction_limit,
-        expected_transaction_volume=expected_transaction_volume,
-        expected_transaction_frequency=expected_transaction_frequency,
-        currency=currency,
-        countries_supported=countries_supported,
-        new_product_flag=new_product_flag
+    product = upsert_intake_section(
+        db,
+        Product,
+        change_request_id,
+        dict(
+            product_name=product_name,
+            product_category=product_category,
+            product_description=product_description,
+            digital_channel=digital_channel,
+            branch_channel=branch_channel,
+            agent_channel=agent_channel,
+            cross_border=cross_border,
+            cash_involved=cash_involved,
+            transaction_type=transaction_type,
+            transaction_limit=transaction_limit,
+            expected_transaction_volume=expected_transaction_volume,
+            expected_transaction_frequency=expected_transaction_frequency,
+            currency=currency,
+            countries_supported=countries_supported,
+            new_product_flag=new_product_flag
+        ),
     )
-
-    db.add(product)
-    db.commit()
-    db.refresh(product)
 
     return product
 
@@ -753,26 +795,26 @@ def create_customer_profile(
 ):
     authorize_intake_write(db, change_request_id, current_user)
 
-    customer_profile = CustomerProfile(
-        change_request_id=change_request_id,
-        customer_type=customer_type,
-        customer_segment=customer_segment,
-        individual_customer=individual_customer,
-        business_customer=business_customer,
-        foreign_customer=foreign_customer,
-        onboarding_method=onboarding_method,
-        kyc_required=kyc_required,
-        kyc_method=kyc_method,
-        beneficial_owner_required=beneficial_owner_required,
-        pep_exposure=pep_exposure,
-        high_risk_customer_exposure=high_risk_customer_exposure,
-        expected_customer_count=expected_customer_count,
-        customer_geographic_distribution=customer_geographic_distribution
+    customer_profile = upsert_intake_section(
+        db,
+        CustomerProfile,
+        change_request_id,
+        dict(
+            customer_type=customer_type,
+            customer_segment=customer_segment,
+            individual_customer=individual_customer,
+            business_customer=business_customer,
+            foreign_customer=foreign_customer,
+            onboarding_method=onboarding_method,
+            kyc_required=kyc_required,
+            kyc_method=kyc_method,
+            beneficial_owner_required=beneficial_owner_required,
+            pep_exposure=pep_exposure,
+            high_risk_customer_exposure=high_risk_customer_exposure,
+            expected_customer_count=expected_customer_count,
+            customer_geographic_distribution=customer_geographic_distribution
+        ),
     )
-
-    db.add(customer_profile)
-    db.commit()
-    db.refresh(customer_profile)
 
     return customer_profile
 
@@ -792,21 +834,21 @@ def create_geography(
 ):
     authorize_intake_write(db, change_request_id, current_user)
 
-    geography = Geography(
-        change_request_id=change_request_id,
-        country=country,
-        country_code=country_code,
-        domestic_or_cross_border=domestic_or_cross_border,
-        customer_country=customer_country,
-        transaction_country=transaction_country,
-        beneficiary_country=beneficiary_country,
-        high_risk_jurisdiction_flag=high_risk_jurisdiction_flag,
-        sanctions_exposure=sanctions_exposure
+    geography = upsert_intake_section(
+        db,
+        Geography,
+        change_request_id,
+        dict(
+            country=country,
+            country_code=country_code,
+            domestic_or_cross_border=domestic_or_cross_border,
+            customer_country=customer_country,
+            transaction_country=transaction_country,
+            beneficiary_country=beneficiary_country,
+            high_risk_jurisdiction_flag=high_risk_jurisdiction_flag,
+            sanctions_exposure=sanctions_exposure
+        ),
     )
-
-    db.add(geography)
-    db.commit()
-    db.refresh(geography)
 
     return geography
 
@@ -830,25 +872,25 @@ def create_transaction_profile(
 ):
     authorize_intake_write(db, change_request_id, current_user)
 
-    transaction_profile = TransactionProfile(
-        change_request_id=change_request_id,
-        transaction_type=transaction_type,
-        average_transaction_amount=average_transaction_amount,
-        maximum_transaction_amount=maximum_transaction_amount,
-        expected_daily_volume=expected_daily_volume,
-        expected_monthly_volume=expected_monthly_volume,
-        expected_frequency=expected_frequency,
-        cash_involved=cash_involved,
-        cross_border=cross_border,
-        number_of_countries=number_of_countries,
-        transaction_velocity=transaction_velocity,
-        round_amount_risk=round_amount_risk,
-        rapid_movement_possible=rapid_movement_possible
+    transaction_profile = upsert_intake_section(
+        db,
+        TransactionProfile,
+        change_request_id,
+        dict(
+            transaction_type=transaction_type,
+            average_transaction_amount=average_transaction_amount,
+            maximum_transaction_amount=maximum_transaction_amount,
+            expected_daily_volume=expected_daily_volume,
+            expected_monthly_volume=expected_monthly_volume,
+            expected_frequency=expected_frequency,
+            cash_involved=cash_involved,
+            cross_border=cross_border,
+            number_of_countries=number_of_countries,
+            transaction_velocity=transaction_velocity,
+            round_amount_risk=round_amount_risk,
+            rapid_movement_possible=rapid_movement_possible
+        ),
     )
-
-    db.add(transaction_profile)
-    db.commit()
-    db.refresh(transaction_profile)
 
     return transaction_profile
 
@@ -868,21 +910,21 @@ def create_channel(
 ):
     authorize_intake_write(db, change_request_id, current_user)
 
-    channel = Channel(
-        change_request_id=change_request_id,
-        channel_type=channel_type,
-        mobile_banking=mobile_banking,
-        internet_banking=internet_banking,
-        branch=branch,
-        agent=agent,
-        api=api,
-        third_party_channel=third_party_channel,
-        remote_onboarding=remote_onboarding
+    channel = upsert_intake_section(
+        db,
+        Channel,
+        change_request_id,
+        dict(
+            channel_type=channel_type,
+            mobile_banking=mobile_banking,
+            internet_banking=internet_banking,
+            branch=branch,
+            agent=agent,
+            api=api,
+            third_party_channel=third_party_channel,
+            remote_onboarding=remote_onboarding
+        ),
     )
-
-    db.add(channel)
-    db.commit()
-    db.refresh(channel)
 
     return channel
 
@@ -909,28 +951,28 @@ def create_vendor(
 ):
     authorize_intake_write(db, change_request_id, current_user)
 
-    vendor = Vendor(
-        change_request_id=change_request_id,
-        vendor_name=vendor_name,
-        vendor_type=vendor_type,
-        country=country,
-        india_based=india_based,
-        service_description=service_description,
-        handles_customer_data=handles_customer_data,
-        handles_transactions=handles_transactions,
-        handles_payment_data=handles_payment_data,
-        criticality=criticality,
-        outsourcing_type=outsourcing_type,
-        due_diligence_completed=due_diligence_completed,
-        contract_completed=contract_completed,
-        audit_rights=audit_rights,
-        business_continuity_plan=business_continuity_plan,
-        cross_border_processing=cross_border_processing
+    vendor = upsert_intake_section(
+        db,
+        Vendor,
+        change_request_id,
+        dict(
+            vendor_name=vendor_name,
+            vendor_type=vendor_type,
+            country=country,
+            india_based=india_based,
+            service_description=service_description,
+            handles_customer_data=handles_customer_data,
+            handles_transactions=handles_transactions,
+            handles_payment_data=handles_payment_data,
+            criticality=criticality,
+            outsourcing_type=outsourcing_type,
+            due_diligence_completed=due_diligence_completed,
+            contract_completed=contract_completed,
+            audit_rights=audit_rights,
+            business_continuity_plan=business_continuity_plan,
+            cross_border_processing=cross_border_processing
+        ),
     )
-
-    db.add(vendor)
-    db.commit()
-    db.refresh(vendor)
 
     return vendor
 
@@ -1335,10 +1377,27 @@ def generate_ai_assessment_endpoint(
             ),
         )
 
-    recommendation, assessment = generate_ai_assessment(
-        db,
-        change_request_id
-    )
+    try:
+        recommendation, assessment = generate_ai_assessment(
+            db,
+            change_request_id
+        )
+    except ValueError as exc:
+        # Missing GEMINI_API_KEY, every model failing, or an unparseable
+        # response. Nothing has been saved, so the request stays where it is.
+        message = str(exc)
+        if "GEMINI_API_KEY" in message:
+            detail = (
+                "The AI assessment could not be generated because "
+                "GEMINI_API_KEY is not configured. Ask the system owner to "
+                "add it to the backend .env file and restart the server."
+            )
+        else:
+            detail = (
+                "The AI service could not produce an assessment right now. "
+                f"Try again in a moment. ({message})"
+            )
+        raise HTTPException(status_code=503, detail=detail)
 
     create_audit_event(
         db=db,
@@ -2601,6 +2660,7 @@ def get_audit_events(
                 "evidence": event.evidence,
                 "model_version": event.model_version,
                 "policy_version": event.policy_version,
+                "event_hash": event.event_hash,
                 "created_at": event.created_at,
             }
             for event in events

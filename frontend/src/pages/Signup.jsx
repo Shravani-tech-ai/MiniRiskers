@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Eye, EyeOff, Loader2, Lock, Mail, UserRound } from "lucide-react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import AuthShell from "../components/marketing/AuthShell";
 import { authInputClassName } from "../components/marketing/authFormStyles";
 import { useAuth } from "../context/AuthContext";
+import api from "../services/api";
 import { ROLES, roleLabel } from "../utils/rolePermissions";
 
 const SIGNUP_ROLES = [
@@ -29,6 +30,29 @@ function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [allowAdminSignup, setAllowAdminSignup] = useState(true);
+
+  useEffect(() => {
+    // Hide the Admin option when the server disallows Admin self-signup,
+    // instead of letting the user discover it on submit.
+    api
+      .get("/auth/signup-options")
+      .then((response) => {
+        setAllowAdminSignup(response.data?.allow_admin_signup !== false);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!allowAdminSignup && form.role === ROLES.ADMIN) {
+      setForm((previous) => ({ ...previous, role: ROLES.BUSINESS_OWNER }));
+    }
+  }, [allowAdminSignup, form.role]);
+
+  const signupRoles = allowAdminSignup
+    ? SIGNUP_ROLES
+    : SIGNUP_ROLES.filter((role) => role !== ROLES.ADMIN);
+  const disabledRoles = allowAdminSignup ? [] : [ROLES.ADMIN];
 
   if (authLoading) {
     return (
@@ -73,9 +97,13 @@ function Signup() {
         },
       });
     } catch (err) {
+      const detail = err?.response?.data?.detail;
       setError(
-        err?.response?.data?.detail ||
-          "Could not create your account. Please try again."
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map((item) => item.msg || String(item)).join(" ")
+          : "Could not create your account. Please try again."
       );
     } finally {
       setLoading(false);
@@ -87,7 +115,12 @@ function Signup() {
       wide
       mode="signup"
       selectedRole={form.role}
-      onRoleSelect={(role) => setForm((previous) => ({ ...previous, role }))}
+      disabledRoles={disabledRoles}
+      onRoleSelect={(role) => {
+        if (!disabledRoles.includes(role)) {
+          setForm((previous) => ({ ...previous, role }));
+        }
+      }}
       title="Create your account"
       subtitle="Pick your role to access the right workflow."
       footer={
@@ -174,7 +207,7 @@ function Signup() {
               onChange={handleChange}
               className={`${authInputClassName} px-3`}
             >
-              {SIGNUP_ROLES.map((role) => (
+              {signupRoles.map((role) => (
                 <option key={role} value={role}>
                   {roleLabel(role)}
                 </option>

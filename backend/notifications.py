@@ -397,6 +397,8 @@ def notify_condition_evidence_submitted(
         body=f"Business owner submitted evidence for: {condition.description}.",
         change_request_id=change_request.id,
         link_path=assessment_link(change_request),
+        # Every (re)submission and send-back is a new event to act on.
+        dedupe=False,
     )
 
 
@@ -414,6 +416,8 @@ def notify_condition_evidence_rejected(
         body=f"Analyst rejected evidence for: {condition.description}. Please resubmit.",
         change_request_id=change_request.id,
         link_path=assessment_link(change_request),
+        # Every (re)submission and send-back is a new event to act on.
+        dedupe=False,
     )
 
 

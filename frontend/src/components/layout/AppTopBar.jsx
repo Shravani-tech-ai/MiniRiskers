@@ -1,9 +1,20 @@
-import { Shield, UserCircle2 } from "lucide-react";
+import { LogOut, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import NotificationBell from "./NotificationBell";
 import ThemeToggle from "../ThemeToggle";
+import { useAuth } from "../../context/AuthContext";
+import { roleLabel } from "../../utils/rolePermissions";
 
 function AppTopBar({ compact = false }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/", { replace: true });
+  };
+
   if (compact) {
     return (
       <header className="shrink-0 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 lg:hidden">
@@ -29,10 +40,12 @@ function AppTopBar({ compact = false }) {
             <NotificationBell compact />
             <button
               type="button"
-              className="rounded-lg p-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Profile"
+              onClick={handleLogout}
+              className="rounded-lg p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Log out"
+              title={`Log out ${user?.full_name || user?.username || ""} (${roleLabel(user?.role)})`}
             >
-              <UserCircle2 size={22} />
+              <LogOut size={18} />
             </button>
           </div>
         </div>

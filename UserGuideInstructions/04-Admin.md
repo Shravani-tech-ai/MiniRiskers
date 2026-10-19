@@ -134,6 +134,7 @@ The lifecycle:
 
 ```text
 Committee:  DRAFT ──(Submit for approval)──► PENDING APPROVAL
+            (the proposer can Withdraw a draft or a pending version → WITHDRAWN)
 Admin:                                         ├─(Approve and publish)─► ACTIVE  (old ACTIVE → RETIRED)
                                                └─(Reject + note)───────► REJECTED (final)
 ```
@@ -188,7 +189,7 @@ On the **Regulations** page, your view opens on **Awaiting approval** if anythin
 | Pending document | **Approve** | Becomes Active, and indexing starts (*"Approved. Indexing has started."*). The uploader is notified. **Disabled on your own upload** (*"You cannot approve your own upload"*) |
 | Pending document | **Reject** + note | Becomes Rejected, and the uploader gets your reason |
 | Active document | **Withdraw** + reason | Stops being cited. Analysts on open requests that cited it get *"Re-check evidence for CR-…"* (*"Withdrawn. Affected open requests were flagged."*) |
-| Indexing failed | **Retry indexing** | Re-runs indexing (*"Re-indexing started."*) |
+| Indexing failed or Not indexed | **Retry indexing** | Re-runs indexing (*"Re-indexing started."*) |
 | Any document with a file | **Download** | Saves the file |
 
 ### Uploading yourself
@@ -390,7 +391,7 @@ For one request's **PDF** examiner pack, open the request. The Audit Trail card 
 |---|---|
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | AI BRD extraction and AI assessment drafts |
 | `JWT_SECRET`, `JWT_EXPIRE_MINUTES` (480) | Login token security and duration |
-| `ALLOW_ADMIN_SELF_SIGNUP` (true) | Whether anyone can sign up as Admin. **Set it to false outside development** |
+| `ALLOW_ADMIN_SELF_SIGNUP` (true) | Whether anyone can sign up as Admin. When false, the Signup page hides the Admin option. **Set it to false outside development** |
 | `DEV_PASSWORD_*` | Override seeded development passwords |
 
 ---
@@ -425,8 +426,8 @@ Click **Retry indexing**. Check that the file has selectable text.
 **A user says they can't log in.**
 In **Users**, check that they are **Active** and don't hold a retired role.
 
-**"Unable to generate AI assessment."**
-Check `GEMINI_API_KEY` in `.env` and restart the backend.
+**"The AI assessment could not be generated because GEMINI_API_KEY is not configured…"**
+Add `GEMINI_API_KEY` to the backend `.env` and restart the backend.
 
 **Training says "Not enough data".**
 Lower *Minimum decided cases to train* in Settings, or wait for more decisions.

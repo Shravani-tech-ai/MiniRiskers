@@ -42,17 +42,30 @@ function getScoreColor(score) {
   return "text-green-600";
 }
 
-function RiskCard({ title, score }) {
+const RATING_TEXT_CLASS = {
+  CRITICAL: "text-red-600 dark:text-red-400",
+  HIGH: "text-orange-600",
+  MEDIUM: "text-yellow-600",
+  LOW: "text-green-600",
+};
+
+// `rating` comes from the backend, which applies the rating bands of the
+// methodology version this assessment was scored under. The fixed cut-offs
+// are only a fallback for responses without category_ratings.
+function RiskCard({ title, score, rating: bandRating }) {
   const numericScore = Number(score || 0);
 
-  let rating = "LOW";
+  let rating = bandRating;
 
-  if (numericScore >= 76) {
-    rating = "CRITICAL";
-  } else if (numericScore >= 51) {
-    rating = "HIGH";
-  } else if (numericScore >= 26) {
-    rating = "MEDIUM";
+  if (!rating) {
+    rating = "LOW";
+    if (numericScore >= 76) {
+      rating = "CRITICAL";
+    } else if (numericScore >= 51) {
+      rating = "HIGH";
+    } else if (numericScore >= 26) {
+      rating = "MEDIUM";
+    }
   }
 
   return (
@@ -67,9 +80,9 @@ function RiskCard({ title, score }) {
       <div className="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
 
         <span
-          className={`text-3xl font-bold leading-none tabular-nums ${getScoreColor(
-            numericScore
-          )}`}
+          className={`text-3xl font-bold leading-none tabular-nums ${
+            RATING_TEXT_CLASS[rating] || getScoreColor(numericScore)
+          }`}
         >
           {numericScore.toFixed(1)}
         </span>
@@ -200,36 +213,43 @@ function RiskOverview({
           <RiskCard
             title="Customer"
             score={riskAssessment.customer_risk_score}
+            rating={riskAssessment.category_ratings?.customer}
           />
 
           <RiskCard
             title="Product"
             score={riskAssessment.product_risk_score}
+            rating={riskAssessment.category_ratings?.product}
           />
 
           <RiskCard
             title="Geography"
             score={riskAssessment.geography_risk_score}
+            rating={riskAssessment.category_ratings?.geography}
           />
 
           <RiskCard
             title="Transaction"
             score={riskAssessment.transaction_risk_score}
+            rating={riskAssessment.category_ratings?.transaction}
           />
 
           <RiskCard
             title="Channel"
             score={riskAssessment.channel_risk_score}
+            rating={riskAssessment.category_ratings?.channel}
           />
 
           <RiskCard
             title="Third Party"
             score={riskAssessment.third_party_risk_score}
+            rating={riskAssessment.category_ratings?.third_party}
           />
 
           <RiskCard
             title="Fraud"
             score={riskAssessment.fraud_risk_score}
+            rating={riskAssessment.category_ratings?.fraud}
           />
 
         </div>

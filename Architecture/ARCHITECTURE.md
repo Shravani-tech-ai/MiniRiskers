@@ -141,11 +141,12 @@ Business Owners/Admins can open "New Request").
 - The frontend stores this token (`frontend/src/context/AuthContext.jsx`)
   and attaches it to every API call; the backend decodes it on each request
   to identify the user (`get_current_user`).
-- **Self-registration** is open for Business Owner, Risk Analyst, Risk
-  Committee, and Auditor. Admin accounts cannot be self-registered
-  (`ALLOW_ADMIN_SELF_SIGNUP=false` by default) — they must be seeded/created
-  directly.
-- For local development, 5 sample accounts (one per role) are auto-created
+- **Self-registration** is open for Business Owner, Risk Analyst and Risk
+  Committee. Admin self-registration is controlled by
+  `ALLOW_ADMIN_SELF_SIGNUP` (default `true` for development; set it to
+  `false` in production, and the Signup page then hides the Admin option).
+  The former Auditor role is retired; its audit work belongs to Admin.
+- For local development, 4 sample accounts (one per role) are auto-created
   the first time the app starts, listed in the project [README](../README.md).
 
 ---

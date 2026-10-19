@@ -429,8 +429,6 @@ Type into *"Verification note (required if the evidence is not sufficient)..."*,
 | **Verify** | The status becomes **Verified** (the note is optional). The Business Owner is notified. When the last condition is verified, the request becomes **"Approved — conditions met"** and closes, and the Business Owner and Committee are notified |
 | **Send back** | The status returns to **Open**, with your note shown as *"Analyst feedback: …"*. **A note is required.** The Business Owner is notified to resubmit |
 
-> ⚠ If the Business Owner resubmits after a send-back, you **won't get a second notification**. Check open conditions on your **Decided** requests.
-
 **Why:** maker-checker. The person proving a condition is met can't be the person confirming it.
 
 ### Audit Trail (bottom of the Outcome view)
@@ -538,14 +536,11 @@ The Business Owner didn't save all 11 required fields. You can't edit them. Ask 
 **"Continue to analyst review" is disabled.**
 Residual is pending. Add at least one control.
 
-**"Unable to generate AI assessment."**
-Usually `GEMINI_API_KEY` is missing or invalid in `.env`. The request stays at the Risk stage, and you can retry once it's fixed.
+**"The AI assessment could not be generated because GEMINI_API_KEY is not configured…"**
+Ask whoever runs the server to add the key to `.env` and restart. If the message says *"The AI service could not produce an assessment right now"*, retry in a moment. Either way the request stays at the Risk stage and nothing is lost.
 
-**I see the AI card's "Generate AI Assessment" button.**
-Prefer **Continue to analyst review →**. It generates the draft *and* moves the stage.
-
-**Why does the category card say HIGH but the methodology says MEDIUM?**
-The small category pills use fixed thresholds (26/51/76). The Inherent and Residual ratings use the methodology's bands.
+**What does the AI card's "Generate AI Assessment" button do?**
+The same as **Continue to analyst review →**: it generates the draft and moves you to Analyst review. It is disabled until residual risk is calculated.
 
 **Can I take a request off another analyst?**
 No. You only see unassigned requests or ones assigned to you.

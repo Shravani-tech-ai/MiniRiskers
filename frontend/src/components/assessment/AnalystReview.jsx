@@ -281,8 +281,9 @@ function AnalystReview({
             value={consequences}
             onChange={(e) => setConsequences(e.target.value)}
             rows={4}
+            disabled={analystReviewed || !canSubmit}
             placeholder="Enter additional controls, monitoring conditions, or consequences..."
-            className="mt-3 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40"
+            className="mt-3 w-full rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:ring-indigo-900/40 disabled:bg-slate-50 dark:disabled:bg-slate-800/50"
           />
         </div>
 

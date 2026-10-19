@@ -32,6 +32,7 @@ function IntakePanel({
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  const [applying, setApplying] = useState(false);
   const [extractionResult, setExtractionResult] = useState(null);
   const [brdUpload, setBrdUpload] = useState(null);
   const [loadingBrdStatus, setLoadingBrdStatus] = useState(false);
@@ -157,14 +158,19 @@ function IntakePanel({
     }
   };
 
-  const handleApplyExtraction = () => {
+  const handleApplyExtraction = async () => {
     if (!extractionResult?.merged_preview) {
       return;
     }
 
     setError("");
-    onExtractionApplied(extractionResult.merged_preview);
-    setExtractionResult(null);
+    setApplying(true);
+    try {
+      await onExtractionApplied(extractionResult.merged_preview);
+      setExtractionResult(null);
+    } finally {
+      setApplying(false);
+    }
   };
 
   const uploadInfo = brdUpload?.upload;
@@ -381,7 +387,7 @@ function IntakePanel({
 
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-800">
                 {extractionResult.diff_from_saved?.length || 0} fields
-                differ from saved data. Apply to populate the forms
+                differ from saved data. Apply to save them into the forms
                 below.
               </p>
 
@@ -430,10 +436,10 @@ function IntakePanel({
               <button
                 type="button"
                 onClick={handleApplyExtraction}
-                disabled={readOnly}
+                disabled={readOnly || applying}
                 className={`mt-4 ${btnDarkSm}`}
               >
-                Apply to forms
+                {applying ? "Saving..." : "Apply & save to forms"}
               </button>
             </div>
           )}

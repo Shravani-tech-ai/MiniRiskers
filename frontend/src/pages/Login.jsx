@@ -72,9 +72,13 @@ function Login() {
         );
         return;
       }
+      const detail = err?.response?.data?.detail;
       setError(
-        err?.response?.data?.detail ||
-          "Login failed. Check your credentials and try again."
+        typeof detail === "string"
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map((item) => item.msg || String(item)).join(" ")
+          : "Login failed. Check your credentials and try again."
       );
     } finally {
       setLoading(false);

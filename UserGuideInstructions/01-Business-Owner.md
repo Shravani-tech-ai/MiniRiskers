@@ -153,9 +153,11 @@ Click **Continue**.
 - **Requested by** is filled in automatically from your account and cannot be changed. This is how the system knows the request is **yours**.
 - **Intake summary** lists everything you entered, plus the BRD's status.
 
-Click **Submit & open assessment**.
+Click **Create & open assessment**.
 
-> ⚠ Despite its name, **"Submit & open assessment" only CREATES the request as a Draft.** It does **not** send it to the analyst yet. You'll do that later from the Preview tab ([section 6](#6-submitting-for-risk-analyst-review)).
+> **Create & open assessment** saves the request as a **Draft**. It does **not** send it to the analyst yet; you do that later from the Preview tab ([section 6](#6-submitting-for-risk-analyst-review)).
+>
+> If you chose a BRD but it couldn't be attached, the request page shows *"The request was created, but the BRD could not be attached…"*. Upload it again in the Intake method panel.
 
 **What happens:**
 
@@ -200,11 +202,13 @@ The header shows **Completeness: {n}%**, the share of the 11 required fields tha
 - It says either *"Combined AI extraction and rule-based field mapping."* or, if the AI was unavailable, *"AI was unavailable; rule-based parsing was used. Review fields carefully."*
 - A table compares **Field / Extracted / Saved**.
 - A warning lists required fields still missing.
-- An **Apply to forms** button copies the extracted values into the tabs on the right.
+- An **Apply & save to forms** button saves the extracted values into the intake and fills the tabs on the right.
 
-> ⚠ **Apply to forms only fills the forms on screen. It does not save.** You must open each tab and click its **Save** button.
+> **Review the table before you click.** AI can make mistakes, so this click is your human check (review gate G1 in the governance docs). Nothing extracted is saved until you press it.
 >
-> **Why?** This is a deliberate safety gate (review gate G1 in the governance docs): AI can make mistakes, so a human must look at and save every value.
+> After saving, each completed tab shows **✓ Saved**. Fill in anything still missing, and you can still **Edit** any tab.
+>
+> If a required value (e.g. product name) is missing, the server can't save the extraction. You'll see an error, and the values are filled into the tabs for you to finish and **Save** section by section.
 
 You also get a notification, *"BRD extracted for CR-…"*.
 
@@ -491,7 +495,7 @@ Charts cover **your own** requests: rating distribution, pipeline, average categ
 You can't, because the inputs are locked. Ask the analyst or committee. They can defer it back to you, or an Admin can edit it.
 
 **"Submit for Risk Analyst review" is greyed out.**
-Some required field isn't **saved**. The helper text lists which ones. Remember: *Apply to forms* doesn't save.
+Some required field isn't **saved**. The helper text lists which ones.
 
 **Extract fields is greyed out.**
 Upload a BRD with readable text first. Scanned images don't work.
@@ -502,8 +506,8 @@ The AI and the rule-based parser both found nothing. Fill the tabs manually.
 **I can't see the risk score.**
 It's released only after the analyst submits their review.
 
-**My old requests disappeared after I changed my name in Settings.**
-Requests are linked to the name or username you had when you created them. Change your name back, or ask an Admin.
+**Will changing my name in Settings hide my requests?**
+No. Your requests move to your new name automatically. The exception is when another account has the same old name; then ask an Admin.
 
 **Can I delete a draft?**
 There is no delete button. Leave it as a draft.

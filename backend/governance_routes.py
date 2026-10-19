@@ -36,6 +36,7 @@ from backend.methodology_store import (
     STATUS_PENDING,
     STATUS_REJECTED,
     STATUS_RETIRED,
+    STATUS_WITHDRAWN,
     get_active_methodology,
     get_config_for_version,
     next_version_number,
@@ -214,6 +215,19 @@ def create_draft(
     current_user: User = Depends(get_current_user),
 ):
     assert_role(current_user, *METHODOLOGY_PROPOSERS)
+    open_version = (
+        db.query(MethodologyVersion)
+        .filter(MethodologyVersion.status.in_([STATUS_DRAFT, STATUS_PENDING]))
+        .first()
+    )
+    if open_version:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"v{open_version.version} is already in draft or awaiting "
+                "approval. Finish or withdraw it first."
+            ),
+        )
     active_row, active_config = get_active_methodology(db)
     config = copy.deepcopy(payload.config or active_config)
     config["controls"] = controls_config(config)
@@ -282,6 +296,8 @@ def submit_for_approval(
     row = _get_version_or_404(db, version_id)
     if row.status != STATUS_DRAFT:
         raise HTTPException(status_code=400, detail="Only drafts can be submitted.")
+    if row.created_by_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the proposer can submit this draft.")
     if not (row.change_summary or "").strip():
         raise HTTPException(
             status_code=400,
@@ -294,6 +310,31 @@ def submit_for_approval(
     row.submitted_at = datetime.utcnow()
     record_methodology_event(db, row, "SUBMITTED_FOR_APPROVAL", audit_actor_name(current_user), current_user.id)
     notify_methodology_pending(db, row.version)
+    db.commit()
+    return _serialize_version(row)
+
+
+@router.post("/methodology/versions/{version_id}/withdraw")
+def withdraw_version(
+    version_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Proposer takes back a draft or pending version so a new one can start."""
+    assert_role(current_user, *METHODOLOGY_PROPOSERS)
+    row = _get_version_or_404(db, version_id)
+    if row.status not in (STATUS_DRAFT, STATUS_PENDING):
+        raise HTTPException(
+            status_code=400,
+            detail="Only drafts or versions awaiting approval can be withdrawn.",
+        )
+    if row.created_by_user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the proposer can withdraw this version.")
+    row.status = STATUS_WITHDRAWN
+    record_methodology_event(
+        db, row, "WITHDRAWN", audit_actor_name(current_user), current_user.id,
+        "Withdrawn by the proposer before approval.",
+    )
     db.commit()
     return _serialize_version(row)
 

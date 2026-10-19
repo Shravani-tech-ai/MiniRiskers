@@ -269,7 +269,7 @@ Afterwards: *"✓ Committee decision recorded"*.
 
 Click **Propose a change**. This creates a **Draft** copy of the active version, numbered +0.1 (e.g. v1.0 → v1.1).
 
-- Only **one** open draft or pending version can exist at a time.
+- Only **one** open draft or pending version can exist at a time. The server enforces this too.
 - While one exists, the button changes to **"v1.1 is in draft"** or **"v1.1 is awaiting approval"**. Clicking it opens that version.
 
 ### Step 2: Edit the draft
@@ -291,7 +291,7 @@ Click **Propose a change**. This creates a **Draft** copy of the active version,
 
 **Changes from vX** lists every difference automatically.
 
-Click **Save draft** as you go.
+Click **Save draft** as you go. Changed your mind? **Withdraw draft** closes it (status *Withdrawn*), so you or a colleague can start a fresh one.
 
 ### Step 3: Run impact preview (strongly recommended)
 
@@ -309,6 +309,7 @@ Click **Submit for approval**. It saves first, then submits.
 
 - The status becomes **Pending approval**, and all Admins get *"Methodology vX pending approval"*.
 - You'll see *"Waiting for an Admin to approve this change before it is used."*
+- Until the Admin acts, you can still take it back with **Withdraw proposal**.
 
 ### Step 5: Outcome
 
@@ -417,11 +418,11 @@ The analyst's downgrade was escalated. Choose Approve with conditions, Defer or 
 **"Propose a change" is missing.**
 A draft or pending version already exists. Click the amber "vX is in draft / awaiting approval" button.
 
-**Save draft gives a permission error.**
-Only the committee member who created the draft can edit it.
+**I can't see Save draft or Submit on a colleague's draft.**
+Only the committee member who created the draft can edit, submit or withdraw it. You'll see *"Only {name} can edit or submit this draft."*
 
-**How do I delete a draft?**
-There's currently no delete or withdraw option. Submit it, and an Admin can reject it.
+**How do I get rid of a draft?**
+Open it and click **Withdraw draft** (or **Withdraw proposal** while it awaits approval). It becomes **Withdrawn**, stays in the version history, and a new draft can be started.
 
 **I can't see a request the analyst says they sent.**
 It must be in committee review. Check the **All** filter, and ask whether the analyst actually clicked **Submit Analyst Review**.

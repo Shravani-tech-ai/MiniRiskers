@@ -110,7 +110,7 @@ If you pick the wrong card, you will see *"This account is not registered as {Ro
 
 **Session:** your login lasts 8 hours, and closing the browser tab logs you out.
 
-**Log out:** click your name in the top-right header. ⚠ On a phone-sized screen there is currently **no logout button**, so close the tab instead.
+**Log out:** click your name in the top-right header. On a phone-sized screen, use the **log out icon** at the top right.
 
 ### Notifications (bell icon)
 
@@ -148,16 +148,8 @@ Stage targets: Awaiting analyst 8h · Risk assessment 12h · Analyst review 12h 
 
 ---
 
-## Known quirks (as of this version)
+## Good to know
 
-These are small gaps in the current code. They are worth knowing so they don't surprise you:
-
-1. **No logout on mobile layout.** The profile icon on small screens does nothing.
-2. **"Apply to forms" after BRD extraction does not save anything by itself.** You must still click **Save** on each section.
-3. **Opening a stage from Track your Progress** may land you on the request's current stage instead of the one you clicked. Use the ← / → buttons in the page footer to move.
-4. **A missing Gemini API key** only shows "Unable to generate AI assessment." at the "Continue to analyst review" step. Check `GEMINI_API_KEY` in `.env`.
-5. **A Business Owner who changes their Full name** may stop seeing requests created under the old name, because ownership is matched by name or username.
-6. **Approval-condition evidence is a text note**, not a file upload.
-7. **Resubmitting condition evidence after a send-back does not notify the analyst again.**
-8. **The category score pills on Risk Overview** use fixed thresholds (26/51/76), even if the methodology's rating bands have been changed.
-9. **Signup always offers "Admin"**, even if `ALLOW_ADMIN_SELF_SIGNUP=false`. In that case it is refused on submit.
+1. **Approval-condition evidence is a text note**, not a file upload. Reference where the proof lives (ticket number, document link, etc.).
+2. **A one-band downgrade** by the analyst sends no special notification to the committee. The committee sees the acknowledgement box when it opens the request. Only **escalated** overrides send an extra notification.
+3. **Changing your Full name** in Settings carries your requests over to the new name. The exception is when another account shares your old name; then ask an Admin.
