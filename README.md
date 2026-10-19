@@ -41,6 +41,8 @@ There are **four roles**. Each user has one role, and the app only shows the pag
 - Once a Business Owner submits a request, its inputs are **locked**. They become editable again only if the committee sends it back.
 - The Methodology and Regulations pages are hidden from Business Owners.
 
+> 📘 **Step-by-step guides for each role** (every button, what it does, and what other roles see at that moment) are in [UserGuideInstructions/](UserGuideInstructions/README.md).
+
 > The old **Auditor** role has been retired. Its read-only audit work now belongs to the Admin. Accounts that still hold the Auditor role cannot sign in until an Admin gives them a current role.
 
 ---
