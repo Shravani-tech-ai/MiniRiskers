@@ -54,6 +54,18 @@ For risk scores:
 - Use the calculated values provided in the context.
 - Do not recalculate or modify the scores.
 
+For learned examples (context field "learned_examples"):
+
+- These are similar past requests the bank has already decided,
+  with the system rating, the analyst's final rating, the reason
+  for any override and the committee decision.
+- Use them to calibrate your qualitative analysis and to raise
+  analyst review questions where this request resembles a past
+  case that was upgraded or downgraded.
+- They are not regulatory evidence and must not be cited as such.
+- Never change the calculated scores because of them.
+- If the list is empty, ignore this section.
+
 For controls:
 
 - Explain how the controls reduce the identified risks.

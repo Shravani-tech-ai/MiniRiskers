@@ -1,3 +1,5 @@
+import json
+
 from sqlalchemy.orm import Session
 
 from backend.methodology_store import get_active_methodology
@@ -6,7 +8,7 @@ from backend.models import (
     RiskFactor,
     RiskAssessment
 )
-from risk_engine.methodology import score_factors
+from risk_engine.methodology import CATEGORIES, score_factors
 
 
 RESIDUAL_PENDING = "PENDING_CONTROLS"
@@ -63,6 +65,45 @@ def calculate_control_effectiveness(
     )
 
 
+def control_categories(control: Control) -> list[str]:
+    """Risk categories a control mitigates; an empty list means all."""
+    try:
+        parsed = json.loads(control.mapped_categories or "[]")
+    except (TypeError, json.JSONDecodeError):
+        return []
+    return [c for c in parsed if c in CATEGORIES]
+
+
+def calculate_category_effectiveness(
+    db: Session,
+    change_request_id: int,
+) -> dict:
+    """Mean effectiveness of the controls mapped to each category.
+
+    Controls without a mapping count towards every category. A category no
+    control covers gets 0 (no mitigation).
+    """
+    controls = [
+        control
+        for control in db.query(Control)
+        .filter(Control.change_request_id == change_request_id)
+        .all()
+        if control.effectiveness_score is not None
+    ]
+    result = {}
+    for category in CATEGORIES:
+        covering = [
+            float(control.effectiveness_score)
+            for control in controls
+            if not control_categories(control)
+            or category in control_categories(control)
+        ]
+        result[category] = (
+            round(sum(covering) / len(covering), 2) if covering else 0.0
+        )
+    return result
+
+
 def factor_rows_to_inputs(factors: list[RiskFactor]) -> list[dict]:
     return [
         {
@@ -98,6 +139,9 @@ def generate_risk_assessment(
         factor_rows_to_inputs(factors),
         control_effectiveness,
         config,
+        category_effectiveness=calculate_category_effectiveness(
+            db, change_request_id
+        ),
     )
     category_scores = result["category_scores"]
     controls_assessed = controls_count > 0

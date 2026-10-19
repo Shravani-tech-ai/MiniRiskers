@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from backend.models import RiskFactor, RegulatoryEvidence
+from backend.models import RiskFactor, RegulatoryEvidence, RegulatorySource
 
 from rag.query_engine import search_regulations
 from rag.regulatory_queries import RISK_FACTOR_QUERIES
@@ -17,11 +17,20 @@ def build_regulatory_query(risk_factor: RiskFactor) -> str:
     )
 
 
+def _source_ids_by_document(db: Session) -> dict:
+    return {
+        row.document_name: row.id
+        for row in db.query(RegulatorySource.id, RegulatorySource.document_name)
+    }
+
+
 def generate_evidence_for_risk_factor(
     db: Session,
     risk_factor: RiskFactor,
-    number_of_results: int = 3
+    number_of_results: int = 3,
+    source_ids: dict | None = None,
 ):
+    source_ids = source_ids if source_ids is not None else _source_ids_by_document(db)
 
     query = build_regulatory_query(risk_factor)
 
@@ -46,6 +55,10 @@ def generate_evidence_for_risk_factor(
         evidence = RegulatoryEvidence(
             change_request_id=risk_factor.change_request_id,
             risk_factor_id=risk_factor.id,
+            regulatory_source_id=(
+                metadata.get("source_id")
+                or source_ids.get(metadata.get("document"))
+            ),
 
             query=query,
 
@@ -80,12 +93,15 @@ def generate_evidence_for_change_request(
     number_of_results: int = 3
 ):
 
-    # Remove previously generated evidence for this assessment
+    # Keep earlier evidence as history; only the new set is current.
     db.query(RegulatoryEvidence).filter(
-        RegulatoryEvidence.change_request_id == change_request_id
-    ).delete(synchronize_session=False)
+        RegulatoryEvidence.change_request_id == change_request_id,
+        RegulatoryEvidence.is_current.is_(True),
+    ).update({"is_current": False}, synchronize_session=False)
 
     db.commit()
+
+    source_ids = _source_ids_by_document(db)
 
     risk_factors = (
         db.query(RiskFactor)
@@ -102,7 +118,8 @@ def generate_evidence_for_change_request(
         evidence = generate_evidence_for_risk_factor(
             db,
             risk_factor,
-            number_of_results
+            number_of_results,
+            source_ids,
         )
 
         all_evidence.extend(evidence)

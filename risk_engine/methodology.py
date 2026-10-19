@@ -27,6 +27,31 @@ CATEGORIES = [
 
 RATINGS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 
+# Tested control ratings (design and operating effectiveness).
+CONTROL_RATINGS = [
+    "EFFECTIVE",
+    "PARTIALLY_EFFECTIVE",
+    "INEFFECTIVE",
+    "NOT_TESTED",
+]
+
+RESIDUAL_METHODS = ["AVERAGE", "PER_CATEGORY"]
+
+# AVERAGE: residual = inherent x (1 - mean control effectiveness), the
+# original engine behaviour. PER_CATEGORY: each category score is reduced
+# only by the controls mapped to that category.
+DEFAULT_CONTROLS_CONFIG = {
+    "residual_method": "AVERAGE",
+    # Points of mitigation credited for each tested rating. A control's
+    # effectiveness is the weaker of its design and operating ratings.
+    "effectiveness_scale": {
+        "EFFECTIVE": 90,
+        "PARTIALLY_EFFECTIVE": 50,
+        "INEFFECTIVE": 0,
+        "NOT_TESTED": 30,
+    },
+}
+
 FRAMEWORK_PATH = (
     Path(__file__).resolve().parent.parent / "config" / "risk_framework.json"
 )
@@ -167,6 +192,7 @@ DEFAULT_CONFIG = {
         "pause_clock_when_returned": True,
         "condition_default_due_days": 30,
     },
+    "controls": copy.deepcopy(DEFAULT_CONTROLS_CONFIG),
 }
 
 
@@ -292,6 +318,34 @@ def get_triggered_concentration_rules(
     ]
 
 
+def controls_config(config: dict) -> dict:
+    """Control settings with defaults for versions saved before they existed."""
+    stored = config.get("controls") or {}
+    scale = {
+        **DEFAULT_CONTROLS_CONFIG["effectiveness_scale"],
+        **(stored.get("effectiveness_scale") or {}),
+    }
+    return {
+        "residual_method": stored.get("residual_method")
+        or DEFAULT_CONTROLS_CONFIG["residual_method"],
+        "effectiveness_scale": scale,
+    }
+
+
+def rated_control_effectiveness(
+    design_rating: str,
+    operating_rating: str,
+    config: dict,
+) -> float:
+    """Effectiveness (0-100) of a control from its tested ratings.
+
+    A control is only as good as the weaker of how it is designed and how it
+    actually operates.
+    """
+    scale = controls_config(config)["effectiveness_scale"]
+    return float(min(scale[design_rating], scale[operating_rating]))
+
+
 def catalog_entry(config: dict, category: str, factor: str) -> dict | None:
     return (config.get("factor_catalog") or {}).get(category, {}).get(factor)
 
@@ -300,11 +354,16 @@ def score_factors(
     factors: list[dict],
     control_effectiveness: float,
     config: dict,
+    category_effectiveness: dict | None = None,
 ) -> dict:
     """Score a set of triggered factors under a methodology config.
 
     `factors` items need `category` and `name`; `score` and `weight` are
     used only when the config's catalog has no entry for the factor.
+
+    `category_effectiveness` (category -> 0-100) is used when the
+    methodology's residual method is PER_CATEGORY; otherwise, or when it is
+    not given, the single `control_effectiveness` applies to every category.
     """
     resolved = []
     for factor in factors:
@@ -331,7 +390,21 @@ def score_factors(
     )
 
     control_effectiveness = float(control_effectiveness or 0)
-    raw_residual = inherent * (1 - control_effectiveness / 100)
+    residual_method = controls_config(config)["residual_method"]
+    if residual_method == "PER_CATEGORY" and category_effectiveness is not None:
+        raw_residual = sum(
+            category_scores[c]
+            * weights.get(c, 0)
+            * (1 - float(category_effectiveness.get(c) or 0) / 100)
+            for c in CATEGORIES
+        )
+        # Equivalent single effectiveness, so stored assessments still
+        # re-explain correctly as inherent x (1 - effectiveness).
+        if inherent > 0:
+            control_effectiveness = (1 - raw_residual / inherent) * 100
+    else:
+        residual_method = "AVERAGE"
+        raw_residual = inherent * (1 - control_effectiveness / 100)
     base_floor = get_base_residual_floor(inherent, config)
     triggered = get_triggered_concentration_rules(
         {f["name"] for f in resolved},
@@ -355,6 +428,12 @@ def score_factors(
         "triggered_rules": triggered,
         "residual_score": residual,
         "residual_rating": get_rating(residual, config),
+        "residual_method": residual_method,
+        "category_effectiveness": (
+            {c: round(float(category_effectiveness.get(c) or 0), 2) for c in CATEGORIES}
+            if residual_method == "PER_CATEGORY"
+            else None
+        ),
     }
 
 
@@ -467,6 +546,29 @@ def validate_config(config: dict, reference: dict | None = None) -> list[str]:
         )
     if any(r not in RATINGS for r in policy.get("escalate_downgrade_from") or []):
         errors.append("Override policy lists an unknown rating.")
+
+    controls = config.get("controls")
+    if controls is not None:
+        if controls.get("residual_method") not in RESIDUAL_METHODS:
+            errors.append("Residual method must be AVERAGE or PER_CATEGORY.")
+        scale = controls.get("effectiveness_scale") or {}
+        if set(scale) != set(CONTROL_RATINGS):
+            errors.append(
+                "Control effectiveness scale must cover EFFECTIVE, "
+                "PARTIALLY_EFFECTIVE, INEFFECTIVE and NOT_TESTED."
+            )
+        elif any(
+            not isinstance(v, (int, float)) or not 0 <= v <= 100
+            for v in scale.values()
+        ):
+            errors.append("Control effectiveness points must be between 0 and 100.")
+        elif not (
+            scale["EFFECTIVE"] >= scale["PARTIALLY_EFFECTIVE"] >= scale["INEFFECTIVE"]
+        ):
+            errors.append(
+                "Control effectiveness points must not increase from "
+                "EFFECTIVE to PARTIALLY_EFFECTIVE to INEFFECTIVE."
+            )
 
     workflow = config.get("workflow") or {}
     if float(workflow.get("sla_target_hours", 0)) <= 0:

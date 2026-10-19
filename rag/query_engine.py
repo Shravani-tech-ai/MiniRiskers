@@ -1,3 +1,4 @@
+from functools import lru_cache
 from pathlib import Path
 
 from langchain_chroma import Chroma
@@ -9,6 +10,15 @@ CHROMA_DIR = PROJECT_ROOT / "chroma_db"
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
+COLLECTION_NAME = "regulatory_documents"
+
+# Chunk `status` metadata. Only "current" chunks are retrieved; superseded,
+# withdrawn and not-yet-effective ("scheduled") documents stay in the store
+# for audit but are never cited.
+CHUNK_STATUS_CURRENT = "current"
+
+
+@lru_cache(maxsize=1)
 def load_vector_store():
 
     embeddings = HuggingFaceEmbeddings(
@@ -24,13 +34,16 @@ def load_vector_store():
     return vector_store
 
 
-def search_regulations(question, number_of_results=5):
+def search_regulations(question, number_of_results=5, current_only=True):
 
     vector_store = load_vector_store()
 
     results = vector_store.similarity_search_with_score(
         question,
-        k=number_of_results
+        k=number_of_results,
+        filter=(
+            {"status": CHUNK_STATUS_CURRENT} if current_only else None
+        ),
     )
 
     return results
