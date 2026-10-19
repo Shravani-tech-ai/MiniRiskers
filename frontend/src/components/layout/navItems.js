@@ -1,9 +1,11 @@
 import {
   BarChart3,
+  BookOpenCheck,
   ClipboardList,
   LayoutGrid,
   Milestone,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
 } from "lucide-react";
 
@@ -45,9 +47,31 @@ export const NAV_ITEMS = [
     hiddenFor: [ROLES.BUSINESS_OWNER],
   },
   {
+    to: "/regulations",
+    label: "Regulations",
+    icon: BookOpenCheck,
+    matches: (path) => path === "/regulations",
+    hiddenFor: [ROLES.BUSINESS_OWNER],
+  },
+  {
+    to: "/admin",
+    label: "Admin console",
+    icon: ShieldCheck,
+    matches: (path) => path.startsWith("/admin"),
+    visibleFor: [ROLES.ADMIN],
+  },
+  {
     to: "/settings",
     label: "Settings",
     icon: Settings,
     matches: (path) => path === "/settings",
   },
 ];
+
+export function navItemsFor(role) {
+  return NAV_ITEMS.filter(
+    (item) =>
+      !item.hiddenFor?.includes(role) &&
+      (!item.visibleFor || item.visibleFor.includes(role))
+  );
+}

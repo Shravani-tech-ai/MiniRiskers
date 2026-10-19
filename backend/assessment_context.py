@@ -111,7 +111,8 @@ def build_assessment_context(
     regulatory_evidence = (
         db.query(RegulatoryEvidence)
         .filter(
-            RegulatoryEvidence.change_request_id == change_request_id
+            RegulatoryEvidence.change_request_id == change_request_id,
+            RegulatoryEvidence.is_current.is_(True),
         )
         .all()
     )

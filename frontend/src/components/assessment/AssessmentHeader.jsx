@@ -9,11 +9,7 @@ import {
 } from "../../utils/rolePermissions";
 
 export function getDefaultBackPath(role) {
-  if (
-    role === ROLES.RISK_ANALYST ||
-    role === ROLES.RISK_COMMITTEE ||
-    role === ROLES.AUDITOR
-  ) {
+  if (role === ROLES.RISK_ANALYST || role === ROLES.RISK_COMMITTEE) {
     return "/assessments";
   }
 

@@ -2,7 +2,6 @@ export const ROLES = {
   BUSINESS_OWNER: "BUSINESS_OWNER",
   RISK_ANALYST: "RISK_ANALYST",
   RISK_COMMITTEE: "RISK_COMMITTEE",
-  AUDITOR: "AUDITOR",
   ADMIN: "ADMIN",
 };
 
@@ -14,8 +13,6 @@ export function getDashboardTitle(role) {
       return "Risk Assessments";
     case ROLES.RISK_COMMITTEE:
       return "Pending Committee Decisions";
-    case ROLES.AUDITOR:
-      return "Audit & Compliance View";
     case ROLES.ADMIN:
       return "System Overview";
     default:
@@ -24,24 +21,14 @@ export function getDashboardTitle(role) {
 }
 
 export function getAssessmentPermissions(role) {
-  const readOnly = role === ROLES.AUDITOR;
-
   return {
-    readOnly,
-    canEditIntake:
-      !readOnly &&
-      (role === ROLES.BUSINESS_OWNER || role === ROLES.ADMIN),
-    canRunRiskPipeline:
-      !readOnly &&
-      (role === ROLES.RISK_ANALYST || role === ROLES.ADMIN),
-    canAnalystReview:
-      !readOnly &&
-      (role === ROLES.RISK_ANALYST || role === ROLES.ADMIN),
-    canCommitteeDecide:
-      !readOnly &&
-      (role === ROLES.RISK_COMMITTEE || role === ROLES.ADMIN),
-    canCreateRequest:
-      role === ROLES.BUSINESS_OWNER || role === ROLES.ADMIN,
+    // No role is read-only since the Auditor role was folded into Admin.
+    readOnly: false,
+    canEditIntake: role === ROLES.BUSINESS_OWNER || role === ROLES.ADMIN,
+    canRunRiskPipeline: role === ROLES.RISK_ANALYST || role === ROLES.ADMIN,
+    canAnalystReview: role === ROLES.RISK_ANALYST || role === ROLES.ADMIN,
+    canCommitteeDecide: role === ROLES.RISK_COMMITTEE || role === ROLES.ADMIN,
+    canCreateRequest: role === ROLES.BUSINESS_OWNER || role === ROLES.ADMIN,
   };
 }
 
@@ -53,8 +40,6 @@ export function roleLabel(role) {
       return "Risk Analyst";
     case ROLES.RISK_COMMITTEE:
       return "Risk Committee";
-    case ROLES.AUDITOR:
-      return "Auditor";
     case ROLES.ADMIN:
       return "Admin";
     default:
@@ -193,8 +178,9 @@ export function isDecided(changeRequest) {
 export function getMethodologyPermissions(role) {
   return {
     canView: role !== ROLES.BUSINESS_OWNER,
-    canPropose: role === ROLES.RISK_ANALYST || role === ROLES.ADMIN,
-    canApprove: role === ROLES.RISK_COMMITTEE || role === ROLES.ADMIN,
+    // The Risk Committee proposes changes; an Admin approves them.
+    canPropose: role === ROLES.RISK_COMMITTEE,
+    canApprove: role === ROLES.ADMIN,
   };
 }
 

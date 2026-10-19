@@ -24,7 +24,7 @@ function RolePicker({ onRoleSelect, notice }) {
             </p>
           ) : null}
 
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {ROLE_CARDS.map((card) => {
               const Icon = card.icon;
               return (

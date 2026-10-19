@@ -150,7 +150,7 @@ def test_escalated_downgrade_blocks_unconditional_approval(app_client, db_sessio
     assert ok.json()["change_request"]["current_stage"] == "COMPLETED"
 
     review = app_client.get(
-        f"/change-requests/{request_id}/analyst-review", headers=tokens["AUDITOR"]
+        f"/change-requests/{request_id}/analyst-review", headers=tokens["ADMIN"]
     ).json()["review"]
     assert review["acknowledged_by"] == "Risk Committee"
 
@@ -193,13 +193,13 @@ def test_escalated_downgrade_blocks_unconditional_approval(app_client, db_sessio
     assert result["change_request_status"] == "CONDITIONS_MET"
 
     chain = app_client.get(
-        f"/change-requests/{request_id}/audit-events/verify", headers=tokens["AUDITOR"]
+        f"/change-requests/{request_id}/audit-events/verify", headers=tokens["ADMIN"]
     ).json()
     assert chain["valid"] is True
     actions = [
         e["action"]
         for e in app_client.get(
-            f"/change-requests/{request_id}/audit-events", headers=tokens["AUDITOR"]
+            f"/change-requests/{request_id}/audit-events", headers=tokens["ADMIN"]
         ).json()["events"]
     ]
     for expected in (
@@ -298,7 +298,7 @@ def test_audit_chain_detects_tampering_and_is_append_only(app_client, db_session
 
     request_id = make_request(db_session, [("PRODUCT", "New Product")])
     assert app_client.get(
-        f"/change-requests/{request_id}/audit-events/verify", headers=tokens["AUDITOR"]
+        f"/change-requests/{request_id}/audit-events/verify", headers=tokens["ADMIN"]
     ).json()["valid"]
 
     with pytest.raises(Exception):
@@ -314,7 +314,7 @@ def test_audit_chain_detects_tampering_and_is_append_only(app_client, db_session
     ), {"id": request_id})
     db_session.commit()
     result = app_client.get(
-        f"/change-requests/{request_id}/audit-events/verify", headers=tokens["AUDITOR"]
+        f"/change-requests/{request_id}/audit-events/verify", headers=tokens["ADMIN"]
     ).json()
     assert result["valid"] is False
     assert "modified" in result["problems"][0]["issue"]
@@ -331,7 +331,7 @@ def test_audit_pack_exports(app_client, db_session, tokens):
     pack = app_client.get(
         f"/change-requests/{request_id}/audit-export",
         params={"format": "json"},
-        headers=tokens["AUDITOR"],
+        headers=tokens["ADMIN"],
     )
     assert pack.status_code == 200
     body = pack.json()
@@ -344,14 +344,14 @@ def test_audit_pack_exports(app_client, db_session, tokens):
     csv_response = app_client.get(
         f"/change-requests/{request_id}/audit-export",
         params={"format": "csv"},
-        headers=tokens["AUDITOR"],
+        headers=tokens["ADMIN"],
     )
     assert csv_response.text.startswith("request_number,sequence")
 
     pdf = app_client.get(
         f"/change-requests/{request_id}/audit-export",
         params={"format": "pdf"},
-        headers=tokens["AUDITOR"],
+        headers=tokens["ADMIN"],
     )
     assert pdf.content[:4] == b"%PDF"
 
@@ -360,55 +360,60 @@ def test_audit_pack_exports(app_client, db_session, tokens):
         headers=tokens["BUSINESS_OWNER"],
     ).status_code == 403
 
-    assert app_client.get("/audit/export", headers=tokens["AUDITOR"]).status_code == 200
+    assert app_client.get("/audit/export", headers=tokens["ADMIN"]).status_code == 200
     assert app_client.get("/audit/export", headers=tokens["RISK_ANALYST"]).status_code == 403
 
 
 def test_methodology_maker_checker_and_versioned_scoring(app_client, db_session, tokens):
-    analyst, analyst_2, committee = (
-        tokens["RISK_ANALYST"], tokens["RISK_ANALYST_2"], tokens["RISK_COMMITTEE"]
+    committee, committee_2, analyst, admin = (
+        tokens["RISK_COMMITTEE"], tokens["RISK_COMMITTEE_2"],
+        tokens["RISK_ANALYST"], tokens["ADMIN"],
     )
-    active = app_client.get("/methodology/active", headers=analyst).json()
+    active = app_client.get("/methodology/active", headers=committee).json()
     config = active["config"]
     config["category_weights"]["FRAUD"] = 0.5
-    bad = app_client.post("/methodology/versions", json={"config": config}, headers=analyst)
+    bad = app_client.post("/methodology/versions", json={"config": config}, headers=committee)
     assert bad.status_code == 400
 
     config["category_weights"].update({"FRAUD": 0.15, "CUSTOMER": 0.10})
-    assert app_client.post(
-        "/methodology/versions", json={"config": config}, headers=tokens["BUSINESS_OWNER"]
-    ).status_code == 403
+    # Only the Risk Committee proposes methodology changes.
+    for role in ("BUSINESS_OWNER", "RISK_ANALYST", "ADMIN"):
+        assert app_client.post(
+            "/methodology/versions", json={"config": config}, headers=tokens[role]
+        ).status_code == 403
 
     draft = app_client.post(
-        "/methodology/versions", json={"config": config}, headers=analyst
+        "/methodology/versions", json={"config": config}, headers=committee
     ).json()
     assert draft["status"] == "DRAFT"
+    assert draft["config"]["controls"]["residual_method"] == "AVERAGE"
 
     assert app_client.put(
-        f"/methodology/versions/{draft['id']}", json={"change_summary": "x"}, headers=analyst_2
+        f"/methodology/versions/{draft['id']}", json={"change_summary": "x"}, headers=committee_2
     ).status_code == 403
-    assert app_client.post(f"/methodology/versions/{draft['id']}/submit", headers=analyst).status_code == 400
+    assert app_client.post(f"/methodology/versions/{draft['id']}/submit", headers=committee).status_code == 400
     app_client.put(
         f"/methodology/versions/{draft['id']}",
         json={"change_summary": "Raise fraud weight after mule-account typology review."},
-        headers=analyst,
+        headers=committee,
     )
-    assert app_client.post(f"/methodology/versions/{draft['id']}/submit", headers=analyst).status_code == 200
+    assert app_client.post(f"/methodology/versions/{draft['id']}/submit", headers=committee).status_code == 200
 
-    impact = app_client.get(f"/methodology/versions/{draft['id']}/impact", headers=committee).json()
+    impact = app_client.get(f"/methodology/versions/{draft['id']}/impact", headers=admin).json()
     assert impact["requests_rescored"] >= 1
 
-    # An analyst cannot approve; the committee can.
-    assert app_client.post(
-        f"/methodology/versions/{draft['id']}/approve", json={}, headers=analyst_2
-    ).status_code == 403
+    # Only an Admin approves: neither the committee nor an analyst can.
+    for headers in (committee_2, analyst):
+        assert app_client.post(
+            f"/methodology/versions/{draft['id']}/approve", json={}, headers=headers
+        ).status_code == 403
     approved = app_client.post(
-        f"/methodology/versions/{draft['id']}/approve", json={"note": "Agreed."}, headers=committee
+        f"/methodology/versions/{draft['id']}/approve", json={"note": "Agreed."}, headers=admin
     ).json()
     assert approved["status"] == "ACTIVE"
     new_version = approved["version"]
 
-    versions = app_client.get("/methodology/versions", headers=tokens["AUDITOR"]).json()["versions"]
+    versions = app_client.get("/methodology/versions", headers=analyst).json()["versions"]
     statuses = {v["version"]: v["status"] for v in versions}
     assert statuses["1.0"] == "RETIRED" and statuses[new_version] == "ACTIVE"
 

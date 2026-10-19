@@ -82,7 +82,7 @@ def test_change_password_rejects_wrong_current(app_client, tokens):
             "current_password": "wrong-password",
             "new_password": "another-password",
         },
-        headers=tokens["AUDITOR"],
+        headers=tokens["ADMIN"],
     )
     assert response.status_code == 400
     assert "incorrect" in response.json()["detail"].lower()

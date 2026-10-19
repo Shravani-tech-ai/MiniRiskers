@@ -472,12 +472,53 @@ def notify_brd_extracted(db: Session, change_request: ChangeRequest) -> None:
 def notify_methodology_pending(db: Session, version_label: str) -> None:
     notify_users(
         db,
-        users_for_committee(db),
+        active_users_with_roles(db, ROLE_ADMIN),
         notification_type=f"METHODOLOGY_PENDING_{version_label}",
         title=f"Methodology v{version_label} pending approval",
-        body="A risk methodology change is waiting for committee review on /methodology.",
+        body="The Risk Committee proposed a methodology change. Review it on /methodology.",
         link_path="/methodology",
         dedupe=True,
+    )
+
+
+def notify_methodology_reviewed(
+    db: Session,
+    proposer_id: int | None,
+    version_label: str,
+    approved: bool,
+    note: str | None,
+) -> None:
+    proposer = db.get(User, proposer_id) if proposer_id else None
+    if proposer is None:
+        return
+    outcome = "approved and now in use" if approved else "rejected"
+    notify_users(
+        db,
+        [proposer],
+        notification_type=f"METHODOLOGY_REVIEWED_{version_label}",
+        title=f"Methodology v{version_label} {outcome}",
+        body=note or f"An Admin {outcome.split(' ')[0]} your methodology change.",
+        link_path="/methodology",
+    )
+
+
+def notify_feedback_requested(
+    db: Session,
+    change_request: ChangeRequest,
+    window_days: int,
+) -> None:
+    label = request_label(change_request)
+    notify_users(
+        db,
+        users_for_business_owner(db, change_request),
+        notification_type="FEEDBACK_REQUESTED",
+        title=f"How did {label} go? Rate the process",
+        body=(
+            f"Your request is closed. Give a 1-5 star rating within "
+            f"{window_days} days to help improve the system."
+        ),
+        change_request_id=change_request.id,
+        link_path=assessment_link(change_request),
     )
 
 

@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import PageContainer from "../components/layout/PageContainer";
 import RequestPreviewModal from "../components/assessment/RequestPreviewModal";
+import { PendingFeedbackBanner } from "../components/feedback/RequestFeedback";
 import { useAuth } from "../context/AuthContext";
 import { pillSelected, pillUnselected } from "../utils/buttonStyles";
 import {
@@ -413,6 +414,7 @@ function Dashboard() {
 
   return (
     <PageContainer className="space-y-8">
+        {user?.role === ROLES.BUSINESS_OWNER && <PendingFeedbackBanner />}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">

@@ -7,16 +7,19 @@ from backend.models import ChangeRequest, User
 ROLE_BUSINESS_OWNER = "BUSINESS_OWNER"
 ROLE_RISK_ANALYST = "RISK_ANALYST"
 ROLE_RISK_COMMITTEE = "RISK_COMMITTEE"
-ROLE_AUDITOR = "AUDITOR"
 ROLE_ADMIN = "ADMIN"
 
 ALL_ROLES = {
     ROLE_BUSINESS_OWNER,
     ROLE_RISK_ANALYST,
     ROLE_RISK_COMMITTEE,
-    ROLE_AUDITOR,
     ROLE_ADMIN,
 }
+
+# Roles that no longer exist. Accounts still holding one cannot sign in
+# until an Admin assigns a current role (the Auditor's read-only audit
+# work now belongs to Admin).
+RETIRED_ROLES = {"AUDITOR"}
 
 COMMITTEE_STAGES = {"COMMITTEE_REVIEW", "COMPLETED"}
 COMMITTEE_STATUSES = {
@@ -64,9 +67,6 @@ def can_read_change_request(user: User, change_request: ChangeRequest) -> bool:
     if user.role == ROLE_ADMIN:
         return True
 
-    if user.role == ROLE_AUDITOR:
-        return True
-
     if user.role == ROLE_BUSINESS_OWNER:
         return _identity_matches(change_request.requested_by, user)
 
@@ -94,7 +94,7 @@ def filter_change_requests_for_user(
     user: User,
     query: Query,
 ) -> Query:
-    if user.role in {ROLE_ADMIN, ROLE_AUDITOR}:
+    if user.role == ROLE_ADMIN:
         return query
 
     if user.role == ROLE_BUSINESS_OWNER:
@@ -150,14 +150,6 @@ def assert_role(user: User, *roles: str) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to perform this action.",
-        )
-
-
-def assert_not_auditor_write(user: User) -> None:
-    if user.role == ROLE_AUDITOR:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Auditors have read-only access.",
         )
 
 

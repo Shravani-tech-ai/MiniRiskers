@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import api from "../../services/api";
+import AIFeedback from "./AIFeedback";
 import { btnPrimaryMd } from "../../utils/buttonStyles";
 
 function getRiskClass(rating) {
@@ -485,6 +486,13 @@ function AIAssessment({
           <p className="mt-3 text-sm text-red-600 dark:text-red-400">
             {downloadError}
           </p>
+        )}
+
+        {aiAssessment && changeRequestId && !stale && (
+          <AIFeedback
+            changeRequestId={changeRequestId}
+            draftKey={aiAssessment.id ?? aiAssessment.generated_at}
+          />
         )}
 
       </div>

@@ -84,7 +84,7 @@ def _extract_response_text(response) -> str:
     )
 
 
-def _generate_with_models(prompt: str, as_json: bool) -> str:
+def _generate_with_models(prompt: str, as_json: bool) -> tuple[str, str]:
     api_client = _get_client()
     last_error = None
 
@@ -104,7 +104,7 @@ def _generate_with_models(prompt: str, as_json: bool) -> str:
                 config=types.GenerateContentConfig(**config_kwargs),
             )
 
-            return _extract_response_text(response)
+            return _extract_response_text(response), model_name
         except Exception as error:
             last_error = error
             continue
@@ -115,8 +115,13 @@ def _generate_with_models(prompt: str, as_json: bool) -> str:
 
 
 def generate_text(prompt: str) -> str:
-    return _generate_with_models(prompt, as_json=False)
+    return _generate_with_models(prompt, as_json=False)[0]
 
 
 def generate_json(prompt: str) -> str:
+    return _generate_with_models(prompt, as_json=True)[0]
+
+
+def generate_json_with_model(prompt: str) -> tuple[str, str]:
+    """JSON response plus the model that actually produced it."""
     return _generate_with_models(prompt, as_json=True)

@@ -4,6 +4,8 @@ import Dashboard from "./pages/Dashboard";
 import Assessments from "./pages/Assessments";
 import Analytics from "./pages/Analytics";
 import Methodology from "./pages/Methodology";
+import Regulations from "./pages/Regulations";
+import AdminConsole from "./pages/AdminConsole";
 import Assessment from "./pages/Assessment";
 import TrackProgress from "./pages/TrackProgress";
 import Settings from "./pages/Settings";
@@ -85,12 +87,39 @@ function App() {
               allowedRoles={[
                 ROLES.RISK_ANALYST,
                 ROLES.RISK_COMMITTEE,
-                ROLES.AUDITOR,
                 ROLES.ADMIN,
               ]}
             >
               <MainLayout>
                 <Methodology />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/regulations"
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                ROLES.RISK_ANALYST,
+                ROLES.RISK_COMMITTEE,
+                ROLES.ADMIN,
+              ]}
+            >
+              <MainLayout>
+                <Regulations />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+              <MainLayout>
+                <AdminConsole />
               </MainLayout>
             </ProtectedRoute>
           }

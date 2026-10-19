@@ -26,7 +26,10 @@ from backend.notifications import (
     notify_condition_evidence_submitted,
     notify_condition_verified,
     notify_methodology_pending,
+    notify_methodology_reviewed,
+    notify_feedback_requested,
 )
+from backend.system_settings import get_setting
 from backend.methodology_store import (
     STATUS_ACTIVE,
     STATUS_DRAFT,
@@ -53,12 +56,10 @@ from backend.models import (
 )
 from backend.permissions import (
     ROLE_ADMIN,
-    ROLE_AUDITOR,
     ROLE_BUSINESS_OWNER,
     ROLE_RISK_ANALYST,
     ROLE_RISK_COMMITTEE,
     _identity_matches,
-    assert_not_auditor_write,
     assert_role,
     filter_change_requests_for_user,
     get_change_request_or_404,
@@ -68,6 +69,7 @@ from backend.serializers import serialize_condition
 from backend.similar_cases import find_similar_cases
 from risk_engine.methodology import (
     CATEGORIES,
+    controls_config,
     framework_coverage_gaps,
     framework_refs_for_category,
     framework_refs_for_factor,
@@ -77,19 +79,20 @@ from risk_engine.methodology import (
     score_factors,
     validate_config,
 )
-from risk_engine.risk_calculator import factor_rows_to_inputs
+from risk_engine.risk_calculator import (
+    calculate_category_effectiveness,
+    factor_rows_to_inputs,
+)
 
 router = APIRouter()
 
-# The risk function: FCRM analysts propose methodology changes, the risk
-# committee approves them. Admin can do either, but never both for the
-# same version (maker-checker).
-METHODOLOGY_PROPOSERS = (ROLE_RISK_ANALYST, ROLE_ADMIN)
-METHODOLOGY_APPROVERS = (ROLE_RISK_COMMITTEE, ROLE_ADMIN)
+# The Risk Committee proposes methodology changes and an Admin approves
+# them before they are used (maker-checker: different people by role).
+METHODOLOGY_PROPOSERS = (ROLE_RISK_COMMITTEE,)
+METHODOLOGY_APPROVERS = (ROLE_ADMIN,)
 METHODOLOGY_READERS = (
     ROLE_RISK_ANALYST,
     ROLE_RISK_COMMITTEE,
-    ROLE_AUDITOR,
     ROLE_ADMIN,
 )
 
@@ -213,6 +216,7 @@ def create_draft(
     assert_role(current_user, *METHODOLOGY_PROPOSERS)
     active_row, active_config = get_active_methodology(db)
     config = copy.deepcopy(payload.config or active_config)
+    config["controls"] = controls_config(config)
     version = next_version_number(db)
     config["version"] = version
     errors = validate_config(config, active_config)
@@ -252,7 +256,7 @@ def update_draft(
             status_code=400,
             detail="Only drafts can be edited. Published versions are immutable.",
         )
-    if row.created_by_user_id != current_user.id and current_user.role != ROLE_ADMIN:
+    if row.created_by_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only the proposer can edit this draft.")
     if payload.config is not None:
         config = copy.deepcopy(payload.config)
@@ -333,6 +337,9 @@ def approve_version(
         db, row, "APPROVED_AND_PUBLISHED", audit_actor_name(current_user), current_user.id,
         payload.note.strip() or None,
     )
+    notify_methodology_reviewed(
+        db, row.created_by_user_id, row.version, True, payload.note.strip() or None
+    )
     db.commit()
     return _serialize_version(row)
 
@@ -354,6 +361,9 @@ def reject_version(
     row.review_note = payload.note.strip()
     record_methodology_event(
         db, row, "REJECTED", audit_actor_name(current_user), current_user.id, payload.note.strip(),
+    )
+    notify_methodology_reviewed(
+        db, row.created_by_user_id, row.version, False, payload.note.strip()
     )
     db.commit()
     return _serialize_version(row)
@@ -383,8 +393,13 @@ def methodology_impact(
         factors = db.query(RiskFactor).filter(RiskFactor.change_request_id == request_id).all()
         inputs = factor_rows_to_inputs(factors)
         current_config = get_config_for_version(db, assessment.risk_model_version)
-        current = score_factors(inputs, assessment.control_adjustment or 0, current_config)
-        proposed = score_factors(inputs, assessment.control_adjustment or 0, candidate)
+        by_category = calculate_category_effectiveness(db, request_id)
+        current = score_factors(
+            inputs, assessment.control_adjustment or 0, current_config, by_category
+        )
+        proposed = score_factors(
+            inputs, assessment.control_adjustment or 0, candidate, by_category
+        )
         cr = requests.get(request_id)
         rows.append({
             "change_request_id": request_id,
@@ -552,7 +567,6 @@ def verify_condition(
     current_user: User = Depends(get_current_user),
 ):
     assert_role(current_user, ROLE_RISK_ANALYST, ROLE_ADMIN)
-    assert_not_auditor_write(current_user)
     condition, change_request = _get_condition(db, condition_id, current_user)
     if condition.status != "EVIDENCE_SUBMITTED":
         raise HTTPException(status_code=400, detail="There is no submitted evidence to verify.")
@@ -592,6 +606,10 @@ def verify_condition(
     )
     if payload.accepted and remaining == 0:
         change_request.status = "CONDITIONS_MET"
+        change_request.closed_at = datetime.utcnow()
+        notify_feedback_requested(
+            db, change_request, get_setting(db, "feedback_window_days")
+        )
         create_audit_event(
             db=db,
             change_request_id=change_request.id,
@@ -616,7 +634,7 @@ def verify_condition(
 # Audit trail verification and export
 # ---------------------------------------------------------------------------
 
-AUDIT_EXPORT_ROLES = (ROLE_RISK_ANALYST, ROLE_RISK_COMMITTEE, ROLE_AUDITOR, ROLE_ADMIN)
+AUDIT_EXPORT_ROLES = (ROLE_RISK_ANALYST, ROLE_RISK_COMMITTEE, ROLE_ADMIN)
 
 
 @router.get("/change-requests/{change_request_id}/audit-events/verify")
@@ -678,7 +696,7 @@ def verify_all_chains(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assert_role(current_user, ROLE_AUDITOR, ROLE_ADMIN)
+    assert_role(current_user, ROLE_ADMIN)
     ids = [row.id for row in db.query(ChangeRequest.id).all()]
     results = [verify_chain(db, request_id) for request_id in ids]
     return {
@@ -696,7 +714,7 @@ def export_all_audit(
     current_user: User = Depends(get_current_user),
 ):
     """Portfolio-wide audit trail for examiners (Auditor / Admin)."""
-    assert_role(current_user, ROLE_AUDITOR, ROLE_ADMIN)
+    assert_role(current_user, ROLE_ADMIN)
     actor = audit_actor_name(current_user)
     packs = [
         build_audit_pack(db, row.id, actor)
@@ -849,5 +867,5 @@ def get_override_insights(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    assert_role(current_user, METHODOLOGY_READERS)
+    assert_role(current_user, *METHODOLOGY_READERS)
     return build_override_insights(db, current_user)

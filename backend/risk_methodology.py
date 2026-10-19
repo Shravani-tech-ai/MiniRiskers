@@ -114,7 +114,10 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
     )
     evidence = (
         db.query(RegulatoryEvidence)
-        .filter(RegulatoryEvidence.change_request_id == change_request_id)
+        .filter(
+            RegulatoryEvidence.change_request_id == change_request_id,
+            RegulatoryEvidence.is_current.is_(True),
+        )
         .all()
     )
     analyst_review = (
