@@ -56,16 +56,18 @@ function RiskCard({ title, score }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm">
 
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+      <p className="truncate text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
         {title}
       </p>
 
-      <div className="mt-3 flex items-end justify-between">
+      {/* Wraps the pill under the score when the card is too narrow for
+          both, so it never spills past the border. */}
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
 
         <span
-          className={`text-3xl font-bold ${getScoreColor(
+          className={`text-3xl font-bold leading-none tabular-nums ${getScoreColor(
             numericScore
           )}`}
         >
@@ -73,7 +75,7 @@ function RiskCard({ title, score }) {
         </span>
 
         <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getRiskClass(
+          className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-semibold ${getRiskClass(
             rating
           )}`}
         >
