@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from backend.models import RiskFactor, RegulatoryEvidence, RegulatorySource
+from backend.serializers import display_document_name
 
 from rag.query_engine import search_regulations
 from rag.regulatory_queries import RISK_FACTOR_QUERIES
@@ -69,7 +70,7 @@ def generate_evidence_for_risk_factor(
             page_number=page_number,
 
             source_reference=(
-                f"{metadata.get('document', 'Unknown Document')} "
+                f"{display_document_name(metadata.get('document')) or 'Unknown Document'} "
                 f"- Page {page_number if page_number is not None else 'N/A'}"
             ),
 

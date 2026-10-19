@@ -51,7 +51,7 @@ from backend.methodology_store import (
     get_config_for_version,
 )
 from backend.override_policy import evaluate_override
-from backend.serializers import serialize_condition
+from backend.serializers import display_document_name, serialize_condition
 from backend.governance_routes import router as governance_router
 from backend.notification_routes import router as notification_router
 from backend.admin_routes import router as admin_router
@@ -1241,9 +1241,9 @@ def generate_regulatory_evidence(
             "query": item.query,
             "evidence_text": item.evidence_text,
             "authority": item.authority,
-            "document_name": item.document_name,
+            "document_name": display_document_name(item.document_name),
             "page_number": item.page_number,
-            "source_reference": item.source_reference,
+            "source_reference": display_document_name(item.source_reference),
             "relevance_score": item.relevance_score,
             "created_at": item.created_at
         })
@@ -1282,9 +1282,9 @@ def get_regulatory_evidence(
             "risk_factor_id": item.risk_factor_id,
             "query": item.query,
             "authority": item.authority,
-            "document_name": item.document_name,
+            "document_name": display_document_name(item.document_name),
             "page_number": item.page_number,
-            "source_reference": item.source_reference,
+            "source_reference": display_document_name(item.source_reference),
             "relevance_score": item.relevance_score,
             "evidence_text": item.evidence_text,
             "created_at": item.created_at

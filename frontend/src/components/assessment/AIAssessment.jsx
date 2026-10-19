@@ -116,7 +116,9 @@ function getSourceLabel(item) {
 
   const parts = [
     item.authority,
-    item.document,
+    // Assessments generated before the backend cleaned names still carry
+    // the corpus file-order prefix ("1-RBI ...").
+    item.document?.replace(/^\d+-/, ""),
     item.page_number ? `p. ${item.page_number}` : null,
   ].filter(Boolean);
 

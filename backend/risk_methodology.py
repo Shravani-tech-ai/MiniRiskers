@@ -15,6 +15,7 @@ from html import escape
 from sqlalchemy.orm import Session
 
 from backend.assessment_inputs import load_assessment_inputs
+from backend.serializers import display_document_name
 from backend.models import (
     AnalystOverride,
     ChangeRequest,
@@ -265,7 +266,8 @@ def build_risk_methodology(db: Session, change_request_id: int) -> dict:
         })
 
     documents = Counter(
-        item.document_name or "Unknown document" for item in evidence
+        display_document_name(item.document_name) or "Unknown document"
+        for item in evidence
     )
 
     notes = [

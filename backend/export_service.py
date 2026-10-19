@@ -5,6 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from backend.assessment_inputs import load_assessment_inputs
+from backend.serializers import display_document_name
 from backend.models import (
     AIRecommendation,
     AnalystOverride,
@@ -140,11 +141,11 @@ def build_assessment_export(
             {
                 "id": item.id,
                 "authority": item.authority,
-                "document_name": item.document_name,
+                "document_name": display_document_name(item.document_name),
                 "page_number": item.page_number,
                 "query": item.query,
                 "evidence_text": item.evidence_text,
-                "source_reference": item.source_reference,
+                "source_reference": display_document_name(item.source_reference),
                 "relevance_score": item.relevance_score,
             }
             for item in evidence
@@ -364,7 +365,7 @@ def _source_label(item) -> str:
         return ""
     parts = [
         item.get("authority"),
-        item.get("document"),
+        display_document_name(item.get("document")),
         f"p. {item['page_number']}" if item.get("page_number") else None,
     ]
     return " · ".join(str(part) for part in parts if part)

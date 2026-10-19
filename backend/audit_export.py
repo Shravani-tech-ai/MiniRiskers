@@ -32,7 +32,7 @@ from backend.models import (
     RiskFactor,
 )
 from backend.risk_methodology import _PDF_CSS, _cell, _table
-from backend.serializers import serialize_condition
+from backend.serializers import display_document_name, serialize_condition
 from risk_engine.methodology import (
     CATEGORIES,
     framework_refs_for_category,
@@ -269,7 +269,7 @@ def build_audit_pack(db: Session, change_request_id: int, generated_by: str) -> 
             {
                 "risk_factor": factor_names.get(e.risk_factor_id),
                 "authority": e.authority,
-                "document": e.document_name,
+                "document": display_document_name(e.document_name),
                 "page": e.page_number,
                 "relevance_score": e.relevance_score,
                 "excerpt": (e.evidence_text or "")[:400],

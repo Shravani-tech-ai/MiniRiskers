@@ -54,8 +54,14 @@ function EvidencePreviewModal({
               id="evidence-preview-title"
               className="mt-1 text-lg font-semibold leading-snug text-slate-900 dark:text-slate-100"
             >
-              {evidence.query || "Regulatory evidence"}
+              {evidence.document_name || "Regulatory evidence"}
+              {evidence.page_number && ` · Page ${evidence.page_number}`}
             </h3>
+            {evidence.query && (
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Retrieved for: {evidence.query}
+              </p>
+            )}
           </div>
           <button
             type="button"

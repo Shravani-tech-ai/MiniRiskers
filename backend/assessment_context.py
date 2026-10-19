@@ -1,5 +1,7 @@
 from sqlalchemy.orm import Session
 
+from backend.serializers import display_document_name
+
 from backend.models import (
     ChangeRequest,
     Product,
@@ -271,11 +273,11 @@ def build_assessment_context(
                 "authority":
                     evidence.authority,
                 "document_name":
-                    evidence.document_name,
+                    display_document_name(evidence.document_name),
                 "page_number":
                     evidence.page_number,
                 "source_reference":
-                    evidence.source_reference,
+                    display_document_name(evidence.source_reference),
                 "relevance_score":
                     evidence.relevance_score
             }

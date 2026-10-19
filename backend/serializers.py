@@ -1,8 +1,18 @@
 """Shared API serializers."""
 
+import re
 from datetime import datetime
 
 from backend.models import ApprovalCondition
+
+
+def display_document_name(name):
+    """Drop the corpus file-order prefix ("1-RBI ..." -> "RBI ...").
+
+    The prefixed stem stays the stored key that links Chroma chunks and
+    PDFs; only what users see is cleaned.
+    """
+    return re.sub(r"^\d+-", "", name) if name else name
 
 
 def serialize_condition(condition: ApprovalCondition) -> dict:

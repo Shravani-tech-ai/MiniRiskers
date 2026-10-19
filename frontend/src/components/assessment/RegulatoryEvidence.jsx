@@ -106,17 +106,40 @@ function RegulatoryEvidence({
                     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold tabular-nums text-slate-600 dark:text-slate-400">
                       {index + 1}
                     </span>
-                    <p className="min-w-0 flex-1 text-sm font-medium leading-6 text-slate-800 dark:text-slate-200">
-                      {evidence.query || evidence.document_name || "Regulatory evidence"}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => showEvidence(index)}
-                      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                    >
-                      <Eye size={14} />
-                      View evidence
-                    </button>
+                    {/* The query is shared by every hit of one retrieval, so
+                        label each record by the document page it came from. */}
+                    <div className="min-w-0 flex-1">
+                      <p className="wrap-break-word text-sm font-medium leading-6 text-slate-800 dark:text-slate-200">
+                        {evidence.document_name || "Regulatory document"}
+                        {evidence.page_number && (
+                          <span className="text-slate-500 dark:text-slate-400">
+                            {" "}· Page {evidence.page_number}
+                          </span>
+                        )}
+                      </p>
+                      {(evidence.authority ||
+                        factorNames[evidence.risk_factor_id]) && (
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          {[
+                            evidence.authority,
+                            factorNames[evidence.risk_factor_id] &&
+                              `Supports: ${factorNames[evidence.risk_factor_id]}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      )}
+                      {/* Below the text, not beside it, so long document
+                          names get the full row width. */}
+                      <button
+                        type="button"
+                        onClick={() => showEvidence(index)}
+                        className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      >
+                        <Eye size={14} />
+                        View evidence
+                      </button>
+                    </div>
                   </li>
                 );
               })}

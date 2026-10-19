@@ -32,63 +32,63 @@
       "issuer": "Reserve Bank of India",
       "type": "Indian regulation",
       "in_corpus": true,
-      "corpus_document": "1-RBI Master Direction on KYC"
+      "corpus_document": "RBI Master Direction on KYC"
     },
     "PMLA": {
       "title": "Prevention of Money Laundering Act, 2002",
       "issuer": "Government of India",
       "type": "Indian statute",
       "in_corpus": true,
-      "corpus_document": "2-Prevention of Money Laundering Act, 2002"
+      "corpus_document": "Prevention of Money Laundering Act, 2002"
     },
     "PML_RULES": {
       "title": "Prevention of Money-laundering (Maintenance of Records) Rules, 2005",
       "issuer": "Government of India",
       "type": "Indian rules",
       "in_corpus": true,
-      "corpus_document": "3-Prevention of Money Laundering (Maintenance of Records) Rules, 2005"
+      "corpus_document": "Prevention of Money Laundering (Maintenance of Records) Rules, 2005"
     },
     "FIU_IND": {
       "title": "FIU-IND reporting formats and guidance",
       "issuer": "Financial Intelligence Unit — India",
       "type": "Indian reporting guidance",
       "in_corpus": true,
-      "corpus_document": "4-FIU-IND reporting material"
+      "corpus_document": "FIU-IND reporting material"
     },
     "RBI_DPSC": {
       "title": "RBI Master Direction on Digital Payment Security Controls, 2021",
       "issuer": "Reserve Bank of India",
       "type": "Indian regulation",
       "in_corpus": true,
-      "corpus_document": "5-Master Direction on Digital Payment Security Controls"
+      "corpus_document": "Master Direction on Digital Payment Security Controls"
     },
     "RBI_FRM": {
       "title": "RBI Master Directions on Fraud Risk Management in Commercial Banks, 2024",
       "issuer": "Reserve Bank of India",
       "type": "Indian regulation",
       "in_corpus": true,
-      "corpus_document": "6-Master Directions on Fraud Risk Management in Commercial Banks"
+      "corpus_document": "Master Directions on Fraud Risk Management in Commercial Banks"
     },
     "RBI_ITGRC": {
       "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023",
       "issuer": "Reserve Bank of India",
       "type": "Indian regulation",
       "in_corpus": true,
-      "corpus_document": "7-Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023"
+      "corpus_document": "Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices, 2023"
     },
     "RBI_ITOS": {
       "title": "RBI Master Direction on Outsourcing of Information Technology Services, 2023",
       "issuer": "Reserve Bank of India",
       "type": "Indian regulation",
       "in_corpus": true,
-      "corpus_document": "8-Master Direction on Outsourcing of Information Technology Services, 2023"
+      "corpus_document": "Master Direction on Outsourcing of Information Technology Services, 2023"
     },
     "UAPA_51A": {
       "title": "Procedure for implementation of Section 51A of the Unlawful Activities (Prevention) Act, 1967",
       "issuer": "Ministry of Home Affairs, Government of India",
       "type": "Indian order",
       "in_corpus": true,
-      "corpus_document": "9-Section 51A UAPA implementation procedure"
+      "corpus_document": "Section 51A UAPA implementation procedure"
     }
   },
   "methodology_basis": [
