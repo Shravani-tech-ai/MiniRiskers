@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertTriangle } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AssessmentHeader from "../components/assessment/AssessmentHeader";
 import ProductInformation from "../components/assessment/ProductInformation";
@@ -20,6 +20,7 @@ import DecisionOutcome from "../components/assessment/DecisionOutcome";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import CommitteeStatusPanel from "../components/assessment/CommitteeStatusPanel";
 import IntakePanel from "../components/assessment/IntakePanel";
+import IntakeFlowSteps from "../components/assessment/IntakeFlowSteps";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
 import SimilarCasesPanel from "../components/assessment/SimilarCasesPanel";
 import RiskMethodologyModal from "../components/assessment/RiskMethodologyModal";
@@ -48,6 +49,7 @@ import {
   getMissingSectionFields,
 } from "../utils/assessmentFormMapping";
 import PageContainer from "../components/layout/PageContainer";
+import { btnPrimaryMd } from "../utils/buttonStyles";
 
 import api from "../services/api";
 import { RequestFeedbackCard } from "../components/feedback/RequestFeedback";
@@ -149,6 +151,9 @@ function Assessment() {
 
   const [intakeMode, setIntakeMode] = useState("brd");
   const [highlightEmptyFields, setHighlightEmptyFields] = useState(false);
+  // Business Owner intake flow: "intake" (BRD / manual choice) or "inputs"
+  // (the section tabs; the Preview tab doubles as the review & submit step).
+  const [intakeStep, setIntakeStep] = useState("intake");
   const [completenessPercent, setCompletenessPercent] = useState(0);
   const [missingFields, setMissingFields] = useState([]);
   const [activeView, setActiveView] = useState("REQUEST_CREATED");
@@ -218,9 +223,11 @@ function Assessment() {
       }
       setCompletenessPercent(response.data.completeness_percent ?? 0);
       setMissingFields(response.data.missing_fields ?? []);
+      return response.data.inputs;
     } catch (inputsError) {
       console.log("No assessment inputs yet.", inputsError);
       await refreshCompleteness();
+      return null;
     }
   };
 
@@ -272,6 +279,8 @@ function Assessment() {
     setEditingSection(null);
     setSectionError("");
     setHighlightEmptyFields(true);
+    setInputTab("product");
+    setIntakeStep("inputs");
     return true;
   };
 
@@ -332,7 +341,14 @@ function Assessment() {
         canOpenPreferred ? preferredView : getDefaultView(user?.role, stage)
       );
 
-      await hydrateAssessmentInputs();
+      const inputs = await hydrateAssessmentInputs();
+      // Start a fresh request at the intake step; once any section is saved,
+      // open straight on the assessment inputs.
+      setIntakeStep(
+        Object.values(getPersistedSectionFlags(inputs)).some(Boolean)
+          ? "inputs"
+          : "intake"
+      );
 
       // 2. Risk Assessment
       try {
@@ -1216,6 +1232,42 @@ function Assessment() {
     };
   };
 
+  // Intake flow steps: the Preview tab is the "review" step.
+  const currentIntakeStep =
+    intakeStep === "intake"
+      ? "intake"
+      : inputTab === "preview"
+      ? "review"
+      : "inputs";
+
+  const isIntakeStepEnabled = (step) =>
+    !editingSection && (step !== "review" || isTabEnabled("preview"));
+
+  const isIntakeStepComplete = (step) => {
+    if (step === "intake") {
+      return intakeStep === "inputs";
+    }
+    if (step === "inputs") {
+      return isTabEnabled("preview") && missingFields.length === 0;
+    }
+    return Boolean(permissions.submitted);
+  };
+
+  const changeIntakeStep = (step) => {
+    setSectionError("");
+    if (step === "intake") {
+      setIntakeStep("intake");
+      return;
+    }
+
+    setIntakeStep("inputs");
+    if (step === "review") {
+      setInputTab("preview");
+    } else if (inputTab === "preview") {
+      setInputTab("product");
+    }
+  };
+
   const submitDisabledReason =
     permissions.canSubmit && missingFields.length > 0
       ? `Complete and save the required fields first: ${formatMissingFieldLabels(
@@ -1436,15 +1488,19 @@ function Assessment() {
           />
         )}
 
-        <div
-          className={
-            permissions.canEditIntake
-              ? "space-y-8 xl:grid xl:grid-cols-12 xl:items-start xl:gap-10 xl:space-y-0"
-              : ""
-          }
-        >
+        <div>
           {permissions.canEditIntake && (
-          <div className="space-y-6 xl:col-span-5">
+            <IntakeFlowSteps
+              currentStep={currentIntakeStep}
+              isStepEnabled={isIntakeStepEnabled}
+              isStepComplete={isIntakeStepComplete}
+              onStepChange={changeIntakeStep}
+            />
+          )}
+
+          {/* Kept mounted while hidden so the panel keeps its BRD/extract state. */}
+          {permissions.canEditIntake && (
+          <div className={intakeStep === "intake" ? "" : "hidden"}>
         <IntakePanel
           changeRequestId={changeRequestId}
           intakeMode={intakeMode}
@@ -1454,12 +1510,24 @@ function Assessment() {
           setError={setError}
           readOnly={!permissions.canEditIntake}
         />
+            <div className="-mt-4 mb-8 flex justify-end">
+              <button
+                type="button"
+                onClick={() => changeIntakeStep("inputs")}
+                className={btnPrimaryMd}
+              >
+                {intakeMode === "manual"
+                  ? "Start manual entry"
+                  : "Continue to assessment inputs"}
+                <ArrowRight size={16} />
+              </button>
+            </div>
           </div>
           )}
 
           <div
             className={[
-              permissions.canEditIntake ? "xl:col-span-7" : "",
+              permissions.canEditIntake && intakeStep === "intake" ? "hidden" : "",
               highlightEmptyFields ? "highlight-empty-fields" : "",
             ].join(" ")}
             onMouseOver={
@@ -1470,6 +1538,10 @@ function Assessment() {
           activeTab={inputTab}
           onTabChange={changeInputTab}
           isTabEnabled={isTabEnabled}
+          // In the step flow, review is its own step: step 2 shows only the
+          // six sections and step 3 shows the preview without the tab row.
+          showPreviewTab={!permissions.canEditIntake}
+          showTabs={!permissions.canEditIntake || inputTab !== "preview"}
         >
           {inputTab === "product" && (
             <ProductInformation

@@ -16,8 +16,18 @@ function RequestInputTabs({
   activeTab,
   onTabChange,
   isTabEnabled = () => true,
+  showPreviewTab = true,
+  showTabs = true,
   children,
 }) {
+  const tabs = showPreviewTab
+    ? INPUT_TABS
+    : INPUT_TABS.filter((tab) => tab.id !== "preview");
+
+  if (!showTabs) {
+    return <div className="mb-8">{children}</div>;
+  }
+
   return (
     <div className="mb-8">
       <div className="mb-4">
@@ -25,12 +35,12 @@ function RequestInputTabs({
           Assessment inputs
         </h2>
         <p className="mt-2 text-base text-slate-600 dark:text-slate-400">
-          Complete and save each section in order, or use BRD extraction above.
+          Complete and save each section in order.
         </p>
       </div>
 
       <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1">
-        {INPUT_TABS.map((tab) => {
+        {tabs.map((tab) => {
           const selected = activeTab === tab.id;
           const enabled = selected || isTabEnabled(tab.id);
 

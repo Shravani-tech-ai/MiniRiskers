@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Sparkles,
   TrendingDown,
-  TrendingUp,
 } from "lucide-react";
 
 import ThemeToggle from "../components/ThemeToggle";
@@ -78,9 +77,6 @@ function MetricsPanel({ metrics, metricsError }) {
           const metric = metrics?.[metricDef.key];
           const hasValue =
             metric && metric.value !== null && metric.value !== undefined;
-          const changePct = metric?.change_pct ?? 0;
-          const isUp = changePct >= 0;
-          const TrendIcon = isUp ? TrendingUp : TrendingDown;
 
           return (
             <div
@@ -94,30 +90,16 @@ function MetricsPanel({ metrics, metricsError }) {
                 <p className="text-3xl font-bold tabular-nums leading-none text-slate-900 dark:text-slate-100 lg:text-4xl">
                   {hasValue ? metricDef.format(metric.value) : "—"}
                 </p>
-                {hasValue ? (
-                  <TrendIcon
-                    size={18}
-                    className={isUp ? "text-emerald-600" : "text-red-500"}
-                  />
-                ) : null}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 lg:text-base">
                   {metricDef.label}
                 </p>
-                <p
-                  className={`mt-0.5 text-xs lg:text-sm ${
-                    hasValue
-                      ? isUp
-                        ? "text-emerald-700 dark:text-emerald-400"
-                        : "text-red-600 dark:text-red-400"
-                      : "text-slate-400 dark:text-slate-500"
-                  }`}
-                >
-                  {hasValue
-                    ? `${changePct > 0 ? "+" : ""}${changePct}% vs last 30 days`
-                    : "No data yet"}
-                </p>
+                {!hasValue && (
+                  <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500 lg:text-sm">
+                    No data yet
+                  </p>
+                )}
               </div>
             </div>
           );
