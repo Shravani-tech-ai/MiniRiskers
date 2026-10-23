@@ -17,9 +17,6 @@ function AppSidebar() {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-lg font-bold text-slate-900 dark:text-slate-100">MiniRiskers</span>
-            <span className="rounded-md bg-violet-100 dark:bg-violet-950/40 px-2 py-0.5 text-[11px] font-bold text-violet-700 dark:text-violet-300">
-              PRO
-            </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400">FCRM Workbench</p>
         </div>

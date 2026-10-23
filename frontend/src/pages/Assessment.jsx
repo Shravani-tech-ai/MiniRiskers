@@ -148,6 +148,7 @@ function Assessment() {
   });
 
   const [intakeMode, setIntakeMode] = useState("brd");
+  const [highlightEmptyFields, setHighlightEmptyFields] = useState(false);
   const [completenessPercent, setCompletenessPercent] = useState(0);
   const [missingFields, setMissingFields] = useState([]);
   const [activeView, setActiveView] = useState("REQUEST_CREATED");
@@ -223,27 +224,55 @@ function Assessment() {
     }
   };
 
-  // Saves the reviewed BRD extraction to the intake, then reloads the forms
-  // from the server so each section shows as saved. If the server refuses
-  // (e.g. a required value such as product name is still missing), the
-  // values are still filled in locally for the user to finish and save.
-  const handleExtractionApplied = async (mergedPreview) => {
-    try {
-      await api.post(
-        `/change-requests/${changeRequestId}/intake/apply-extraction`,
-        { extracted: mergedPreview }
-      );
-      await hydrateAssessmentInputs();
-      return true;
-    } catch (applyError) {
-      applyFormValues(mapInputsToFormState(mergedPreview));
-      const detail = applyError.response?.data?.detail;
-      setError(
-        `${typeof detail === "string" ? detail : "Could not save the extracted values."} ` +
-          "The values were filled into the forms below; complete any missing fields and save each section."
-      );
+  // Tooltip for the fields highlighted as empty after a BRD extraction (the
+  // highlight itself is pure CSS in index.css, so the hint is set on hover).
+  const showEmptyFieldHint = (event) => {
+    const field = event.target;
+    if (!field.matches?.("input, textarea, select")) {
+      return;
+    }
+
+    const isEmpty =
+      !field.closest("fieldset:disabled") &&
+      (field.tagName === "SELECT"
+        ? field.value === ""
+        : field.matches(":placeholder-shown"));
+
+    if (!isEmpty) {
+      field.removeAttribute("title");
+      return;
+    }
+
+    const label = field.parentElement?.querySelector("label")?.textContent || "";
+    field.title = label.trim().endsWith("*")
+      ? "This field is not filled. It is required, so fill it before saving."
+      : "This field is not filled. Fill it before saving if it is required.";
+  };
+
+  // Fills the reviewed BRD extraction into the forms without saving it.
+  // Sections whose values changed are marked unsaved so the user reviews and
+  // saves each one; empty fields are highlighted for them to complete.
+  const handleExtractionApplied = (mergedPreview) => {
+    const mapped = mapInputsToFormState(mergedPreview);
+    if (!mapped) {
       return false;
     }
+
+    const changed = (key, current) =>
+      JSON.stringify(mapped[key]) !== JSON.stringify(current);
+
+    if (changed("productForm", productForm)) setProductSaved(false);
+    if (changed("customerForm", customerForm)) setCustomerSaved(false);
+    if (changed("geographyForm", geographyForm)) setGeographySaved(false);
+    if (changed("transactionForm", transactionForm)) setTransactionSaved(false);
+    if (changed("channelForm", channelForm)) setChannelSaved(false);
+    if (changed("vendorForm", vendorForm)) setVendorSaved(false);
+
+    applyFormValues(mapped);
+    setEditingSection(null);
+    setSectionError("");
+    setHighlightEmptyFields(true);
+    return true;
   };
 
   useEffect(() => {
@@ -1428,7 +1457,15 @@ function Assessment() {
           </div>
           )}
 
-          <div className={permissions.canEditIntake ? "xl:col-span-7" : ""}>
+          <div
+            className={[
+              permissions.canEditIntake ? "xl:col-span-7" : "",
+              highlightEmptyFields ? "highlight-empty-fields" : "",
+            ].join(" ")}
+            onMouseOver={
+              highlightEmptyFields ? showEmptyFieldHint : undefined
+            }
+          >
         <RequestInputTabs
           activeTab={inputTab}
           onTabChange={changeInputTab}

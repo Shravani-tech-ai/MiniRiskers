@@ -304,7 +304,7 @@ function NewRequest() {
         </div>
 
         <div className="xl:grid xl:grid-cols-12 xl:gap-10">
-        <ol className="mb-8 grid grid-cols-3 gap-2 sm:gap-4 xl:col-span-4 xl:mb-0 xl:grid-cols-1 xl:gap-3">
+        <ol className="mb-8 grid grid-cols-3 gap-2 sm:gap-4 xl:col-span-4 xl:mb-0 xl:grid-cols-1 xl:gap-3 xl:self-start xl:content-start">
           {STEPS.map((wizardStep) => {
             const isComplete = step > wizardStep.id;
             const isCurrent = step === wizardStep.id;
@@ -369,8 +369,8 @@ function NewRequest() {
                 className="hidden"
                 onChange={handleBrdSelected}
               />
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="flex items-start gap-3">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 flex-1 basis-80 items-start gap-3">
                   <div className="rounded-lg bg-indigo-50 p-2 dark:bg-indigo-950/40">
                     <FileUp size={20} className="text-indigo-600 dark:text-indigo-400" />
                   </div>

@@ -324,8 +324,8 @@ function Assessments() {
               key={item.id}
               className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-sm"
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="min-w-0">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 basis-72">
                   <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400">
                     {item.request_number}
                   </p>

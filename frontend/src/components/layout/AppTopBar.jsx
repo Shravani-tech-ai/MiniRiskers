@@ -28,9 +28,6 @@ function AppTopBar({ compact = false }) {
                 <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                   MiniRiskers
                 </span>
-                <span className="rounded bg-violet-100 dark:bg-violet-950/40 px-1 py-0.5 text-[9px] font-bold text-violet-700 dark:text-violet-300">
-                  PRO
-                </span>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">FCRM Workbench</p>
             </div>

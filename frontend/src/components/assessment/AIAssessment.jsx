@@ -642,9 +642,9 @@ function AIAssessment({
 
           {sections.length > 0 && (
 
-            <section className="flex flex-col gap-3 rounded-lg border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
+            <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-4 dark:border-slate-700">
 
-              <div>
+              <div className="min-w-0 flex-1 basis-72">
                 <h4 className={sectionLabelClass}>Assessment details</h4>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {sections.map((section) => section.title).join(" · ")}

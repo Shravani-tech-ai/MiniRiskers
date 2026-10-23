@@ -11,7 +11,6 @@ import {
 
 import api from "../../services/api";
 import {
-  btnDarkSm,
   btnPrimarySm,
   tabSelected,
   tabUnselected,
@@ -32,8 +31,9 @@ function IntakePanel({
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
-  const [applying, setApplying] = useState(false);
-  const [extractionResult, setExtractionResult] = useState(null);
+  // Set once the current BRD's values are filled into the forms; cleared when
+  // a different BRD is uploaded or the BRD is removed.
+  const [appliedExtraction, setAppliedExtraction] = useState(null);
   const [brdUpload, setBrdUpload] = useState(null);
   const [loadingBrdStatus, setLoadingBrdStatus] = useState(false);
   const [removingBrd, setRemovingBrd] = useState(false);
@@ -73,7 +73,7 @@ function IntakePanel({
     try {
       setUploading(true);
       setError("");
-      setExtractionResult(null);
+      setAppliedExtraction(null);
 
       const formData = new FormData();
       formData.append("file", file);
@@ -94,7 +94,6 @@ function IntakePanel({
           character_count: response.data.character_count,
           has_text: (response.data.character_count || 0) > 0,
           uploaded_at: new Date().toISOString(),
-          preview: response.data.preview,
         },
       });
     } catch (err) {
@@ -117,7 +116,7 @@ function IntakePanel({
       await api.delete(`/change-requests/${changeRequestId}/intake/brd`);
 
       setBrdUpload({ uploaded: false, upload: null });
-      setExtractionResult(null);
+      setAppliedExtraction(null);
     } catch (err) {
       setError(
         err?.response?.data?.detail || "Failed to remove BRD."
@@ -143,7 +142,11 @@ function IntakePanel({
         `/change-requests/${changeRequestId}/intake/extract-brd`
       );
 
-      setExtractionResult(response.data);
+      // Fill the forms straight away; the user reviews and saves each section.
+      const applied = await onExtractionApplied(response.data.merged_preview);
+      if (applied) {
+        setAppliedExtraction(response.data);
+      }
     } catch (err) {
       const detail = err?.response?.data?.detail;
       setError(
@@ -155,21 +158,6 @@ function IntakePanel({
       );
     } finally {
       setExtracting(false);
-    }
-  };
-
-  const handleApplyExtraction = async () => {
-    if (!extractionResult?.merged_preview) {
-      return;
-    }
-
-    setError("");
-    setApplying(true);
-    try {
-      await onExtractionApplied(extractionResult.merged_preview);
-      setExtractionResult(null);
-    } finally {
-      setApplying(false);
     }
   };
 
@@ -244,39 +232,34 @@ function IntakePanel({
             <button
               type="button"
               onClick={handleExtract}
-              disabled={readOnly || extracting || !canExtract}
+              disabled={
+                readOnly || extracting || !canExtract || Boolean(appliedExtraction)
+              }
               title={
-                canExtract
+                appliedExtraction
+                  ? "Values from this BRD are in the forms. Upload another BRD to extract again."
+                  : canExtract
                   ? "Extract intake fields from uploaded BRD"
                   : "Upload a BRD with readable text first"
               }
               className={[
                 btnPrimarySm,
-                !canExtract ? "pointer-events-none" : "",
+                !canExtract || appliedExtraction ? "pointer-events-none" : "",
               ].join(" ")}
             >
               {extracting ? (
                 <Loader2 size={16} className="animate-spin" />
+              ) : appliedExtraction ? (
+                <CheckCircle2 size={16} />
               ) : (
                 <Sparkles size={16} />
               )}
-              Extract fields
+              {extracting
+                ? "Extracting..."
+                : appliedExtraction
+                ? "Extracted"
+                : "Extract fields"}
             </button>
-          </div>
-
-          <div className="flex flex-col gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-slate-600 dark:bg-slate-800/40">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Don't have a BRD? Download the sample format, replace the
-              example values and upload it.
-            </p>
-            <a
-              href={SAMPLE_BRD_URL}
-              download="MiniRiskers-sample-BRD.pdf"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950/60"
-            >
-              <Download size={15} />
-              Sample BRD (PDF)
-            </a>
           </div>
 
           {loadingBrdStatus && !uploadInfo && (
@@ -333,12 +316,6 @@ function IntakePanel({
                       Image-only PDFs cannot be parsed.
                     </p>
                   )}
-
-                  {uploadInfo.preview && uploadInfo.has_text && (
-                    <p className="mt-3 line-clamp-3 rounded-md border border-green-100 bg-white dark:bg-slate-900/80 p-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
-                      {uploadInfo.preview}
-                    </p>
-                  )}
                 </div>
 
                 <button
@@ -365,84 +342,20 @@ function IntakePanel({
             </p>
           )}
 
-          {extractionResult && (
-            <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 p-4">
-              <p className="text-sm font-semibold text-slate-900">
-                Review extracted values
-              </p>
-
-              {(extractionResult.extraction_method === "rules" ||
-                extractionResult.extraction_method === "heuristic") && (
-                <p className="mt-1 text-xs text-amber-800 dark:text-amber-900">
-                  AI was unavailable; rule-based parsing was used. Review
-                  fields carefully.
-                </p>
-              )}
-
-              {extractionResult.extraction_method === "ai+rules" && (
-                <p className="mt-1 text-xs text-slate-600 dark:text-slate-800">
-                  Combined AI extraction and rule-based field mapping.
-                </p>
-              )}
-
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-800">
-                {extractionResult.diff_from_saved?.length || 0} fields
-                differ from saved data. Apply to save them into the forms
-                below.
-              </p>
-
-              {extractionResult.diff_from_saved?.length > 0 && (
-                <div className="mt-4 max-h-48 overflow-y-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-                  <table className="min-w-full text-left text-xs">
-                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
-                      <tr>
-                        <th className="px-3 py-2">Field</th>
-                        <th className="px-3 py-2">Extracted</th>
-                        <th className="px-3 py-2">Saved</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {extractionResult.diff_from_saved.map(
-                        (row) => (
-                          <tr
-                            key={`${row.section}.${row.field}`}
-                            className="border-t border-slate-100 dark:border-slate-800"
-                          >
-                            <td className="px-3 py-2 font-medium">
-                              {row.section}.{row.field}
-                            </td>
-                            <td className="px-3 py-2">
-                              {String(row.current ?? "—")}
-                            </td>
-                            <td className="px-3 py-2 text-slate-400 dark:text-slate-500">
-                              {String(row.baseline ?? "—")}
-                            </td>
-                          </tr>
-                        )
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {(extractionResult.missing_fields?.length || 0) > 0 && (
-                <p className="mt-3 text-sm text-amber-800 dark:text-amber-300">
-                  {extractionResult.missing_fields.length} required field(s)
-                  still missing after extraction. You can apply partial values,
-                  then complete the manual forms below.
-                </p>
-              )}
-
-              <button
-                type="button"
-                onClick={handleApplyExtraction}
-                disabled={readOnly || applying}
-                className={`mt-4 ${btnDarkSm}`}
-              >
-                {applying ? "Saving..." : "Apply & save to forms"}
-              </button>
-            </div>
-          )}
+          <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 dark:border-slate-600 dark:bg-slate-800/40">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Don't have a BRD? Download the sample format, replace the
+              example values and upload it.
+            </p>
+            <a
+              href={SAMPLE_BRD_URL}
+              download="MiniRiskers-sample-BRD.pdf"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:bg-slate-900 dark:text-indigo-300 dark:hover:bg-indigo-950/60"
+            >
+              <Download size={15} />
+              Sample BRD (PDF)
+            </a>
+          </div>
         </div>
       )}
     </div>

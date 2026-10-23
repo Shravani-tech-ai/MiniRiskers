@@ -415,8 +415,8 @@ function Dashboard() {
   return (
     <PageContainer className="space-y-8">
         {user?.role === ROLES.BUSINESS_OWNER && <PendingFeedbackBanner />}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1 basis-80">
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 lg:text-4xl">
                 {dashboardTitle}
