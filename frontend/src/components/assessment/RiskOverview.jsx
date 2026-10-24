@@ -118,9 +118,9 @@ function RiskOverview({
       {canRun && (
       <div className="mb-8 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 p-6">
 
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-5">
 
-          <div>
+          <div className="min-w-0 flex-1 basis-80">
 
             <h3 className="text-xl font-bold text-slate-900 lg:text-2xl">
               Run Financial Crime Risk Assessment

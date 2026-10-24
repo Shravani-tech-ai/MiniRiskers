@@ -1,4 +1,5 @@
-import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useAssessmentWorkflow } from "../../context/AssessmentWorkflowContext";
@@ -21,6 +22,7 @@ function AssessmentHeader({ changeRequest }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { clearWorkflow } = useAssessmentWorkflow();
+  const [showDescription, setShowDescription] = useState(false);
   const backPath = location.state?.from || getDefaultBackPath(user?.role);
 
   const handleBack = () => {
@@ -56,16 +58,37 @@ function AssessmentHeader({ changeRequest }) {
               {changeRequest.title}
             </h1>
 
-            <p className="mt-3 text-base text-slate-600 dark:text-slate-400 lg:text-lg">
-              {changeRequest.business_unit}
-              {" · "}
-              {changeRequest.product_type}
-              {" · "}
-              {changeRequest.customer_segment}
-            </p>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+              <p className="text-base text-slate-600 dark:text-slate-400 lg:text-lg">
+                {changeRequest.business_unit}
+                {" · "}
+                {changeRequest.product_type}
+                {" · "}
+                {changeRequest.customer_segment}
+              </p>
 
-            {changeRequest.description ? (
-              <p className="mt-4 max-w-4xl text-base leading-relaxed text-slate-600 dark:text-slate-400 lg:text-[17px]">
+              {changeRequest.description ? (
+                <button
+                  type="button"
+                  onClick={() => setShowDescription((open) => !open)}
+                  aria-expanded={showDescription}
+                  aria-controls="change-request-description"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  {showDescription ? "Hide description" : "View description"}
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform ${showDescription ? "rotate-180" : ""}`}
+                  />
+                </button>
+              ) : null}
+            </div>
+
+            {changeRequest.description && showDescription ? (
+              <p
+                id="change-request-description"
+                className="mt-4 max-w-4xl text-base leading-relaxed text-slate-600 dark:text-slate-400 lg:text-[17px]"
+              >
                 {changeRequest.description}
               </p>
             ) : null}

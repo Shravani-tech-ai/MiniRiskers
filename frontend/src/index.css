@@ -74,6 +74,23 @@ input[type="checkbox"]:disabled:checked,
   background-size: 100% 100%;
 }
 
+/* After a BRD extraction is applied, flag editable fields it left empty. */
+.highlight-empty-fields fieldset:not(:disabled) input:placeholder-shown:not(:focus),
+.highlight-empty-fields fieldset:not(:disabled) textarea:placeholder-shown:not(:focus),
+.highlight-empty-fields fieldset:not(:disabled) select:has(option[value=""]:checked):not(:focus) {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+  box-shadow: 0 0 0 1px #f59e0b;
+}
+
+.dark .highlight-empty-fields fieldset:not(:disabled) input:placeholder-shown:not(:focus),
+.dark .highlight-empty-fields fieldset:not(:disabled) textarea:placeholder-shown:not(:focus),
+.dark .highlight-empty-fields fieldset:not(:disabled) select:has(option[value=""]:checked):not(:focus) {
+  border-color: #d97706;
+  background-color: rgba(120, 53, 15, 0.25);
+  box-shadow: 0 0 0 1px #d97706;
+}
+
 /* Prevent low-contrast disabled buttons (light bg + white text). */
 button:disabled {
   cursor: not-allowed;

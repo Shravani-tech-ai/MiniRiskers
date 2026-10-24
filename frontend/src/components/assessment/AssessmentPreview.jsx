@@ -325,12 +325,13 @@ function AssessmentPreview({
                   ? "Submitting..."
                   : "Submit for Risk Analyst review"}
               </button>
-              <p className="text-xs text-slate-500 dark:text-slate-400 sm:text-right">
-                {alreadySubmitted
-                  ? "This request has already been submitted for Risk Analyst review."
-                  : disabledReason ||
-                    "Submitting hands this request off to the Risk Analyst queue. You won't be able to submit it again."}
-              </p>
+              {(alreadySubmitted || disabledReason) && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 sm:text-right">
+                  {alreadySubmitted
+                    ? "This request has already been submitted for Risk Analyst review."
+                    : disabledReason}
+                </p>
+              )}
             </div>
           )}
         </div>

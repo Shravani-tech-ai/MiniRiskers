@@ -51,8 +51,8 @@ function CommitteeStatusPanel({ changeRequest, auditEvents, onViewOutcome }) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-4 rounded-lg border border-green-200 bg-green-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-green-900 dark:bg-green-950/40">
-            <div className="flex items-start gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950/40">
+            <div className="flex min-w-0 flex-1 basis-72 items-start gap-3">
               <CheckCircle2
                 size={20}
                 className="mt-0.5 shrink-0 text-green-600 dark:text-green-400"
