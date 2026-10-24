@@ -1161,3 +1161,52 @@ class AIFeedback(Base):
     comment = Column(Text)
 
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class IntakeDocument(Base):
+    """A BRD uploaded as the source of a change request's intake data.
+
+    Every upload is kept, so reviewers can always see the document the
+    inputs were taken from. Uploading a new BRD supersedes the current one
+    and removing it only detaches it; neither deletes the file.
+    """
+
+    __tablename__ = "intake_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    change_request_id = Column(Integer, nullable=False, index=True)
+
+    filename = Column(String, nullable=False)
+
+    # Path under the BRD upload root, unique per upload.
+    stored_name = Column(String, nullable=False)
+
+    content_type = Column(String)
+
+    size_bytes = Column(Integer)
+
+    sha256 = Column(String)
+
+    character_count = Column(Integer)
+
+    uploaded_by = Column(String)
+
+    uploaded_by_user_id = Column(Integer)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # CURRENT / SUPERSEDED / REMOVED
+    status = Column(String, nullable=False, default="CURRENT", index=True)
+
+    status_changed_by = Column(String)
+
+    status_changed_at = Column(DateTime)
+
+    extraction_method = Column(String)
+
+    extracted_at = Column(DateTime)
+
+    applied_by = Column(String)
+
+    applied_at = Column(DateTime)

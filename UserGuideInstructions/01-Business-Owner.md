@@ -194,7 +194,8 @@ The header shows **Completeness: {n}%**, the share of the 11 required fields tha
 | **BRD upload / Manual entry** (toggle) | Shows or hides the BRD tools | Choose AI-assisted or fully manual entry |
 | **Upload BRD** | Uploads a file (.pdf/.docx/.txt/.md) and shows how much text was read | The AI needs readable text to work |
 | **Extract fields** | AI (Gemini), plus rule-based parsing, reads the BRD and proposes values for **all six sections** | Saves a lot of typing on long BRDs. Enabled only once a BRD with text is uploaded |
-| **Remove** | Deletes the uploaded BRD | — |
+| **Download** | Downloads the uploaded BRD | Check exactly which file is attached |
+| **Remove** | Detaches the BRD from the request | The file is not deleted: it stays in the request's document history, which the analyst, committee and admin can see. Uploading a new BRD likewise keeps the old one as an earlier version |
 | **Sample BRD (PDF)** | Downloads the template | — |
 
 **After Extract**, a **"Review extracted values"** box appears:

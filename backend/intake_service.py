@@ -1,4 +1,9 @@
+import hashlib
 import json
+import mimetypes
+import os
+import re
+import uuid
 from datetime import datetime
 from pathlib import Path
 
@@ -22,44 +27,199 @@ from backend.models import (
     Channel,
     CustomerProfile,
     Geography,
+    IntakeDocument,
     Product,
     TransactionProfile,
     Vendor,
 )
 
-UPLOAD_ROOT = Path(__file__).resolve().parent.parent / "data" / "uploads"
+UPLOAD_ROOT = Path(
+    os.environ.get("MINIRISKERS_BRD_UPLOAD_DIR")
+    or Path(__file__).resolve().parent.parent / "data" / "uploads"
+)
 BRD_PROMPT_PATH = (
     Path(__file__).resolve().parent.parent / "ai" / "prompts" / "brd-extraction.md"
 )
 
+DOC_CURRENT = "CURRENT"
+DOC_SUPERSEDED = "SUPERSEDED"
+DOC_REMOVED = "REMOVED"
 
-def save_brd_file(
+
+def _display_filename(filename: str | None) -> str:
+    # Browsers may send a full client path ("C:\fakepath\brd.pdf").
+    name = (filename or "").replace("\\", "/").split("/")[-1].strip()
+    return name or "brd-upload"
+
+
+def _storage_filename(filename: str) -> str:
+    safe = re.sub(r"[^A-Za-z0-9._ -]", "_", filename).strip(" .")[:120]
+    return f"{uuid.uuid4().hex}_{safe or 'brd-upload'}"
+
+
+def brd_document_path(document: IntakeDocument) -> Path:
+    return UPLOAD_ROOT / document.stored_name
+
+
+def _register_legacy_uploads(db: Session, change_request_id: int) -> None:
+    """Record BRDs uploaded before documents were tracked in the database."""
+    if (
+        db.query(IntakeDocument.id)
+        .filter(IntakeDocument.change_request_id == change_request_id)
+        .first()
+    ):
+        return
+
+    folder = UPLOAD_ROOT / str(change_request_id)
+    if not folder.exists():
+        return
+
+    files = sorted(
+        [path for path in folder.iterdir() if path.is_file()],
+        key=lambda path: path.stat().st_mtime,
+    )
+    for index, path in enumerate(files):
+        file_bytes = path.read_bytes()
+        try:
+            character_count = len(extract_text_from_bytes(file_bytes, path.name))
+        except ValueError:
+            character_count = 0
+        db.add(IntakeDocument(
+            change_request_id=change_request_id,
+            filename=path.name,
+            stored_name=f"{change_request_id}/{path.name}",
+            content_type=mimetypes.guess_type(path.name)[0],
+            size_bytes=len(file_bytes),
+            sha256=hashlib.sha256(file_bytes).hexdigest(),
+            character_count=character_count,
+            uploaded_by="Unknown (uploaded before document tracking)",
+            created_at=datetime.utcfromtimestamp(path.stat().st_mtime),
+            status=DOC_CURRENT if index == len(files) - 1 else DOC_SUPERSEDED,
+        ))
+    if files:
+        db.commit()
+
+
+def save_brd_document(
+    db: Session,
     change_request_id: int,
     file_bytes: bytes,
-    filename: str,
-) -> Path:
-    folder = UPLOAD_ROOT / str(change_request_id)
-    folder.mkdir(parents=True, exist_ok=True)
+    filename: str | None,
+    content_type: str | None,
+    character_count: int,
+    actor: str,
+    user_id: int | None,
+) -> IntakeDocument:
+    """Store an uploaded BRD; the previous current one is superseded."""
+    _register_legacy_uploads(db, change_request_id)
 
-    destination = folder / filename
+    display_name = _display_filename(filename)
+    stored_name = f"{change_request_id}/{_storage_filename(display_name)}"
+    destination = UPLOAD_ROOT / stored_name
+    destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(file_bytes)
 
-    return destination
+    now = datetime.utcnow()
+    for previous in (
+        db.query(IntakeDocument)
+        .filter(
+            IntakeDocument.change_request_id == change_request_id,
+            IntakeDocument.status == DOC_CURRENT,
+        )
+        .all()
+    ):
+        previous.status = DOC_SUPERSEDED
+        previous.status_changed_by = actor
+        previous.status_changed_at = now
+
+    document = IntakeDocument(
+        change_request_id=change_request_id,
+        filename=display_name,
+        stored_name=stored_name,
+        content_type=(
+            content_type
+            if content_type and content_type != "application/octet-stream"
+            else mimetypes.guess_type(display_name)[0]
+        ),
+        size_bytes=len(file_bytes),
+        sha256=hashlib.sha256(file_bytes).hexdigest(),
+        character_count=character_count,
+        uploaded_by=actor,
+        uploaded_by_user_id=user_id,
+        created_at=now,
+        status=DOC_CURRENT,
+    )
+    db.add(document)
+    db.flush()
+    return document
 
 
-def delete_brd_uploads(change_request_id: int) -> bool:
-    folder = UPLOAD_ROOT / str(change_request_id)
+def get_current_brd_document(
+    db: Session,
+    change_request_id: int,
+) -> IntakeDocument | None:
+    _register_legacy_uploads(db, change_request_id)
+    return (
+        db.query(IntakeDocument)
+        .filter(
+            IntakeDocument.change_request_id == change_request_id,
+            IntakeDocument.status == DOC_CURRENT,
+        )
+        .order_by(IntakeDocument.id.desc())
+        .first()
+    )
 
-    if not folder.exists():
-        return False
 
-    removed = False
-    for path in folder.iterdir():
-        if path.is_file():
-            path.unlink()
-            removed = True
+def list_brd_documents(db: Session, change_request_id: int) -> list[IntakeDocument]:
+    _register_legacy_uploads(db, change_request_id)
+    return (
+        db.query(IntakeDocument)
+        .filter(IntakeDocument.change_request_id == change_request_id)
+        .order_by(IntakeDocument.id.desc())
+        .all()
+    )
 
-    return removed
+
+def detach_brd_document(
+    db: Session,
+    change_request_id: int,
+    actor: str,
+) -> IntakeDocument | None:
+    """Detach the current BRD. The file is kept as part of the record."""
+    document = get_current_brd_document(db, change_request_id)
+    if document is None:
+        return None
+    document.status = DOC_REMOVED
+    document.status_changed_by = actor
+    document.status_changed_at = datetime.utcnow()
+    return document
+
+
+def _iso_z(value: datetime | None) -> str | None:
+    return value.isoformat() + "Z" if value else None
+
+
+def serialize_intake_document(document: IntakeDocument) -> dict:
+    return {
+        "id": document.id,
+        "change_request_id": document.change_request_id,
+        "filename": document.filename,
+        "content_type": document.content_type,
+        "size_bytes": document.size_bytes,
+        "sha256": document.sha256,
+        "character_count": document.character_count,
+        "has_text": bool(document.character_count),
+        "uploaded_by": document.uploaded_by,
+        "uploaded_at": _iso_z(document.created_at),
+        "status": document.status,
+        "status_changed_by": document.status_changed_by,
+        "status_changed_at": _iso_z(document.status_changed_at),
+        "extraction_method": document.extraction_method,
+        "extracted_at": _iso_z(document.extracted_at),
+        "applied_by": document.applied_by,
+        "applied_at": _iso_z(document.applied_at),
+        "file_available": brd_document_path(document).is_file(),
+    }
 
 
 def build_brd_extraction_prompt(document_text: str) -> str:
@@ -200,35 +360,29 @@ def extract_intake_from_brd(document_text: str) -> tuple[dict, str]:
         )
 
 
-def get_latest_brd_upload(change_request_id: int) -> dict | None:
-    folder = UPLOAD_ROOT / str(change_request_id)
+def read_brd_document_text(document: IntakeDocument) -> str:
+    path = brd_document_path(document)
+    if not path.is_file():
+        raise ValueError(
+            "The uploaded BRD file is no longer available on the server. "
+            "Upload it again."
+        )
+    return extract_text_from_bytes(path.read_bytes(), document.filename)
 
-    if not folder.exists():
+
+def get_latest_brd_upload(db: Session, change_request_id: int) -> dict | None:
+    document = get_current_brd_document(db, change_request_id)
+    if document is None:
         return None
 
-    files = sorted(
-        [path for path in folder.iterdir() if path.is_file()],
-        key=lambda path: path.stat().st_mtime,
-    )
-
-    if not files:
-        return None
-
-    latest = files[-1]
-    text = extract_text_from_bytes(
-        latest.read_bytes(),
-        latest.name,
-    )
+    try:
+        text = read_brd_document_text(document)
+    except ValueError:
+        text = ""
 
     return {
-        "filename": latest.name,
-        "size_bytes": latest.stat().st_size,
-        "character_count": len(text),
+        **serialize_intake_document(document),
         "has_text": bool(text.strip()),
-        "uploaded_at": datetime.utcfromtimestamp(
-            latest.stat().st_mtime
-        ).isoformat()
-        + "Z",
         "preview": text[:400],
     }
 

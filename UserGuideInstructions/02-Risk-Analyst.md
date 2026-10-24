@@ -99,6 +99,7 @@ You see:
 
 - An indigo banner: *"Submitted by {name} on {date}. Intake inputs are read-only."*
 - The six intake tabs (Product, Customer, Geography, Transaction, Channel, Vendor, Preview). They are **read-only** for you, but every tab is open.
+- A **Source BRD** panel above the tabs, showing the BRD the inputs were taken from: who uploaded it and when, how it was extracted, and whether the extracted values were applied. **Open** / **Download** gets the original file, and **Earlier versions** lists BRDs that were replaced or removed. If no BRD is attached, the inputs were entered manually. The Risk Committee and Admin see the same panel.
 
 Read through them. If something looks wrong or incomplete, you **can't edit it**. Note it, and raise it in your review. The committee can then send the request back to the Business Owner.
 

@@ -14,6 +14,7 @@ os.environ["MINIRISKERS_DATABASE_URL"] = f"sqlite:///{_DB_DIR}/test.db"
 os.environ.setdefault("JWT_SECRET", "test-secret")
 os.environ.setdefault("MINIRISKERS_DISABLE_EMBEDDINGS", "1")
 os.environ["MINIRISKERS_REGULATION_UPLOAD_DIR"] = f"{_DB_DIR}/regulations"
+os.environ["MINIRISKERS_BRD_UPLOAD_DIR"] = f"{_DB_DIR}/uploads"
 
 
 @pytest.fixture(scope="session")

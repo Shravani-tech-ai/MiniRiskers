@@ -20,6 +20,7 @@ import DecisionOutcome from "../components/assessment/DecisionOutcome";
 import CommitteeDecision from "../components/assessment/CommitteeDecision";
 import CommitteeStatusPanel from "../components/assessment/CommitteeStatusPanel";
 import IntakePanel from "../components/assessment/IntakePanel";
+import SourceDocumentPanel from "../components/assessment/SourceDocumentPanel";
 import RegulatoryEvidence from "../components/assessment/RegulatoryEvidence";
 import SimilarCasesPanel from "../components/assessment/SimilarCasesPanel";
 import RiskMethodologyModal from "../components/assessment/RiskMethodologyModal";
@@ -1429,6 +1430,12 @@ function Assessment() {
           )}
 
           <div className={permissions.canEditIntake ? "xl:col-span-7" : ""}>
+        {!permissions.canEditIntake && (
+          <SourceDocumentPanel
+            changeRequestId={changeRequestId}
+            setError={setError}
+          />
+        )}
         <RequestInputTabs
           activeTab={inputTab}
           onTabChange={changeInputTab}

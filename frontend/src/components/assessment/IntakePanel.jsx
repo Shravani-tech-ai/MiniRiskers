@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import api from "../../services/api";
+import { fetchIntakeDocument } from "./SourceDocumentPanel";
 import {
   btnDarkSm,
   btnPrimarySm,
@@ -89,11 +90,8 @@ function IntakePanel({
       setBrdUpload({
         uploaded: true,
         upload: {
-          filename: response.data.filename,
-          size_bytes: file.size,
-          character_count: response.data.character_count,
+          ...response.data.document,
           has_text: (response.data.character_count || 0) > 0,
-          uploaded_at: new Date().toISOString(),
           preview: response.data.preview,
         },
       });
@@ -341,11 +339,27 @@ function IntakePanel({
                   )}
                 </div>
 
+                {uploadInfo.id && uploadInfo.file_available !== false && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      fetchIntakeDocument(changeRequestId, uploadInfo, "download").catch(
+                        () => setError("Could not download the BRD.")
+                      )
+                    }
+                    title="Download uploaded BRD"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  >
+                    <Download size={14} />
+                    Download
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={handleRemoveBrd}
                   disabled={readOnly || removingBrd}
-                  title="Remove uploaded BRD"
+                  title="Detach this BRD from the request (it stays in the request's document history)"
                   className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-200 dark:border-red-900 bg-white dark:bg-slate-900 px-3 py-2 text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-50 disabled:opacity-50"
                 >
                   {removingBrd ? (

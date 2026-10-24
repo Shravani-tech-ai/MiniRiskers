@@ -15,7 +15,7 @@ from fastapi import (
     File,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -89,6 +89,7 @@ from risk_engine.risk_factor_generator import generate_risk_factors
 from rag.evidence_service import generate_evidence_for_change_request
 from backend.assessment_service import generate_ai_assessment
 from backend.models import (
+    IntakeDocument,
     ApprovalCondition,
     Base,
     ChangeRequest,
@@ -136,10 +137,15 @@ from backend.intake_service import (
     completeness_percent,
     extract_intake_from_brd,
     extract_text_from_bytes,
-    delete_brd_uploads,
+    brd_document_path,
+    detach_brd_document,
+    get_current_brd_document,
     get_latest_brd_upload,
+    list_brd_documents,
+    read_brd_document_text,
     save_assessment_inputs,
-    save_brd_file,
+    save_brd_document,
+    serialize_intake_document,
 )
 
 class ApplyExtractionRequest(BaseModel):
@@ -2204,7 +2210,7 @@ def get_brd_status(
     current_user: User = Depends(get_current_user),
 ):
     get_change_request_or_404(db, change_request_id, current_user)
-    upload = get_latest_brd_upload(change_request_id)
+    upload = get_latest_brd_upload(db, change_request_id)
 
     return {
         "change_request_id": change_request_id,
@@ -2230,7 +2236,17 @@ async def upload_brd(
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
 
-    save_brd_file(change_request_id, file_bytes, filename)
+    previous = get_current_brd_document(db, change_request_id)
+    document = save_brd_document(
+        db,
+        change_request_id,
+        file_bytes,
+        filename,
+        file.content_type,
+        len(text),
+        audit_actor_name(current_user),
+        current_user.id,
+    )
 
     create_audit_event(
         db=db,
@@ -2239,14 +2255,20 @@ async def upload_brd(
         user_id=current_user.id,
         action="BRD_UPLOADED",
         entity_type="IntakeDocument",
-        new_value=filename,
-        reason=f"BRD uploaded ({len(text)} characters extracted for processing).",
+        entity_id=document.id,
+        old_value=previous.filename if previous else None,
+        new_value=document.filename,
+        reason=(
+            f"BRD uploaded ({len(text)} characters extracted for processing)."
+            + (f" Supersedes {previous.filename}." if previous else "")
+        ),
     )
     db.commit()
 
     return {
         "change_request_id": change_request_id,
-        "filename": filename,
+        "document": serialize_intake_document(document),
+        "filename": document.filename,
         "character_count": len(text),
         "preview": text[:1500],
     }
@@ -2260,8 +2282,12 @@ def delete_brd(
 ):
     authorize_intake_write(db, change_request_id, current_user)
 
-    removed = delete_brd_uploads(change_request_id)
-    if not removed:
+    document = detach_brd_document(
+        db,
+        change_request_id,
+        audit_actor_name(current_user),
+    )
+    if document is None:
         raise HTTPException(status_code=404, detail="No BRD upload found.")
 
     create_audit_event(
@@ -2271,7 +2297,12 @@ def delete_brd(
         user_id=current_user.id,
         action="BRD_REMOVED",
         entity_type="IntakeDocument",
-        reason="BRD upload removed by user.",
+        entity_id=document.id,
+        old_value=document.filename,
+        reason=(
+            "BRD detached from the request by user. The file is kept in "
+            "the request's document history."
+        ),
     )
     db.commit()
 
@@ -2289,42 +2320,50 @@ async def extract_brd_intake(
 
     if file is not None:
         file_bytes = await file.read()
-        filename = file.filename or "brd-upload.pdf"
-        document_text = extract_text_from_bytes(file_bytes, filename)
-        save_brd_file(change_request_id, file_bytes, filename)
+        try:
+            document_text = extract_text_from_bytes(
+                file_bytes,
+                file.filename or "brd-upload.pdf",
+            )
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error))
+        document = save_brd_document(
+            db,
+            change_request_id,
+            file_bytes,
+            file.filename or "brd-upload.pdf",
+            file.content_type,
+            len(document_text),
+            audit_actor_name(current_user),
+            current_user.id,
+        )
+        create_audit_event(
+            db=db,
+            change_request_id=change_request_id,
+            actor=audit_actor_name(current_user),
+            user_id=current_user.id,
+            action="BRD_UPLOADED",
+            entity_type="IntakeDocument",
+            entity_id=document.id,
+            new_value=document.filename,
+            reason=(
+                f"BRD uploaded ({len(document_text)} characters extracted "
+                "for processing)."
+            ),
+        )
+        db.commit()
     else:
-        folder = (
-            Path(__file__).resolve().parent.parent
-            / "data"
-            / "uploads"
-            / str(change_request_id)
-        )
-        if not folder.exists():
+        document = get_current_brd_document(db, change_request_id)
+        if document is None:
             raise HTTPException(
                 status_code=400,
                 detail="Upload a BRD before extraction.",
             )
-
-        files = sorted(
-            [
-                path
-                for path in folder.iterdir()
-                if path.is_file()
-            ],
-            key=lambda path: path.stat().st_mtime,
-        )
-        if not files:
-            raise HTTPException(
-                status_code=400,
-                detail="Upload a BRD before extraction.",
-            )
-
-        latest = files[-1]
-        document_text = extract_text_from_bytes(
-            latest.read_bytes(),
-            latest.name,
-        )
-        filename = latest.name
+        try:
+            document_text = read_brd_document_text(document)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error))
+    filename = document.filename
 
     try:
         extracted, extraction_method = extract_intake_from_brd(
@@ -2362,10 +2401,13 @@ async def extract_brd_intake(
             }
         ),
     )
+    document.extraction_method = extraction_method
+    document.extracted_at = datetime.utcnow()
     notify_brd_extracted(db, change_request)
     db.commit()
 
     return {
+        "document_id": document.id,
         "filename": filename,
         "extraction_method": extraction_method,
         "extracted": extracted,
@@ -2426,6 +2468,11 @@ def apply_extraction(
 
     missing = compute_missing_fields(merged)
 
+    document = get_current_brd_document(db, change_request_id)
+    if document is not None:
+        document.applied_by = audit_actor_name(current_user)
+        document.applied_at = datetime.utcnow()
+
     create_audit_event(
         db=db,
         change_request_id=change_request_id,
@@ -2434,7 +2481,12 @@ def apply_extraction(
         action="INTAKE_APPLIED",
         entity_type="ChangeRequest",
         entity_id=change_request_id,
-        reason="BRD extraction applied to assessment inputs.",
+        new_value=document.filename if document else None,
+        reason=(
+            f"BRD extraction from {document.filename} applied to assessment inputs."
+            if document
+            else "BRD extraction applied to assessment inputs."
+        ),
     )
     db.commit()
 
@@ -2444,6 +2496,61 @@ def apply_extraction(
         "completeness_percent": completeness_percent(missing),
         "ready_for_risk_calculation": len(missing) == 0,
     }
+
+
+@app.get("/change-requests/{change_request_id}/intake/documents")
+def get_intake_documents(
+    change_request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Source BRDs for a request, newest first, including replaced ones."""
+    get_change_request_or_404(db, change_request_id, current_user)
+    documents = [
+        serialize_intake_document(document)
+        for document in list_brd_documents(db, change_request_id)
+    ]
+    current = next(
+        (item for item in documents if item["status"] == "CURRENT"),
+        None,
+    )
+    return {
+        "change_request_id": change_request_id,
+        "current": current,
+        "documents": documents,
+    }
+
+
+@app.get("/change-requests/{change_request_id}/intake/documents/{document_id}/file")
+def download_intake_document(
+    change_request_id: int,
+    document_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    get_change_request_or_404(db, change_request_id, current_user)
+    document = (
+        db.query(IntakeDocument)
+        .filter(
+            IntakeDocument.id == document_id,
+            IntakeDocument.change_request_id == change_request_id,
+        )
+        .first()
+    )
+    if document is None:
+        raise HTTPException(status_code=404, detail="Document not found.")
+
+    path = brd_document_path(document)
+    if not path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="The original file is no longer available on the server.",
+        )
+    return FileResponse(
+        path,
+        filename=document.filename,
+        media_type=document.content_type or "application/octet-stream",
+    )
 
 
 @app.get("/change-requests/{change_request_id}/controls")
